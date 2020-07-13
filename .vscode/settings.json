@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "thread": "cpp",
+        "iostream": "cpp",
+        "mutex": "cpp",
+        "condition_variable": "cpp",
+        "bitset": "cpp",
+        "functional": "cpp",
+        "cstdlib": "c",
+        "*.tcc": "cpp",
+        "system_error": "c"
+    }
+}
