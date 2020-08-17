@@ -1,7 +1,6 @@
 #ifndef _MSGR_H_
 #define _MSGR_H_
 
-#include "spdk/stdinc.h"
 #include "spdk/env.h"
 #include "spdk/event.h"
 #include "spdk/log.h"

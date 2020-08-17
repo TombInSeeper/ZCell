@@ -1,10 +1,10 @@
 CC=gcc
 CXX=g++
+Q=@
 
-CXX_FLAGS= -D_GNU_SOURCE -Wall  -std=gnu++11 -O2 -march=native -fno-strict-aliasing 
-C_FLAGS = -D_GNU_SOURCE -Wall  -std=gnu11 -O2 -march=native -fno-strict-aliasing 
-SPDK_INCLUDE_FLAGS=-I ./spdk/include
-SPDK_LINK_FLAGS= -Wl,--whole-archive  -Lspdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
+CFLAGS=-D_GNU_SOURCE -Wall -std=c99 -O2 -march=native -fno-strict-aliasing 
+SPDK_INCLUDE_FLAGS=-Ispdk/include
+SPDK_LINK_FLAGS=-Wl,--whole-archive  -Lspdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
 	-Lspdk/dpdk/build/lib -ldpdk  \
 	-lspdk_json -lspdk_jsonrpc -lspdk_log_rpc  -lspdk_app_rpc  -lspdk_rpc \
 	-lspdk_bdev_malloc  -lspdk_bdev_rpc -lspdk_bdev_null \
@@ -17,45 +17,55 @@ SPDK_LINK_FLAGS= -Wl,--whole-archive  -Lspdk/build/lib  -lspdk_env_dpdk  -lspdk_
 	-lspdk_ftl\
 	-lspdk_log -lspdk_trace -lspdk_util -lspdk_copy -lspdk_conf\
 	-lspdk_vmd\
-	-Wl,--no-whole-archive  -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
+	-Wl,--no-whole-archive  -lpthread -lrt -lnuma -ldl -luuid -lm 
 
 
-BENCH_TGT= bin_bh_tmpfs bin_bh_objectstore
-EX_TGT= bin_server bin_client 
+###########################
+MAKEFLAGS += --no-print-directory
 
-BIN_TGT= $(BENCH_TGT) $(EX_TGT)
+C_SRCS += $(wildcard *.c)
+# CXX_SRCS += $(CXX_SRCS-y)
+
+OBJS = $(C_SRCS:.c=.o) 
+
+DEPFLAGS = -MMD -MP -MF $*.d.tmp
+
+# Compile first input $< (.c) into $@ (.o)
+COMPILE_C=\
+	$(Q)echo "  LINK $S/$@"; \
+	$(CC) -o $@  $(SPDK_INCLUDE_FLAGS) $(DEPFLAGS) $(CFLAGS) -c $< && \
+	mv -f $*.d.tmp $*.d && touch -c $@
+
+# Link $(OBJS) and $(LIBS) into $@ (app)
+LINK_C=\
+	$(Q)echo "  LINK $S/$@"; \
+	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS)  $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
+
+
+BIN_TGT=  server client
 
 
 .PHONY: all clean
 
 all: $(BIN_TGT) 
 
-bin_server:main.c msg.o msgr.o objectstore.o 
-	@$(CC) $^  $(C_FLAGS) $(SPDK_INCLUDE_FLAGS) $(SPDK_LINK_FLAGS) -o $@
-	@echo "CC $< -o $@"
+server:demo_server.o msg.o msgr.o objectstore.o 
+	$(LINK_C)
 
-bin_client:client_demo.c msg.o msgr.o
-	@$(CC) $^  $(C_FLAGS) $(SPDK_INCLUDE_FLAGS) $(SPDK_LINK_FLAGS) -o $@
-	@echo "CC $< -o $@"
+client:demo_client.o msg.o msgr.o
+	$(LINK_C)
 
+%.o : %.c %.d
+	$(COMPILE_C)
 
+%d: ;
 
-### benchmark binary
-bin_bh_tmpfs:bench_tmpfs.c
-	@$(CC) $^  $(C_FLAGS) $(SPDK_INCLUDE_FLAGS) $(SPDK_LINK_FLAGS) -o $@
-	@echo "CC $< -o $@"
+.PRECIOUS: $(OBJS)
 
-### benchmark binary
-bin_bh_objectstore:bench_objectstore.c objectstore.o 
-	@$(CC) $^  $(C_FLAGS) $(SPDK_INCLUDE_FLAGS) $(SPDK_LINK_FLAGS) -o $@
-	@echo "CC $< -o $@"
-
-%.o : %.c %.h
-	@$(CC) -c $< $(C_FLAGS) $(SPDK_INCLUDE_FLAGS) -o $@
-	@echo "CC $< -o $@"
+-include $(OBJS:.o=.d)
 
 clean:
-	@rm -rf $(BIN_TGT) *.o core*
+	@rm -rf $(BIN_TGT) *.o core* *.d
 
 
 
