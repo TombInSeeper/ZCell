@@ -2,7 +2,7 @@ CC=gcc
 CXX=g++
 Q=@
 
-CFLAGS=-D_GNU_SOURCE -Wall -std=c99 -O2 -march=native -fno-strict-aliasing 
+CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -O2 -march=native -fno-strict-aliasing 
 SPDK_INCLUDE_FLAGS=-Ispdk/include
 SPDK_LINK_FLAGS=-Wl,--whole-archive  -Lspdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
 	-Lspdk/dpdk/build/lib -ldpdk  \

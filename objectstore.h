@@ -1,7 +1,7 @@
 #ifndef  _OBJECTSTORE_H_
 #define  _OBJECTSTORE_H_
 
-#include<stdint.h>
+#include  <stdint.h>
 
 typedef void (*obj_op_cb_t) (void*);
 
