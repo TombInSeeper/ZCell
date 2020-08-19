@@ -28,11 +28,12 @@ C_SRCS += $(wildcard *.c)
 
 OBJS = $(C_SRCS:.c=.o) 
 
+
 DEPFLAGS = -MMD -MP -MF $*.d.tmp
 
 # Compile first input $< (.c) into $@ (.o)
 COMPILE_C=\
-	$(Q)echo "  LINK $S/$@"; \
+	$(Q)echo "  CC $S/$@"; \
 	$(CC) -o $@  $(SPDK_INCLUDE_FLAGS) $(DEPFLAGS) $(CFLAGS) -c $< && \
 	mv -f $*.d.tmp $*.d && touch -c $@
 
@@ -42,17 +43,23 @@ LINK_C=\
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS)  $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
 
 
-BIN_TGT=  server client
+TEST_BIN=test_fixed_cache
 
+BIN_TGT=server client $(TEST_BIN)
 
-.PHONY: all clean
-
+.PHONY: all clean test
+	
 all: $(BIN_TGT) 
+
+test: $(TEST_BIN)
 
 server:demo_server.o msg.o msgr.o objectstore.o 
 	$(LINK_C)
 
 client:demo_client.o msg.o msgr.o
+	$(LINK_C)
+
+test_fixed_cache:test_fixed_cache.o
 	$(LINK_C)
 
 %.o : %.c %.d

@@ -14,6 +14,7 @@ typedef struct fcache_t {
     uint8_t mem_allocator;
     void  *elems;
     unsigned int *ptr_arr;
+    unsigned int elem_size;
     unsigned int size;
     unsigned int tail;
 } __attribute__((aligned(SPDK_CACHE_LINE_SIZE))) fcache_t;
@@ -48,11 +49,61 @@ static inline fcache_t *fcache_constructor(uint32_t cache_sz, uint32_t elem_sz ,
     }
 
     f->size = cache_sz;
+    f->elem_size = elem_sz;
     int i;
     for (i = 0 ; i < f->size; ++i) {
         f->ptr_arr[i] = i;
     }
 
+    return f;
+
+}
+
+static inline void fcache_destructor(fcache_t * fc)
+{
+    if(fc->mem_allocator == SPDK_MALLOC) {
+        spdk_free(fc->elems);
+    } else if (fc->mem_allocator == MALLOC) {
+        free(fc->elems);
+    } else {
+        return;
+    }
+
+    free(fc->ptr_arr);
+    free(fc);
+}
+
+static inline void* fcache_get(fcache_t *fc)
+{
+    unsigned int _tail = fc->tail;
+    if(_tail == fc->size) {
+        return NULL;
+    }
+    uint32_t pr_id  = fc->ptr_arr[fc->tail++];
+    return (char*)fc->elems + (pr_id * fc->elem_size);
+}
+
+static inline void fcache_put(fcache_t *fc , void* elem)
+{
+    unsigned int _tail = fc->tail;
+    if(_tail == 0) {
+        return;
+    }
+    uint32_t idx = ( (char*)(elem) - (char*)(fc->elems) ) / (fc->elem_size);
+    if ( 0 <= idx && idx < fc->size) {
+        fc->ptr_arr[--fc->tail] = idx;
+    }
+}
+
+static inline uint32_t fcache_elem_id(fcache_t *fc , void *elem)
+{
+    uint32_t idx = ( (char*)(elem) - (char*)(fc->elems) ) / (fc->elem_size);
+    if ( 0 <= idx && idx < fc->size) {
+        return idx;
+    }
+    else {
+        return -1;
+    }
 }
 
 
