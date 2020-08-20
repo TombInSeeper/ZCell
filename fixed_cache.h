@@ -50,6 +50,7 @@ static inline fcache_t *fcache_constructor(uint32_t cache_sz, uint32_t elem_sz ,
 
     f->size = cache_sz;
     f->elem_size = elem_sz;
+    f->mem_allocator = mem_allocator;
     int i;
     for (i = 0 ; i < f->size; ++i) {
         f->ptr_arr[i] = i;
@@ -68,9 +69,27 @@ static inline void fcache_destructor(fcache_t * fc)
     } else {
         return;
     }
-
     free(fc->ptr_arr);
     free(fc);
+}
+
+static inline uint32_t fcache_id_get(fcache_t *fc) {
+    unsigned int _tail = fc->tail;
+    if(_tail == fc->size) {
+        return -1;
+    }
+    uint32_t pr_id  = fc->ptr_arr[fc->tail++];
+    return pr_id;
+}
+
+static inline void fcache_id_put(fcache_t *fc , uint32_t idx) {
+    uint32_t _tail = fc->tail;
+    if(_tail == 0) {
+        return;
+    }
+    if ( 0 <= idx && idx < fc->size) {
+        fc->ptr_arr[--fc->tail] = idx;
+    }
 }
 
 static inline void* fcache_get(fcache_t *fc)
@@ -106,5 +125,8 @@ static inline uint32_t fcache_elem_id(fcache_t *fc , void *elem)
     }
 }
 
+static inline void* fcahe_id_elem(fcache_t *fc , uint32_t id) {
+    return (char*)fc->elems + (id * fc->elem_size);
+}
 
 #endif

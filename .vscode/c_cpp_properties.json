@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/spdk/include"
+                "/home/wuyue/workship/spdk/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

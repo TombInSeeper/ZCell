@@ -2,10 +2,13 @@ CC=gcc
 CXX=g++
 Q=@
 
+SPDK_PATH_PREFIX=/home/wuyue
+
+
 CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -O2 -march=native -fno-strict-aliasing 
-SPDK_INCLUDE_FLAGS=-Ispdk/include
-SPDK_LINK_FLAGS=-Wl,--whole-archive  -Lspdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
-	-Lspdk/dpdk/build/lib -ldpdk  \
+SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
+SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
+	-L$(SPDK_PATH_PREFIX)/spdk/dpdk/build/lib -ldpdk  \
 	-lspdk_json -lspdk_jsonrpc -lspdk_log_rpc  -lspdk_app_rpc  -lspdk_rpc \
 	-lspdk_bdev_malloc  -lspdk_bdev_rpc -lspdk_bdev_null \
 	-lspdk_bdev_nvme\
@@ -43,7 +46,7 @@ LINK_C=\
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS)  $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
 
 
-TEST_BIN=test_fixed_cache
+TEST_BIN=test_fixed_cache test_fake_store
 
 BIN_TGT=server client $(TEST_BIN)
 
@@ -60,6 +63,9 @@ client:demo_client.o msg.o msgr.o
 	$(LINK_C)
 
 test_fixed_cache:test_fixed_cache.o
+	$(LINK_C)
+
+test_fake_store:test_fake_store.o objectstore.o fakestore.o
 	$(LINK_C)
 
 %.o : %.c %.d
