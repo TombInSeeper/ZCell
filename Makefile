@@ -46,7 +46,7 @@ LINK_C=\
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS)  $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
 
 
-TEST_BIN=test_fixed_cache test_fake_store
+TEST_BIN=test_fixed_cache test_fake_store test_msgr test_echo_client
 
 BIN_TGT=server client $(TEST_BIN)
 
@@ -68,7 +68,14 @@ test_fixed_cache:test_fixed_cache.o
 test_fake_store:test_fake_store.o objectstore.o fakestore.o
 	$(LINK_C)
 
-%.o : %.c %.d
+test_msgr:test_msgr.o msgr.o msg.o
+	$(LINK_C)
+
+test_echo_client:test_echo_client.o msgr.o msg.o
+	$(LINK_C)
+
+
+%.o: %.c %.d
 	$(COMPILE_C)
 
 %d: ;

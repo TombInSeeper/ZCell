@@ -45,6 +45,9 @@ struct network_context_t {
     char host[32];
     int  port;
 
+    //Callback of Upper
+    void (*on_recv_message)(struct message *m);
+    void (*on_send_message)(struct message *m);
 
     struct spdk_sock* sock;
 
@@ -60,6 +63,9 @@ struct network_context_t {
     struct spdk_ring* sendq;
 
 };
+
+static __thread struct network_context_t* nctx;
+
 
 struct client_t* _get_client_ctx(struct network_context_t* ctx, struct spdk_sock* sock)
 {
@@ -230,13 +236,13 @@ static int _do_recv_msgs(struct client_t* c)
 
 
 
-static void _async_send_msg_free(void* arg , int err)
-{
-    struct spdk_sock_request* rsp = arg;
-    struct iovec* iov =(struct iovec*) (rsp + 1);
-    free(iov->iov_base);
-    free(rsp);
-}
+// static void _async_send_msg_free(void* arg , int err)
+// {
+//     struct spdk_sock_request* rsp = arg;
+//     struct iovec* iov =(struct iovec*) (rsp + 1);
+//     free(iov->iov_base);
+//     free(rsp);
+// }
 
 static void _recv_msgs(void *arg, struct spdk_sock_group *group, struct spdk_sock *sock)
 {
@@ -244,25 +250,22 @@ static void _recv_msgs(void *arg, struct spdk_sock_group *group, struct spdk_soc
     struct client_t* c = arg;
     n = _do_recv_msgs(c);
     if(n > 0) {
-        // SPDK_NOTICELOG("Reply to clients\n");
+        // SPDK_NOTICELOG("Recving A msg\n");
         // Reap and fill reply queue
         for (int i = 0 ; i < n ; ++i) {
-
             struct message* rqst = &(c->recv_pending[i]);
-            spdk_free(rqst->payload);
+            nctx->on_recv_message(rqst);
 
-
-
-
-            struct message* m = calloc(1 , sizeof(struct message));
-            // Construct message
-            m->cli_priv = c;
-            m->hdr.oph.op_flag = 100;
-            m->hdr.oph.op_seq = c->recv_pending[i].hdr.oph.op_seq;
+            // spdk_free(rqst->payload);
+            // struct message* m = calloc(1 , sizeof(struct message));
+            // // Construct message
+            // m->cli_priv = c;
+            // m->hdr.oph.op_flag = 100;
+            // m->hdr.oph.op_seq = c->recv_pending[i].hdr.oph.op_seq;
             
-            void* objs[] = {m};         
-            // int rc = _do_send_msg(m);
-            spdk_ring_enqueue(c->nctx->sendq , objs , 1 , NULL);
+            // void* objs[] = {m};         
+            // // int rc = _do_send_msg(m);
+            // spdk_ring_enqueue(c->nctx->sendq , objs , 1 , NULL);
         }
 
         //Reset recv_pending
@@ -328,6 +331,9 @@ static int sock_accept_poll(void *arg)
             }
 
             rc = spdk_sock_group_add_sock(ctx->group, sock, _recv_msgs, c);
+			SPDK_NOTICELOG("Add to group (%s, %hu) to (%s, %hu)\n",
+				       caddr, cport, saddr, sport);
+
 
 			if (rc < 0) {
 				spdk_sock_close(&sock);
@@ -365,7 +371,7 @@ static int sock_reply_poll(void *arg)
     struct network_context_t *ctx = arg;
     struct spdk_ring* sq = ctx->sendq;
     int cnt = spdk_ring_count(sq);
-    if( cnt == 0) {
+    if(cnt == 0) {
         return 0;
     }
 
@@ -386,12 +392,12 @@ static int sock_reply_poll(void *arg)
         // spdk_sock_flush()
         int success = _do_send_msg(msgs[0]);
         if(success == 0) {
+            //repush into the queue tail
             spdk_ring_enqueue(sq,msgs,1,NULL);
             continue;
         } else if (success > 0 ) {
             // SPDK_NOTICELOG("Send Successfully\n");
-            spdk_free(msg->payload);
-            free(msg);
+            nctx->on_send_message(msg);
             ret++;
         } else {
             SPDK_WARNLOG("Client Connection Closed\n");
@@ -404,20 +410,29 @@ static int sock_reply_poll(void *arg)
     return ret;
 }
 
-static int _do_server_init(struct network_context_t** nctx, char*ip ,int port )
+
+
+
+int msgr_push_msg(struct message *m)
+{
+    void* objs[] = {m};         
+    return spdk_ring_enqueue(nctx->sendq , objs , 1 , NULL);
+}
+
+
+int msgr_init(msgr_init_opt_t *opts)
 {
 
     SPDK_NOTICELOG("Starting init msgr\n");
-
-    *nctx = calloc(1,sizeof(struct network_context_t));
-    struct network_context_t* ctx = *nctx ;
+    struct network_context_t* ctx = calloc(1,sizeof(struct network_context_t)) ;
     if(!ctx) {
         SPDK_ERRLOG("fuck\n");
         return -1;
     }
-
-    strcpy(ctx->host,ip);
-    ctx->port = port;
+    strcpy(ctx->host, opts-> ip);
+    ctx->port = opts->port;
+    ctx->on_recv_message = opts->on_recv_message;
+    ctx->on_send_message = opts->on_send_message;
     if(1) {
         SPDK_NOTICELOG("Starting listening connection on %s:%d\n", ctx->host, ctx->port);
         ctx->sock = spdk_sock_listen(ctx->host, ctx->port, NULL);
@@ -436,7 +451,6 @@ static int _do_server_init(struct network_context_t** nctx, char*ip ,int port )
 	 */
 	ctx->group = spdk_sock_group_create(NULL);
 
-
     
 	/*
 	 * Start acceptor and group poller
@@ -445,14 +459,9 @@ static int _do_server_init(struct network_context_t** nctx, char*ip ,int port )
 	ctx->accept_poller = spdk_poller_register(sock_accept_poll, ctx, 1000);
 	ctx->group_poller = spdk_poller_register(sock_group_poll, ctx, 0);
 
+    nctx = ctx;
+
     return 0;
-}
-
-static __thread struct network_context_t* nctx;
-
-int msgr_init(char*ip , int port)
-{
-    return _do_server_init(&nctx, ip , port);
 }
 
 int msgr_fini()

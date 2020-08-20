@@ -96,7 +96,6 @@ int main()
     opts.name = "server";
     opts.config_file = "spdk.conf";
     opts.reactor_mask = "0x1";
-    opts.max_delay_us = 1000*1000; 
     opts.shutdown_cb = _sys_fini;
     SPDK_NOTICELOG("starting app\n");
     int rc = spdk_app_start(&opts , _sys_init , NULL);
