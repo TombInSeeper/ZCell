@@ -217,10 +217,12 @@ static int _do_recv_msgs(struct client_t* c)
     }  while (n > 0 && c->qrecv_tail < NR_MSG_PENDING);
     
     //The last read return value
-    if ( n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK) ) {
+
+    if ((errno == EAGAIN || errno == EWOULDBLOCK) ) {
         errno = 0;
         return cnt;
-    }   else if ( n == 0 ) {
+    }  else if ( n == 0 ) {
+        //Normally close connection
         int i;
         for( i = 0 ; i < NR_MSG_PENDING ; ++i) {
             spdk_free(c->recv_pending[i].payload);
