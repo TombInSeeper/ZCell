@@ -218,26 +218,33 @@ static int _do_recv_msgs(struct client_t* c)
     
     //The last read return value
 
-    if ((errno == EAGAIN || errno == EWOULDBLOCK) ) {
-        errno = 0;
+    //socket error ?
+    if ( n <= 0 ) {
+        if ((errno == EAGAIN || errno == EWOULDBLOCK) ) {
+            errno = 0;
+            return cnt;
+        }  else if ( n == 0 ) {
+            //Normally close connection
+            int i;
+            for( i = 0 ; i < NR_MSG_PENDING ; ++i) {
+                spdk_free(c->recv_pending[i].payload);
+            }
+            return -1;
+        }  else {
+            SPDK_NOTICELOG("Unexpected read error:%d, %s\n" , errno, strerror(errno));
+            // Free all buffer, if allocated
+            int i;
+            for( i = 0 ; i < NR_MSG_PENDING ; ++i) {
+                spdk_free(c->recv_pending[i].payload);
+            }
+            return -1;
+        }
+    } else if ( c->qrecv_tail == NR_MSG_PENDING ) {
+        SPDK_NOTICELOG("client[%d] message recv buffer is full\n" , c->port % NR_MAX_CLIENTS);
         return cnt;
-    }  else if ( n == 0 ) {
-        //Normally close connection
-        int i;
-        for( i = 0 ; i < NR_MSG_PENDING ; ++i) {
-            spdk_free(c->recv_pending[i].payload);
-        }
-        return -1;
-    }    
-    else {
-        SPDK_NOTICELOG("Unexpected read error:%d, %s" , errno, strerror(errno));
-        // Free all buffer, if allocated
-        int i;
-        for( i = 0 ; i < NR_MSG_PENDING ; ++i) {
-            spdk_free(c->recv_pending[i].payload);
-        }
-        return -1;
     }
+
+
 }
 
 
