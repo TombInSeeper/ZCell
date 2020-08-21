@@ -5,9 +5,6 @@
 #define NR_MAX_CLIENTS (1 * 8)
 #define NR_MSG_PENDING (1 * 2048)
 
-// static char tmpbuf[1024 * 1024];
-
-
 enum  {
     MSG_NEW = 0,
     MSG_HEADER = 1,
@@ -225,6 +222,7 @@ static int _do_recv_msgs(struct client_t* c)
         return cnt;
     }       
     else {
+        SPDK_NOTICELOG("Unexpected read error:%d, %s" , errno, strerror(errno));
         // Free all buffer, if allocated
         int i;
         for( i = 0 ; i < NR_MSG_PENDING ; ++i) {

@@ -31,11 +31,15 @@ int main( int argc , char **argv)
 {
 
     int dp = 1;
-
-    if(argc == 2) {
-        dp = atoi(argv[1]);
+    const char *srv_ip;
+    int srv_port;
+    if(argc == 5) {
+        srv_ip = argv[1];
+        srv_port = atoi(argv[2]);
+        dp = atoi(argv[3]);
+        assert( 0 <= dp && dp <= 512);
     } else {
-        printf("Usage: %s [request_depth]", argv[0]);
+        printf("Usage: %s [ip] [port] [request_depth] ", argv[0]);
         exit(0);
     }
 
@@ -49,7 +53,7 @@ int main( int argc , char **argv)
     make_message((struct request_hdr_t *)buf);
 
     char *response = malloc(sizeof(struct request_hdr_t));
-    struct spdk_sock *sock = spdk_sock_connect("127.0.0.1", 18000, "posix");
+    struct spdk_sock *sock = spdk_sock_connect(srv_ip, srv_port, "posix");
     if (!sock) {
         SPDK_ERRLOG("sock create error , fuck\n");
         goto end;
