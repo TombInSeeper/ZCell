@@ -220,7 +220,13 @@ static int _do_recv_msgs(struct client_t* c)
     if ( n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK) ) {
         errno = 0;
         return cnt;
-    }       
+    }   else if ( n == 0 ) {
+        int i;
+        for( i = 0 ; i < NR_MSG_PENDING ; ++i) {
+            spdk_free(c->recv_pending[i].payload);
+        }
+        return -1;
+    }    
     else {
         SPDK_NOTICELOG("Unexpected read error:%d, %s" , errno, strerror(errno));
         // Free all buffer, if allocated
