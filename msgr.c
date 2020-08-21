@@ -3,7 +3,7 @@
 #define ADDR_STR_LEN INET6_ADDRSTRLEN
 
 #define NR_MAX_CLIENTS (1 * 8)
-#define NR_MSG_PENDING (1 * 128)
+#define NR_MSG_PENDING (1 * 2048)
 
 // static char tmpbuf[1024 * 1024];
 

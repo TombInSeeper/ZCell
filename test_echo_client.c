@@ -27,11 +27,21 @@ void make_message(struct request_hdr_t *m)
 
 
 
-int main()
+int main( int argc , char **argv)
 {
+
+    int dp = 1;
+
+    if(argc == 2) {
+        dp = atoi(argv[1]);
+    } else {
+        printf("Usage: %s [request_depth]", argv[0]);
+        exit(0);
+    }
+
     struct spdk_env_opts opts;
     spdk_env_opts_init(&opts);
-    opts.core_mask = "[4]";
+    opts.core_mask = "[1]";
     spdk_env_init(&opts);
     size_t len = sizeof(struct request_hdr_t) + 0x1000;
     char *buf = malloc(len);
@@ -45,14 +55,17 @@ int main()
         goto end;
     }
 
-    const int dp = 6;
-    const int total = 1 * 10000 ;
+
+
+
+    // const int dp = 512;
+    const int total = 1 * 1000 ;
     // int n = total;
     int n = 0;
     uint64_t start_tsc, end_tsc;
 
     start_tsc = spdk_get_ticks();
-#if 1
+
     while ( n ++ < total) {
         int i;
         struct iovec iov;
@@ -93,7 +106,7 @@ int main()
 
         }
     }
-#endif 
+
     // sleep(1);
     // SPDK_NOTICELOG("Read successfully\n");
     end_tsc = spdk_get_ticks();

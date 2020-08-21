@@ -11,13 +11,13 @@
 void msgr_start( void* arg , void* arg2)
 {
     uint16_t port = spdk_env_get_current_core() + 45678;
-    msgr_init("127.0.0.1", port);
+    // msgr_init("127.0.0.1", port);
     return;
 }
 
 void msgr_stop(void* arg , void* arg2)
 {
-    msgr_fini();
+    // msgr_fini();
 }
 
 
