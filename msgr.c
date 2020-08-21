@@ -230,18 +230,18 @@ static int _do_recv_msgs(struct client_t* c)
                 spdk_free(c->recv_pending[i].payload);
             }
             return -1;
-        }  else {
-            SPDK_NOTICELOG("Unexpected read error:%d, %s\n" , errno, strerror(errno));
-            // Free all buffer, if allocated
-            int i;
-            for( i = 0 ; i < NR_MSG_PENDING ; ++i) {
-                spdk_free(c->recv_pending[i].payload);
-            }
-            return -1;
         }
     } else if ( c->qrecv_tail == NR_MSG_PENDING ) {
         SPDK_NOTICELOG("client[%d] message recv buffer is full\n" , c->port % NR_MAX_CLIENTS);
         return cnt;
+    } else {
+        SPDK_NOTICELOG("Unexpected read error:%d, %s\n" , errno, strerror(errno));
+        // Free all buffer, if allocated
+        int i;
+        for( i = 0 ; i < NR_MSG_PENDING ; ++i) {
+            spdk_free(c->recv_pending[i].payload);
+        }
+        return -1;
     }
 
 
