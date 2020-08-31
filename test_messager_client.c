@@ -42,7 +42,8 @@ void on_recv_message(message_t *msg) {
 }
 
 
-unsigned int g_task_start;
+unsigned int g_task_start = 0;
+
 typedef struct client_task_data {
     int cpuid;
     int rqsts;
@@ -71,6 +72,8 @@ void*  client_task(void* arg)
         .on_recv_message = on_recv_message
     };
     int rc = cif.messager_init(&conf);
+    // printf("Task[%d] , Connect OK \n",data->cpuid);
+    
     assert (rc== 0);
     char meta_buffer[128];
     char data_buffer[4096];
@@ -78,18 +81,20 @@ void*  client_task(void* arg)
     if(!session1) {
         return NULL;
     }
+    printf("Task[%d] , Connect OK \n",data->cpuid);
+
     message_t msg = {
         .state = {
             .hdr_rem_len = sizeof(msg_hdr_t),
-            .meta_rem_len = 128,
-            .data_rem_len = 0 
+            .meta_rem_len = 0,
+            .data_rem_len = 0x1000 
         },
         .header = {
             .seq = 0,
             .type = MSG_PING,
             .prio = 0,
-            .meta_length = 128,
-            .data_length = 0,
+            .meta_length = 0,
+            .data_length = 0x1000,
         },
         .meta_buffer = meta_buffer,
         .data_buffer = data_buffer,
@@ -103,7 +108,7 @@ void*  client_task(void* arg)
     data->start = ts.tv_nsec  + ts.tv_sec * 1000000000ULL;
     int i;
     for ( i = 0 ; i < data->rqsts ; ) {
-        int qd = 128;
+        int qd = 100;
         int j ;
         for ( j = 0 ; j < qd ; ++j) {
             cif.messager_sendmsg(&msg);
