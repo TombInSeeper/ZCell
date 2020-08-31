@@ -59,8 +59,8 @@ void _sys_init(void *arg)
         .port = 18000,
         .on_recv_message = _on_recv_message,
         .on_send_message = _on_send_message,
-        // .data_buffer_alloc = alloc_data_buffer,
-        // .data_buffer_free = free_data_buffer
+        .data_buffer_alloc = alloc_data_buffer,
+        .data_buffer_free = free_data_buffer
     };
     int rc = sif.messager_init(&conf);
     assert (rc == 0);
