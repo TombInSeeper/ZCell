@@ -120,8 +120,8 @@ void*  client_task(void* arg)
     double tt =  (data->end - data->start) / 1e3;
     double avg_lat = tt / data->rqsts;
     double qps = data->rqsts * 1000 / tt ;
-    printf("Task[%d] done, rqsts = %d, time = %lf us, avg_lat=%lf \n",
-        data->cpuid, data->rqsts, (data->end - data->start) / 1e3, avg_lat );
+    printf("Task[%d] done, rqsts = %d, time = %lf us, avg_lat=%lf ,qps= %lf \n",
+        data->cpuid, data->rqsts, (data->end - data->start) / 1e3, avg_lat , qps);
     cif.messager_close(session1);
     cif.messager_fini();
     return NULL;
