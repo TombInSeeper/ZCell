@@ -1,5 +1,5 @@
 #include"messager.h"
-
+#include "fixed_cache.h"
 #include "spdk/env.h"
 #include "spdk/event.h"
 #include "spdk/log.h"
@@ -9,25 +9,24 @@
 
 static msgr_server_if_t sif;
 // static msgr_client_if_t cif;
+static struct fcache_t *dma_pages;
+
 
 static void *alloc_data_buffer( uint32_t sz) {
-    uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
-    return spdk_dma_malloc(sz, align, NULL);
+    void *p = fcache_get(dma_pages);    
+    if(p) {
+        return p;
+    }
+    // uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
+    // return spdk_dma_malloc(sz, align, NULL);
 }
 
 static void free_data_buffer(void *p) {
-    spdk_dma_free(p);
+    fcache_put(dma_pages, p);
+    // spdk_dma_free(p);
 }
 
-void _sys_fini()
-{
-    SPDK_NOTICELOG("Stoping messager\n");
-    sif.messager_stop();
-    sif.messager_fini();
 
-    SPDK_NOTICELOG("Stoping app\n");
-    spdk_app_stop(0);
-}
 
 void _on_recv_message(message_t *m)
 {
@@ -47,11 +46,25 @@ void _on_send_message(message_t *m)
      m->header.meta_length ,m->header.data_length);
     // msgr_info("Send a message done\n");
 }
+void _sys_fini()
+{
+    SPDK_NOTICELOG("Stoping messager\n");
+    sif.messager_stop();
+    sif.messager_fini();
 
+
+    fcache_destructor(dma_pages);
+
+    SPDK_NOTICELOG("Stoping app\n");
+    spdk_app_stop(0);
+}
 
 void _sys_init(void *arg)
 {
     (void)arg;
+
+    dma_pages = fcache_constructor( 10 * 1024 , 0x1000, SPDK_MALLOC);
+
     msgr_server_if_init(&sif);
 
     messager_conf_t conf = {
