@@ -102,18 +102,39 @@ void*  client_task(void* arg)
     data->start = ts.tv_nsec  + ts.tv_sec * 1000000000ULL;
     int i;
     for ( i = 0 ; i < data->rqsts ; ++i) {
-        cif.messager_sendmsg(&msg);
+        int qd = 32;
+        int j ;
+        for ( j = 0 ; j < qd ; ++j) {
+            cif.messager_sendmsg(&msg);
+            msg.header.seq++;
+        }
         int rc = 0;
-        do {
-            rc = cif.messager_flush();
-        } while (!rc);
+        int n_send = 0 ;
 
+        while(1) {
+            rc = cif.messager_flush();
+            if (rc > 0) {
+                n_send += rc;
+                if(n_send == qd) {
+                    break;
+                }
+            } else if (rc == 0) {
+                if(n_send > 0) {
+                    break;
+                }
+            }
+        }
+
+        if(n_send < qd) {
+            // printf ("Qd is too big that ")
+        }
+
+        int n_wait = n_send;
         int recv = n_recv;
         do {
             rc = cif.messager_wait_msg(0);
-        } while (n_recv - recv < 1);
-        assert (n_recv - recv == 1);
-        msg.header.seq++;
+        } while (n_recv - recv != n_wait);
+        assert (n_recv - recv == n_wait);
     }
     clock_gettime(CLOCK_MONOTONIC, &te);
     data->end = te.tv_nsec  + te.tv_sec * 1000000000ULL;
