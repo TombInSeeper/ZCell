@@ -57,8 +57,8 @@
 #define MAX_EVENTS_PER_POLL 32
 #define MAX_TMPBUF 1024
 #define PORTNUMLEN 32
-#define SO_RCVBUF_SIZE (2 * 1024 * 1024)
-#define SO_SNDBUF_SIZE (2 * 1024 * 1024)
+#define SO_RCVBUF_SIZE (4 * 1024 * 1024)
+#define SO_SNDBUF_SIZE (4 * 1024 * 1024)
 #define IOV_BATCH_SIZE 64
 
 #if defined(SO_ZEROCOPY) && defined(MSG_ZEROCOPY)

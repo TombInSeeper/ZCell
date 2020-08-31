@@ -46,6 +46,7 @@ unsigned int g_task_start;
 typedef struct client_task_data {
     int cpuid;
     int rqsts;
+    int qd;
     uint64_t start;
     uint64_t end;
 } client_task_data;
@@ -81,14 +82,14 @@ void*  client_task(void* arg)
         .state = {
             .hdr_rem_len = sizeof(msg_hdr_t),
             .meta_rem_len = 128,
-            .data_rem_len = 0x1000 
+            .data_rem_len = 0 
         },
         .header = {
             .seq = 0,
             .type = MSG_PING,
             .prio = 0,
             .meta_length = 128,
-            .data_length = 0x1000,
+            .data_length = 0,
         },
         .meta_buffer = meta_buffer,
         .data_buffer = data_buffer,
@@ -101,8 +102,8 @@ void*  client_task(void* arg)
     clock_gettime(CLOCK_MONOTONIC, &ts);
     data->start = ts.tv_nsec  + ts.tv_sec * 1000000000ULL;
     int i;
-    for ( i = 0 ; i < data->rqsts ; ++i) {
-        int qd = 32;
+    for ( i = 0 ; i < data->rqsts ; ) {
+        int qd = 128;
         int j ;
         for ( j = 0 ; j < qd ; ++j) {
             cif.messager_sendmsg(&msg);
@@ -126,7 +127,8 @@ void*  client_task(void* arg)
         }
 
         if(n_send < qd) {
-            // printf ("Qd is too big that ")
+            printf ("Qd is too big and reassign to %d\n", n_send);
+            qd = n_send;
         }
 
         int n_wait = n_send;
@@ -135,13 +137,18 @@ void*  client_task(void* arg)
             rc = cif.messager_wait_msg(0);
         } while (n_recv - recv != n_wait);
         assert (n_recv - recv == n_wait);
+
+        i+= n_wait;
     }
+
+    data->rqsts = i;
+
     clock_gettime(CLOCK_MONOTONIC, &te);
     data->end = te.tv_nsec  + te.tv_sec * 1000000000ULL;
     double tt =  (data->end - data->start) / 1e3;
     double avg_lat = tt / data->rqsts;
     double qps = data->rqsts * 1000 / tt ;
-    printf("Task[%d] done, rqsts = %d, time = %lf us, avg_lat=%lf ,qps= %lf \n",
+    printf("Task[%d] done, rqsts = %d, time = %lf us, avg_lat=%lf ,qps= %lf K \n",
         data->cpuid, data->rqsts, (data->end - data->start) / 1e3, avg_lat , qps);
     cif.messager_close(session1);
     cif.messager_fini();
