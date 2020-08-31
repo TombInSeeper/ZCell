@@ -9,6 +9,10 @@
         "cstdlib": "c",
         "*.tcc": "cpp",
         "system_error": "c",
-        "stdinc.h": "c"
+        "stdinc.h": "c",
+        "array": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp"
     }
 }

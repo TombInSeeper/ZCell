@@ -59,9 +59,6 @@ int main( int argc , char **argv)
         goto end;
     }
 
-
-
-
     // const int dp = 512;
     const int total = 1 * 1000 ;
     // int n = total;

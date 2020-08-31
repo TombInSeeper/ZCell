@@ -1,7 +1,6 @@
+#include "objectstore.h"
 #include "fakestore.h"
 #include "fixed_cache.h"
-
-#include "objectstore_errcode.h"
 
 #include "spdk/event.h"
 #include "spdk/env.h"
@@ -44,7 +43,7 @@ static void fake_async_cb_wrapper(void *cb  , void* cb_arg)
 {
     cb_func_t _cb =  cb;
     if(_cb) {
-        _cb(cb_arg, EXECUTE_OK);
+        _cb(cb_arg, OSTORE_EXECUTE_OK);
     }
 }
 static void fake_async_cb(cb_func_t  cb , void * cb_arg)
@@ -62,14 +61,14 @@ extern int fakestore_info(char *out , uint32_t len)
         snprintf(out, len, "[maxoid=%u,max_obj_size=%s,free_nodes:%u, free_blocks:%u]",
             onode_max, "4MiB", node_dev_size , data_dev_size );
     }
-    return EXECUTE_OK;
+    return OSTORE_EXECUTE_OK;
 }
 
 extern int fakestore_mkfs (const char* dev_list[], int mkfs_flag, cb_func_t  cb , void* cb_arg)
 {
     // Do nothing
     fake_async_cb(cb , cb_arg);
-    return SUBMIT_OK;
+    return OSTORE_SUBMIT_OK;
 }
 
 extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int mount_flag /**/, cb_func_t cb , void* cb_arg)
@@ -82,7 +81,7 @@ extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int mount_flag
     fc->node_cache = fcache_constructor(node_dev_size, block_size, SPDK_MALLOC);
     fc->state = running;
     fake_async_cb(cb,cb_arg);
-    return SUBMIT_OK;
+    return OSTORE_SUBMIT_OK;
 }
 
 extern int fakestore_unmount(cb_func_t cb, void* cb_arg)
@@ -97,7 +96,7 @@ extern int fakestore_unmount(cb_func_t cb, void* cb_arg)
     fc->state= died;
 
     fake_async_cb(cb,cb_arg);
-    return SUBMIT_OK;
+    return OSTORE_SUBMIT_OK;
 }
 
 
@@ -118,7 +117,7 @@ extern int fakestore_create(uint32_t oid , cb_func_t cb , void* cb_arg)
     fs->onodes[oid] = new_o;
 
     fake_async_cb(cb, cb_arg);
-    return SUBMIT_OK;
+    return OSTORE_SUBMIT_OK;
 }
 
 extern int fakestore_delete(uint32_t oid , cb_func_t cb , void* cb_arg)
@@ -143,7 +142,7 @@ extern int fakestore_delete(uint32_t oid , cb_func_t cb , void* cb_arg)
     // memset(new_o, 0 ,sizeof(onode_t));
 
     fake_async_cb(cb, cb_arg);
-    return SUBMIT_OK;
+    return OSTORE_SUBMIT_OK;
 }
 
 extern int fakestore_read(uint32_t oid, uint64_t off, uint32_t len, void* rbuf, cb_func_t cb , void* cb_arg)
@@ -170,7 +169,7 @@ extern int fakestore_read(uint32_t oid, uint64_t off, uint32_t len, void* rbuf, 
         }
     }
     fake_async_cb(cb , cb_arg);
-    return SUBMIT_OK;
+    return OSTORE_SUBMIT_OK;
 }
 
 extern int fakestore_write(uint32_t oid, uint64_t off, uint32_t len, void* wbuf, cb_func_t cb, void* cb_arg)
@@ -202,7 +201,7 @@ extern int fakestore_write(uint32_t oid, uint64_t off, uint32_t len, void* wbuf,
         memcpy(this_page ,(char*)wbuf + i * 0x1000, 0x1000);
     }
     fake_async_cb(cb , cb_arg);
-    return SUBMIT_OK;
+    return OSTORE_SUBMIT_OK;
 }
 
 

@@ -3,6 +3,8 @@
 
 
 #include "stdint.h"
+#include "string.h"
+#include "stdbool.h"
 
 typedef void (*cb_func_t) (void* , int status_code);
 

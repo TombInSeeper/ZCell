@@ -1,5 +1,4 @@
 #include "objectstore.h"
-#include "objectstore_errcode.h"
 
 #include "spdk/event.h"
 #include "spdk/env.h"
@@ -18,7 +17,7 @@ void _sys_fini()
 
 void _unmount_cb (void * arg , int st)
 {
-    assert (st == EXECUTE_OK);
+    assert (st == OSTORE_EXECUTE_OK);
     SPDK_NOTICELOG("unmount OK\n");
 
     obj_if_destruct(os);
@@ -26,7 +25,7 @@ void _unmount_cb (void * arg , int st)
 }
 void _delete_cb(void * arg , int st)
 {
-    assert (st == EXECUTE_OK);
+    assert (st == OSTORE_EXECUTE_OK);
     SPDK_NOTICELOG("obj_delete OK\n");
 
     os->unmount(_unmount_cb , NULL);
@@ -34,7 +33,7 @@ void _delete_cb(void * arg , int st)
 
 void _read_cb(void * arg , int st)
 {
-    assert (st == EXECUTE_OK);
+    assert (st == OSTORE_EXECUTE_OK);
     //verify
     if(1) {
         char *p = rbuf;
@@ -51,7 +50,7 @@ void _read_cb(void * arg , int st)
 
 void _write_cb(void * arg , int st)
 {
-    assert (st == EXECUTE_OK);
+    assert (st == OSTORE_EXECUTE_OK);
     SPDK_NOTICELOG("obj_write OK\n");
 
     spdk_free(wbuf);
@@ -62,7 +61,7 @@ void _write_cb(void * arg , int st)
 
 void _create_cb(void * arg , int st)
 {
-    assert (st == EXECUTE_OK);
+    assert (st == OSTORE_EXECUTE_OK);
     SPDK_NOTICELOG("obj_create OK\n");
     wbuf = spdk_dma_malloc(0x10000,0x1000,NULL);
     memset(wbuf,0x23,0x1000);
@@ -71,7 +70,7 @@ void _create_cb(void * arg , int st)
 
 void _mount_cb(void * arg , int st)
 {
-    assert (st == EXECUTE_OK);
+    assert (st == OSTORE_EXECUTE_OK);
     SPDK_NOTICELOG("mount OK\n");
 
     char sinfo [1024];
