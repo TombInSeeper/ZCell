@@ -113,7 +113,8 @@ void*  client_task(void* arg)
     };
     while (g_task_start == 0)
         ;
-    printf("Task[%d] Starting.., rqsts = %d\n",data->cpuid, data->rqsts);
+    printf("Task[%d] Starting.., rqsts = %d, connect to[%s:%d]\n",data->cpuid, data->rqsts,
+        data->srv_ip , data->srv_port);
     struct timespec ts, te;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     data->start = ts.tv_nsec  + ts.tv_sec * 1000000000ULL;
