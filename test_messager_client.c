@@ -86,8 +86,8 @@ void*  client_task(void* arg)
     // printf("Task[%d] , Connect OK \n",data->cpuid);
     
     assert (rc== 0);
-    char meta_buffer[128];
-    char data_buffer[4096];
+    static char meta_buffer[128];
+    static char data_buffer[4096];
     void *session1 = cif.messager_connect(data->srv_ip,data->srv_port);
     if(!session1) {
         return NULL;
@@ -98,14 +98,14 @@ void*  client_task(void* arg)
         .state = {
             .hdr_rem_len = sizeof(msg_hdr_t),
             .meta_rem_len = 0,
-            .data_rem_len = 0x1000 
+            .data_rem_len = g_data_sz
         },
         .header = {
             .seq = 0,
             .type = MSG_PING,
             .prio = 0,
             .meta_length = 0,
-            .data_length = 0x1000,
+            .data_length = g_data_sz,
         },
         .meta_buffer = meta_buffer,
         .data_buffer = data_buffer,
