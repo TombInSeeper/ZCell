@@ -5,7 +5,7 @@ Q=@
 SPDK_PATH_PREFIX=/home/wuyue
 
 
-CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -O2 -march=native -fno-strict-aliasing 
+CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -O3 -march=native -fno-strict-aliasing 
 SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
 SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
 	-L$(SPDK_PATH_PREFIX)/spdk/dpdk/build/lib -ldpdk  \
