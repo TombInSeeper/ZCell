@@ -31,41 +31,72 @@ typedef struct messager_conf_t {
 
     char ip[46];
     int port;
-    //msg 参数指向的空间将在回调执行完成后释放
+
+    //msg 参数指向的空间以及内部的 meta buffer 与 data buffer 将在回调执行完成后释放
+    //如果要避免释放 meta buffer 和 data buffer 请使用如下方法：
+    // 1. 手动将 msg->data_buffer msg->meta_buffer 置 0 
+    // 2. 使用 message_move 函数将源消息的正文（所属session,header+meta+data) 转移到目的 message
+    //建议使用第2个方法
     void (*on_recv_message)(message_t *msg);
     
-    //msg 参数指向的空间将在回调执行完成后释放
+    //msg 参数指向的空间以及内部的 meta buffer 与 data buffer 将在回调执行完成后释放
+    //如果要避免释放 meta buffer 和 data buffer 请使用如下方法：
+    // 1. 手动将 msg->data_buffer msg->meta_buffer 置 0 
+    // 2. 使用 message_move 函数将源消息的正文（所属session,header+meta+data) 转移到目的 message
+    //建议使用第2个方法
     void (*on_send_message)(message_t *msg);
 
-    void * (*data_buffer_alloc)(uint32_t sz);
+
+    //
+    void *(*data_buffer_alloc)(uint32_t sz);
 
     void (*data_buffer_free)(void *buffer);
 
 }messager_conf_t;
 
 typedef struct msgr_server_if_t {
+    
     int  (*messager_init)(messager_conf_t *conf);
+
     int  (*messager_start)();
+    
     void (*messager_stop)();
+    
     void (*messager_fini)();
+    
     int  (*messager_sendmsg)(message_t *_msg_rvalue_ref);
 } msgr_server_if_t;
 
+
+
+
+// //前置声明
+// struct session_t;
+// typedef struct session_t session_t;
+
+// **messager**
+//messager 是一个 Per-thread 结构
+//用于维护与本thread相关的所有session
+//并负责所有 session 上的消息收发
+//
+
+
 typedef struct msgr_client_if_t {
+    // messager 构造
     int  (*messager_init)(messager_conf_t *conf);
+    
+    // messager 析构
     void (*messager_fini)();
-    ///return ptr to session
+    ///return opal ptr to A session
     void* (*messager_connect)(const char *ip , int port);
     //
     void (*messager_close)(void *sess);
 
     int  (*messager_sendmsg)(message_t *_msg_rvalue_ref);
     
-    int  (*messager_flush)(); //flush all inflight msgs, return success number
+    int  (*messager_flush)(); //try to flush all inflight msgs, return success number
 
-    int  (*messager_wait_flush)(uint32_t max); //flush all inflight msgs, return success number
-
-    int  (*messager_wait_msg)(uint32_t max); // Poll once for income messages, return income messages number 
+    int  (*messager_wait_msg)(); // Poll once for income messages, return income messages number 
 
 } msgr_client_if_t;
 

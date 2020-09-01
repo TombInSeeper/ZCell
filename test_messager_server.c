@@ -1,5 +1,4 @@
-#include"messager.h"
-#include "fixed_cache.h"
+
 #include "spdk/env.h"
 #include "spdk/event.h"
 #include "spdk/log.h"
@@ -7,98 +6,204 @@
 #include "spdk/sock.h"
 #include "spdk/util.h"
 
-static msgr_server_if_t sif;
-// static msgr_client_if_t cif;
-static struct fcache_t *dma_pages;
 
+#include "messager.h"
+#include "fixed_cache.h"
+
+
+#define NR_REACTOR_MAX 256
+
+static const char *base_ip;
+static int base_port;
+static const char *core_mask;
+
+typedef struct reactor_ctx_t {
+    int reactor_id;
+    const char *ip;
+    int port;
+    msgr_server_if_t mimpl;
+    volatile bool running;
+} reactor_ctx_t;
+
+
+static  reactor_ctx_t g_reactor_ctxs[NR_REACTOR_MAX];
+
+static inline reactor_ctx_t* reactor_ctx() {
+    return &g_reactor_ctxs[spdk_env_get_current_core()];
+}
+
+static inline int reactor_reduce_state() {
+    int i;
+    int r = 0;
+    SPDK_ENV_FOREACH_CORE(i) {
+        r += g_reactor_ctxs[i].running;
+    }
+    return r;
+}
 
 static void *alloc_data_buffer( uint32_t sz) {
-    void *p = fcache_get(dma_pages);    
-    if(p) {
-        return p;
-    }
-    // uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
-    // return spdk_dma_malloc(sz, align, NULL);
+    // void *p = fcache_get(dma_pages);    
+    // if(p) {
+    //     return p;
+    // }
+    uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
+    return spdk_dma_malloc(sz, align, NULL);
 }
 
 static void free_data_buffer(void *p) {
-    fcache_put(dma_pages, p);
-    // spdk_dma_free(p);
+    // fcache_put(dma_pages, p);
+    spdk_dma_free(p);
 }
 
+static void parse_args(int argc , char **argv) {
+    int opt = -1;
+	while ((opt = getopt(argc, argv, "i:p:c:")) != -1) {
+		switch (opt) {
+		case 'i':
+			base_ip = optarg;
+			break;
+		case 'p':
+			base_port = atoi(optarg);
+			break;
+        case 'c':
+			core_mask = (optarg);
+			break;
+		default:
+			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-c core_mask]\n", argv[0]);
+			exit(1);
+		}
+	}
+}
 
-
-void _on_recv_message(message_t *m)
+static void _on_recv_message(message_t *m)
 {
     // msgr_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
-    msgr_info("Recv a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
+    msgr_info("Recv a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
     message_t _m ;
     message_move(&_m, m);
     message_state_reset(&_m);
     msgr_info("Echo \n");
-    sif.messager_sendmsg(&_m);
+
+    reactor_ctx()->mimpl.messager_sendmsg(&_m);
 }
 
-void _on_send_message(message_t *m)
+static void _on_send_message(message_t *m)
 {
-    msgr_info("Send a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
+    msgr_info("Send a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
-    // msgr_info("Send a message done\n");
+}
+
+void _per_reactor_stop(void * ctx , void *err) {
+    (void)err;
+    (void)ctx;
+    reactor_ctx_t * rctx = reactor_ctx();
+    // SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
+
+    rctx->mimpl.messager_stop();
+    rctx->mimpl.messager_fini();
+
+    //...
+    rctx->running = false;
+    SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
+    return;
 }
 void _sys_fini()
 {
-    SPDK_NOTICELOG("Stoping messager\n");
-    sif.messager_stop();
-    sif.messager_fini();
+    int i;
+    SPDK_ENV_FOREACH_CORE(i) {
+        if(i != spdk_env_get_first_core())  {
+            struct spdk_event * e = spdk_event_allocate(i,_per_reactor_stop,NULL,NULL);
+            spdk_event_call(e);
+        }
+    }
 
+    if(spdk_env_get_current_core() == spdk_env_get_first_core()) {
+        _per_reactor_stop( NULL, NULL);
+        while (reactor_reduce_state() != 0)
+            spdk_delay_us(1000);
 
-    fcache_destructor(dma_pages);
-
-    SPDK_NOTICELOG("Stoping app\n");
-    spdk_app_stop(0);
+        //IF master
+        SPDK_NOTICELOG("Stoping app....\n");
+        spdk_app_stop(0);
+    }
 }
 
-void _sys_init(void *arg)
-{
-    (void)arg;
-
-    dma_pages = fcache_constructor( 10 * 1024 , 0x1000, SPDK_MALLOC);
-
-    msgr_server_if_init(&sif);
-
+void _per_reactor_boot(void * ctx , void *err) {
+    (void)err;
+    (void)ctx;
+    reactor_ctx_t * rctx = reactor_ctx();
+    // SPDK_NOTICELOG("Booting server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
+    msgr_server_if_init(&rctx->mimpl);
+    msgr_server_if_t *pmif = &rctx->mimpl;
     messager_conf_t conf = {
-        .ip = "127.0.0.1",
-        .port = 18000,
+        // .ip = rctx->ip,
+        .port = rctx->port,
         .on_recv_message = _on_recv_message,
         .on_send_message = _on_send_message,
         .data_buffer_alloc = alloc_data_buffer,
         .data_buffer_free = free_data_buffer
     };
-    int rc = sif.messager_init(&conf);
+    strcpy(conf.ip , rctx->ip);
+    int rc = pmif->messager_init(&conf);
     assert (rc == 0);
+    rc = pmif->messager_start();
+    assert (rc == 0);
+    rctx->running = true;
+    SPDK_NOTICELOG("Booting server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
+}
 
-    rc = sif.messager_start();
-    assert (rc == 0);
+void _sys_init(void *arg)
+{
+    (void)arg;
+    int i;
+
+    //prepare per reactor context
+    SPDK_ENV_FOREACH_CORE(i) {
+        reactor_ctx_t myctx = {
+            .reactor_id = i,
+            .ip = "0.0.0.0",
+            .port = 18000 + i,
+        };
+        memcpy(&g_reactor_ctxs[i], &myctx, sizeof(myctx));
+    }
+
+    mb();
+    
+    SPDK_ENV_FOREACH_CORE(i) {
+        if(i != spdk_env_get_first_core())  {
+            struct spdk_event * e = spdk_event_allocate(i,_per_reactor_boot,NULL,NULL);
+            spdk_event_call(e);
+        }      
+    }
+
+    spdk_delay_us(1000);
+    
+    if(spdk_env_get_current_core() == spdk_env_get_first_core()) {
+        _per_reactor_boot(NULL, NULL);       
+        while (reactor_reduce_state() != spdk_env_get_core_count())
+            spdk_delay_us(1000);
+
+        SPDK_NOTICELOG("All reactors are running\n");
+    }
 }
 
 
-int main()
-{
+int spdk_app_run() {
     struct spdk_app_opts opts;
     spdk_app_opts_init(&opts);
-    opts.name = "test_messager";
-    opts.config_file = "spdk.conf";
-    opts.reactor_mask = "0x1";
+    opts.reactor_mask = core_mask;
     opts.shutdown_cb = _sys_fini;
-    SPDK_NOTICELOG("test_messager echo server bootstarp\n");
     int rc = spdk_app_start(&opts , _sys_init , NULL);
     if(rc) {
-        SPDK_ERRLOG("fuck\n");
         return -1;
     }
-    SPDK_NOTICELOG("The end\n");
     spdk_app_fini();
-
     return 0;
+}
+
+int main( int argc , char **argv)
+{
+    parse_args(argc ,argv);
+    return spdk_app_run();
 }

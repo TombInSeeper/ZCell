@@ -19,11 +19,11 @@ static inline void free_meta_buffer( void *mptr) {
     free(mptr);
 }
 
-static   void* default_alloc_data_buffer(uint32_t sz) {
+static void* default_alloc_data_buffer(uint32_t sz) {
     msgr_info("Messager Internal alloc message data buffer\n");
     return malloc(sz);
 }
-static  void default_free_data_buffer( void *dptr) {
+static void default_free_data_buffer( void *dptr) {
     msgr_info("Messager Internal alloc message data buffer\n");
     free(dptr);
 }
@@ -103,6 +103,7 @@ typedef struct session_t {
 
 typedef struct messager_t {
     messager_conf_t conf;
+    bool is_running;
     net_impl *_net_impl;
     TAILQ_HEAD(session_queue, session_t) session_q;
     struct {
@@ -514,7 +515,9 @@ static int sock_reply_poll(void *arg) {
 
 static int _messager_constructor(messager_conf_t *conf , bool is_server) {
     messager_t *msgr = get_local_msgr();
-
+    if(msgr->is_running) {
+        return 0;
+    }
     msgr->_net_impl = net_impl_constructor(SOCK_TYPE_POSIX);
     if(!msgr->_net_impl) {
         return -1;
@@ -570,11 +573,18 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
         TAILQ_INIT(&(msgr->session_q));
     }
 
+    msgr->is_running = 1;
+
     return 0;
 }
 
 static void _messager_destructor( bool is_server) {
     messager_t *msgr = get_local_msgr();
+    if(!msgr->is_running) 
+        return;
+
+    msgr->is_running = 0;
+
     if(1) {  
         session_t *sp = TAILQ_FIRST(&msgr->session_q);
         while(sp) {
@@ -660,7 +670,7 @@ static int _cli_messager_flush( ) {
     return _flush_all(msgr);
 }
 
-static int _cli_messager_wait_msg(uint32_t sz) {
+static int _cli_messager_wait_msg() {
     return _poll_read_events();
 }
     // int  (*messager_wait_msg)();
