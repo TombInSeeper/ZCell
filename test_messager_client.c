@@ -87,7 +87,7 @@ void*  client_task(void* arg)
     
     assert (rc== 0);
     static char meta_buffer[128];
-    static char data_buffer[4096];
+    static char data_buffer[4096 * 1024];
     void *session1 = cif.messager_connect(data->srv_ip,data->srv_port);
     if(!session1) {
         return NULL;
@@ -138,11 +138,12 @@ void*  client_task(void* arg)
                 if(n_send == qd) {
                     break;
                 }
-            } else if (rc == 0) {
-                if(n_send > 0) {
-                    break;
-                }
-            }
+            } 
+            // else if (rc == 0) {
+            //     if(n_send > 0) {
+            //         break;
+            //     }
+            // }
         }
 
         if(n_send < qd) {
@@ -196,6 +197,9 @@ static void parse_args(int argc , char **argv) {
         case 'b':
 			g_data_sz = atoi(optarg);
 			break;  
+        case 'q':
+			g_qd = atoi(optarg);
+			break; 
         case 'h':      
 		default:
 			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-n nr_client threads] [-n servers][-b block_size][-p ]\n", argv[0]);
