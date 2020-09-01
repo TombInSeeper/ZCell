@@ -10,6 +10,14 @@
 #include "sched.h"
 #include "pthread.h"
 
+
+static const char *g_base_ip = "127.0.0.1";
+static int g_base_port = 18000;
+static int g_n_tasks = 1;
+static int g_n_servers = 1;
+// static int g_qd = 64;
+static int g_data_sz = 0x1000;
+
 int _system_init() {
     // struct spdk_env_opts opts;
     // spdk_env_opts_init(&opts);
@@ -48,6 +56,9 @@ typedef struct client_task_data {
     int cpuid;
     int rqsts;
     int qd;
+    const char *srv_ip;
+    int srv_port;
+    //........
     uint64_t start;
     uint64_t end;
 } client_task_data;
@@ -77,7 +88,7 @@ void*  client_task(void* arg)
     assert (rc== 0);
     char meta_buffer[128];
     char data_buffer[4096];
-    void *session1 = cif.messager_connect("127.0.0.1",18000);
+    void *session1 = cif.messager_connect(data->srv_ip,data->srv_port);
     if(!session1) {
         return NULL;
     }
@@ -108,7 +119,9 @@ void*  client_task(void* arg)
     data->start = ts.tv_nsec  + ts.tv_sec * 1000000000ULL;
     int i;
     for ( i = 0 ; i < data->rqsts ; ) {
-        int qd = 100;
+        
+        int qd = (4 << 20) / (g_data_sz + 256);
+
         int j ;
         for ( j = 0 ; j < qd ; ++j) {
             cif.messager_sendmsg(&msg);
@@ -160,20 +173,45 @@ void*  client_task(void* arg)
     return NULL;
 }
 
+static void parse_args(int argc , char **argv) {
+    int opt = -1;
+	while ((opt = getopt(argc, argv, "i:p:n:s:b:")) != -1) {
+		switch (opt) {
+		case 'i':
+			g_base_ip = optarg;
+			break;
+		case 'p':
+			g_base_port = atoi(optarg);
+			break;
+        case 'n':
+			g_n_tasks = atoi(optarg);
+			break;
+        case 's':
+			g_n_servers = atoi(optarg);   
+			break;
+        case 'b':
+			g_data_sz = atoi(optarg);
+			break;        
+		default:
+			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-n nr_client threads] [-n servers][-b block_size][-p ]\n", argv[0]);
+			exit(1);
+		}
+	}
+}
 
 int main(int argc, char **argv) {
+    
+    parse_args(argc, argv);
     assert(_system_init() == 0);
-    int n_task = 1;
-    if(argc > 1) {
-        n_task = atoi(argv[1]);
-    }
 
     pthread_t tasks[128];
     client_task_data data[128];
     int i;
-    for ( i = 0 ; i < n_task ; ++i) {
+    for ( i = 0 ; i < g_n_tasks ; ++i) {
         client_task_data _tmp = {
-            .cpuid = i + 3,
+            .srv_ip = g_base_ip,
+            .srv_port = g_base_port + (i % g_n_servers),
+            .cpuid = i,
             .rqsts = 10000
         };
         data[i] = _tmp;
@@ -182,7 +220,7 @@ int main(int argc, char **argv) {
 
     g_task_start = 1;
 
-    for ( i = 0 ; i < n_task ; ++i) {
+    for ( i = 0 ; i < g_n_tasks ; ++i) {
         pthread_join(tasks[i], NULL);
     }
 

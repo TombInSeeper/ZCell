@@ -13,9 +13,9 @@
 
 #define NR_REACTOR_MAX 256
 
-static const char *base_ip = "0.0.0.0";
-static int base_port = 18000;
-static const char *core_mask = "0x1";
+static const char *g_base_ip = "0.0.0.0";
+static int g_base_port = 18000;
+static const char *g_core_mask = "0x1";
 
 typedef struct reactor_ctx_t {
     int reactor_id;
@@ -60,13 +60,13 @@ static void parse_args(int argc , char **argv) {
 	while ((opt = getopt(argc, argv, "i:p:c:")) != -1) {
 		switch (opt) {
 		case 'i':
-			base_ip = optarg;
+			g_base_ip = optarg;
 			break;
 		case 'p':
-			base_port = atoi(optarg);
+			g_base_port = atoi(optarg);
 			break;
         case 'c':
-			core_mask = (optarg);
+			g_core_mask = (optarg);
 			break;
 		default:
 			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-c core_mask]\n", argv[0]);
@@ -162,8 +162,8 @@ void _sys_init(void *arg)
     SPDK_ENV_FOREACH_CORE(i) {
         reactor_ctx_t myctx = {
             .reactor_id = i,
-            .ip = base_ip,
-            .port = base_port + i,
+            .ip = g_base_ip,
+            .port = g_base_port + i,
         };
         memcpy(&g_reactor_ctxs[i], &myctx, sizeof(myctx));
     }
@@ -192,7 +192,7 @@ void _sys_init(void *arg)
 int spdk_app_run() {
     struct spdk_app_opts opts;
     spdk_app_opts_init(&opts);
-    opts.reactor_mask = core_mask;
+    opts.reactor_mask = g_core_mask;
     opts.shutdown_cb = _sys_fini;
     int rc = spdk_app_start(&opts , _sys_init , NULL);
     if(rc) {
