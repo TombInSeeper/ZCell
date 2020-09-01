@@ -13,9 +13,9 @@
 
 #define NR_REACTOR_MAX 256
 
-static const char *base_ip;
-static int base_port;
-static const char *core_mask;
+static const char *base_ip = "0.0.0.0";
+static int base_port = 18000;
+static const char *core_mask = "0x1";
 
 typedef struct reactor_ctx_t {
     int reactor_id;
@@ -162,8 +162,8 @@ void _sys_init(void *arg)
     SPDK_ENV_FOREACH_CORE(i) {
         reactor_ctx_t myctx = {
             .reactor_id = i,
-            .ip = "0.0.0.0",
-            .port = 18000 + i,
+            .ip = base_ip,
+            .port = base_port + i,
         };
         memcpy(&g_reactor_ctxs[i], &myctx, sizeof(myctx));
     }
