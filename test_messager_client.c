@@ -93,7 +93,7 @@ void*  client_task(void* arg)
     if(!session1) {
         return NULL;
     }
-    printf("Task[%d] , Connect OK \n",data->cpuid);
+    // printf("Task[%d] , Connect OK \n",data->cpuid);
 
     message_t msg = {
         .state = {
@@ -112,10 +112,12 @@ void*  client_task(void* arg)
         .data_buffer = data_buffer,
         .priv_ctx = session1 
     };
+    printf("Task[%d] Wait for starting.., rqsts = %d, connect with[%s:%d]\n",data->cpuid, data->rqsts,
+        data->srv_ip , data->srv_port);
+
     while (g_task_start == 0)
         ;
-    printf("Task[%d] Starting.., rqsts = %d, connect to[%s:%d]\n",data->cpuid, data->rqsts,
-        data->srv_ip , data->srv_port);
+
     struct timespec ts, te;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     data->start = ts.tv_nsec  + ts.tv_sec * 1000000000ULL;
