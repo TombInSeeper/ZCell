@@ -15,7 +15,7 @@ static const char *g_base_ip = "127.0.0.1";
 static int g_base_port = 18000;
 static int g_n_tasks = 1;
 static int g_n_servers = 1;
-// static int g_qd = 64;
+static int g_qd = 64;
 static int g_data_sz = 0x1000;
 
 int _system_init() {
@@ -120,7 +120,7 @@ void*  client_task(void* arg)
     data->start = ts.tv_nsec  + ts.tv_sec * 1000000000ULL;
     int i;
     for ( i = 0 ; i < data->rqsts ; ) {
-        int qd = 64;
+        int qd = g_qd;
         int j ;
         for ( j = 0 ; j < qd ; ++j) {
             cif.messager_sendmsg(&msg);
