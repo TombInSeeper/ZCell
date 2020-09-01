@@ -67,14 +67,14 @@ void*  client_task(void* arg)
 {
     client_task_data *data = arg;
 
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(data->cpuid,&cpuset);
 
-    if ( sched_setaffinity(getpid(),sizeof(cpuset),&cpuset) )  {
-        printf("sched_setaffinity failed\n");
-        return NULL;
-    }
+
+
+
+    // if ( sched_setaffinity(getpid(),sizeof(cpuset),&cpuset) )  {
+    //     printf("sched_setaffinity failed\n");
+    //     return NULL;
+    // }
 
     static msgr_client_if_t cif;
     msgr_client_if_init(&cif);
@@ -215,7 +215,18 @@ int main(int argc, char **argv) {
             .rqsts = 10000
         };
         data[i] = _tmp;
-        pthread_create(&tasks[i],NULL,client_task,&data[i]);
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(data->cpuid,&cpuset);
+        pthread_attr_t attr;
+        pthread_attr_setaffinity_np(&attr,sizeof(cpuset),&cpuset);
+        pthread_attr_setstacksize(&attr , 16 << 20);
+        pthread_attr_getschedpolicy(&attr,SCHED_RR);
+        int t = pthread_create(&tasks[i],&attr,client_task,&data[i]);
+        if(t) {
+            printf("Thread create failed\n");
+            exit(1);
+        }
     }
 
     g_task_start = 1;
