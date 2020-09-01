@@ -61,6 +61,8 @@ typedef struct client_task_data {
     //........
     uint64_t start;
     uint64_t end;
+    double qps; // K OPS
+    double bd; // MiB/s
 } client_task_data;
 
 void*  client_task(void* arg)
@@ -68,9 +70,6 @@ void*  client_task(void* arg)
     client_task_data *data = arg;
 
     printf("Task[%d] ,Staring...\n",data->cpuid);
-
-
-
 
     // if ( sched_setaffinity(getpid(),sizeof(cpuset),&cpuset) )  {
     //     printf("sched_setaffinity failed\n");
@@ -168,8 +167,11 @@ void*  client_task(void* arg)
     double tt =  (data->end - data->start) / 1e3;
     double avg_lat = tt / data->rqsts;
     double qps = data->rqsts * 1000 / tt ;
-    printf("Task[%d] done, rqsts = %d, time = %lf us, avg_lat=%lf ,qps= %lf K \n",
-        data->cpuid, data->rqsts, (data->end - data->start) / 1e3, avg_lat , qps);
+    double bd = (qps * g_data_sz) / 1000;
+    printf("Task[%d] done, rqsts = %d, time = %lf us, avg_lat=%lf ,qps= %lf K, bd = %lf MiB/s \n",
+        data->cpuid, data->rqsts, (data->end - data->start) / 1e3, avg_lat , qps , bd);
+    data->qps =qps;
+    data->bd = bd;
     cif.messager_close(session1);
     cif.messager_fini();
     return NULL;
@@ -237,10 +239,13 @@ int main(int argc, char **argv) {
 
     g_task_start = 1;
 
+    double qps = 0;
+    double bd  = 0;
     for ( i = 0 ; i < g_n_tasks ; ++i) {
         pthread_join(tasks[i], NULL);
+        qps += data[i].qps;
+        bd += data[i].bd;
     }
-
-
+    printf("Sum:qps=%lf K , bandwidth=%lf MiB/s \n" , qps, bd);
     _system_fini();
 }
