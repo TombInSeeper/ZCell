@@ -50,7 +50,7 @@ void on_recv_message(message_t *msg) {
 }
 
 
-unsigned int g_task_start = 0;
+volatile unsigned int g_task_start = 0;
 
 typedef struct client_task_data {
     int cpuid;
