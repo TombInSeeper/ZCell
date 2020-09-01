@@ -38,7 +38,6 @@ typedef struct msg {
     TAILQ_ENTRY(msg) _msg_list_hook;
 }msg;
 
-
 static inline msg *msg_construct( void * session ) {
     msg* m = calloc(1, sizeof(msg));
     m->message.priv_ctx = session;
