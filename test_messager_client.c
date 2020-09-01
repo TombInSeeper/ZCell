@@ -119,9 +119,7 @@ void*  client_task(void* arg)
     data->start = ts.tv_nsec  + ts.tv_sec * 1000000000ULL;
     int i;
     for ( i = 0 ; i < data->rqsts ; ) {
-        
-        int qd = (4 << 20) / (g_data_sz + 256);
-
+        int qd = 64;
         int j ;
         for ( j = 0 ; j < qd ; ++j) {
             cif.messager_sendmsg(&msg);
@@ -175,7 +173,7 @@ void*  client_task(void* arg)
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "i:p:n:s:b:")) != -1) {
+	while ((opt = getopt(argc, argv, "i:p:n:s:b:h")) != -1) {
 		switch (opt) {
 		case 'i':
 			g_base_ip = optarg;
@@ -191,7 +189,8 @@ static void parse_args(int argc , char **argv) {
 			break;
         case 'b':
 			g_data_sz = atoi(optarg);
-			break;        
+			break;  
+        case 'h':      
 		default:
 			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-n nr_client threads] [-n servers][-b block_size][-p ]\n", argv[0]);
 			exit(1);
