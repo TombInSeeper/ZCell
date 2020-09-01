@@ -67,6 +67,7 @@ void*  client_task(void* arg)
 {
     client_task_data *data = arg;
 
+    printf("Task[%d] ,Staring...\n",data->cpuid);
 
 
 
@@ -216,7 +217,7 @@ int main(int argc, char **argv) {
         };
         data[i] = _tmp;
 
-        
+
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
         CPU_SET(data[i].cpuid,&cpuset);
