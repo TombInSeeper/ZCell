@@ -129,4 +129,10 @@ static inline void* fcahe_id_elem(fcache_t *fc , uint32_t id) {
     return (char*)fc->elems + (id * fc->elem_size);
 }
 
+static inline bool fcache_in(fcache_t *fc , void *ptr) {
+
+    return (uintptr_t)ptr >= (uintptr_t)fc->elems && 
+            (uintptr_t)ptr < (uintptr_t)fc->elems + (fc->elem_size * fc->size); 
+}
+
 #endif

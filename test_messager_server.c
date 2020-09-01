@@ -17,11 +17,16 @@ static const char *g_base_ip = "0.0.0.0";
 static int g_base_port = 18000;
 static const char *g_core_mask = "0x1";
 
+
+
 typedef struct reactor_ctx_t {
     int reactor_id;
     const char *ip;
     int port;
     msgr_server_if_t mimpl;
+
+    struct fcache_t *dma_pages;
+
     volatile bool running;
 } reactor_ctx_t;
 
@@ -42,17 +47,21 @@ static inline int reactor_reduce_state() {
 }
 
 static void *alloc_data_buffer( uint32_t sz) {
-    // void *p = fcache_get(dma_pages);    
-    // if(p) {
-    //     return p;
-    // }
-    uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
-    return spdk_dma_malloc(sz, align, NULL);
+    if(sz <= 0x1000)
+        return fcache_get(reactor_ctx()->dma_pages); 
+    else {    
+        uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
+        return spdk_dma_malloc(sz, align, NULL);
+    }
 }
 
 static void free_data_buffer(void *p) {
-    // fcache_put(dma_pages, p);
-    spdk_dma_free(p);
+    fcache_t *fc = reactor_ctx()->dma_pages;
+    if(fcache_in(fc , p)) {
+        fcache_put(fc, p);
+    } else {
+        spdk_dma_free(p);
+    }
 }
 
 static void parse_args(int argc , char **argv) {
@@ -104,6 +113,9 @@ void _per_reactor_stop(void * ctx , void *err) {
     rctx->mimpl.messager_fini();
 
     //...
+    // rctx->dma_pages = fcache_constructor(8192, 0x1000, SPDK_MALLOC);
+    fcache_destructor(rctx->dma_pages);
+    
     rctx->running = false;
     SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
     return;
@@ -132,7 +144,11 @@ void _sys_fini()
 void _per_reactor_boot(void * ctx , void *err) {
     (void)err;
     (void)ctx;
-    reactor_ctx_t * rctx = reactor_ctx();
+    reactor_ctx_t *rctx = reactor_ctx();
+
+    rctx->dma_pages = fcache_constructor(8192, 0x1000, SPDK_MALLOC);
+    assert(rctx->dma_pages);
+
     // SPDK_NOTICELOG("Booting server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
     msgr_server_if_init(&rctx->mimpl);
     msgr_server_if_t *pmif = &rctx->mimpl;
