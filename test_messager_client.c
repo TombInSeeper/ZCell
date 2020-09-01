@@ -246,6 +246,9 @@ int main(int argc, char **argv) {
         qps += data[i].qps;
         bd += data[i].bd;
     }
-    printf("Sum:qps=%lf K , bandwidth=%lf MiB/s \n" , qps, bd);
+    printf("====================[Main]====================\n");
+    printf("|| Sum:qps=%lf K , bandwidth=%lf MiB/s ||\n" , qps, bd );
+    printf("====================[Main]====================\n");
+
     _system_fini();
 }
