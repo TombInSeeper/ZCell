@@ -180,7 +180,7 @@ void*  client_task(void* arg)
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "i:p:n:s:b:h")) != -1) {
+	while ((opt = getopt(argc, argv, "i:p:n:s:b:h:q:")) != -1) {
 		switch (opt) {
 		case 'i':
 			g_base_ip = optarg;
@@ -202,7 +202,8 @@ static void parse_args(int argc , char **argv) {
 			break; 
         case 'h':      
 		default:
-			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-n nr_client threads] [-n servers][-b block_size][-p ]\n", argv[0]);
+			fprintf(stderr, "Usage: %s [-i ip]\
+             [-p port] [-n nr_client threads] [-n servers][-b block_size][-q qd ]\n", argv[0]);
 			exit(1);
 		}
 	}
