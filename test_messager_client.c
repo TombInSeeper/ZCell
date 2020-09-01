@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
         pthread_attr_t attr;
         pthread_attr_setaffinity_np(&attr,sizeof(cpuset),&cpuset);
         pthread_attr_setstacksize(&attr , 16 << 20);
-        pthread_attr_getschedpolicy(&attr,SCHED_RR);
+        pthread_attr_setschedpolicy(&attr,SCHED_RR);
         int t = pthread_create(&tasks[i],&attr,client_task,&data[i]);
         if(t) {
             printf("Thread create failed\n");
