@@ -222,9 +222,10 @@ int main(int argc, char **argv) {
         CPU_ZERO(&cpuset);
         CPU_SET(data[i].cpuid,&cpuset);
         pthread_attr_t attr;
+        pthread_attr_init(&attr);
         pthread_attr_setaffinity_np(&attr,sizeof(cpuset),&cpuset);
-        // pthread_attr_setstacksize(&attr , 16 << 20);
-        // pthread_attr_setschedpolicy(&attr,PTHREAD_);
+        pthread_attr_setstacksize(&attr , 16 << 20);
+        pthread_attr_setschedpolicy(&attr,SCHED_RR);
         int t = pthread_create(&tasks[i],&attr,client_task,&data[i]);
         if(t) {
             printf("Thread create failed\n");
