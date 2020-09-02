@@ -69,7 +69,7 @@ typedef struct msgr_server_if_t {
     
     void (*messager_fini)();
     
-    int  (*messager_sendmsg)(message_t *_msg_rvalue_ref);
+    int  (*messager_sendmsg)(const message_t *_msg);
 } msgr_server_if_t;
 
 

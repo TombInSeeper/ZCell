@@ -196,7 +196,7 @@ static inline void session_destruct(session_t *ss) {
             } else {\
                 _r = SOCK_NEED_CLOSE;\
             }\
-        } else {\              
+        } else {\
             *(ptr) -= (rc);\
             if ( *(ptr)) {\
                 _r =  SOCK_EAGAIN;\
