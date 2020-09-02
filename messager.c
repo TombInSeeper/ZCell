@@ -186,27 +186,48 @@ static inline void session_destruct(session_t *ss) {
     free(ss);
 }
 
-static int _sock_rw_rc_handle( int rc , uint32_t *ptr) 
-{
-    if ( rc <= 0 ) {
-        if (errno == EWOULDBLOCK || errno == EAGAIN) {
-            //Send Buffer is full
-            errno = 0;
-            return SOCK_EAGAIN;
-        } else {
-            //Socket Error
-            return SOCK_NEED_CLOSE;
-        }
-    }  else  {                
-        *ptr -= rc;
-        if ( *ptr) {
-            //Uncompleted
-            return SOCK_EAGAIN;
-        } else {
-            return SOCK_RWOK;
-        }
-    }
-}
+
+#define _sock_rc_handle(rc,ptr)\
+    ({  int _r = 0; \
+        if ( (rc) <= 0 ) {\
+            if (errno == EWOULDBLOCK || errno == EAGAIN) {\
+                errno = 0;\
+                _r = SOCK_EAGAIN;\
+            } else {\
+                _r = SOCK_NEED_CLOSE;\
+            }\
+        } else {\              
+            *(ptr) -= (rc);\
+            if ( *(ptr)) {\
+                _r =  SOCK_EAGAIN;\
+            } else {\
+                _r =  SOCK_RWOK;\
+            }\
+        }\
+        _r;\
+    })
+
+// static inline int _sock_rc_handle_32( int rc , uint32_t *ptr) 
+// {
+//     if ( rc <= 0 ) {
+//         if (errno == EWOULDBLOCK || errno == EAGAIN) {
+//             //Send Buffer is full
+//             errno = 0;
+//             return SOCK_EAGAIN;
+//         } else {
+//             //Socket Error
+//             return SOCK_NEED_CLOSE;
+//         }
+//     }  else  {                
+//         *ptr -= rc;
+//         if ( *ptr) {
+//             //Uncompleted
+//             return SOCK_EAGAIN;
+//         } else {
+//             return SOCK_RWOK;
+//         }
+//     }
+// }
 
 /**
  * @brief 
@@ -234,7 +255,7 @@ static int _do_send_message(msg * m) {
                 .iov_len = ms->state.hdr_rem_len
             };
             sock_rc = msgr->_net_impl->writev(sess->_sock, &hdr_iov , 1);
-            if ( ( err =  _sock_rw_rc_handle(sock_rc , &(ms->state.hdr_rem_len)) ) != SOCK_RWOK ) {
+            if ( ( err =  _sock_rc_handle(sock_rc , &(ms->state.hdr_rem_len)) ) != SOCK_RWOK ) {
                 return err;
             }           
         }
@@ -245,7 +266,7 @@ static int _do_send_message(msg * m) {
                 .iov_len = ms->state.meta_rem_len
             };
             sock_rc = msgr->_net_impl->writev(sess->_sock, &meta_iov , 1);
-            if ( ( err =  _sock_rw_rc_handle(sock_rc , &(ms->state.meta_rem_len)) ) != SOCK_RWOK ) {
+            if ( ( err =  _sock_rc_handle(sock_rc , &(ms->state.meta_rem_len)) ) != SOCK_RWOK ) {
                 return err;
             } 
         }
@@ -256,7 +277,7 @@ static int _do_send_message(msg * m) {
                 .iov_len = ms->state.data_rem_len
             };
             sock_rc = msgr->_net_impl->writev(sess->_sock, &data_iov , 1);
-            if ( ( err =  _sock_rw_rc_handle(sock_rc , &(ms->state.data_rem_len)) ) != SOCK_RWOK ) {
+            if ( ( err =  _sock_rc_handle(sock_rc , &(ms->state.data_rem_len)) ) != SOCK_RWOK ) {
                 return err;
             } 
         }
@@ -282,7 +303,7 @@ static int _do_recv_message(msg * m) {
                 .iov_len = ms->state.hdr_rem_len
             };
             sock_rc = msgr->_net_impl->readv(sess->_sock, &hdr_iov , 1);
-            if ( ( err =  _sock_rw_rc_handle(sock_rc , &(ms->state.hdr_rem_len)) ) != SOCK_RWOK ) {
+            if ( ( err =  _sock_rc_handle(sock_rc , &(ms->state.hdr_rem_len)) ) != SOCK_RWOK ) {
                 return err;
             } else {
                 assert(ms->state.hdr_rem_len == 0);
@@ -305,7 +326,7 @@ static int _do_recv_message(msg * m) {
                 .iov_len = ms->state.meta_rem_len
             };
             sock_rc = msgr->_net_impl->readv(sess->_sock, &meta_iov , 1);
-            if ( ( err =  _sock_rw_rc_handle(sock_rc , &(ms->state.meta_rem_len)) ) != SOCK_RWOK ) {
+            if ( ( err =  _sock_rc_handle(sock_rc , &(ms->state.meta_rem_len)) ) != SOCK_RWOK ) {
                 return err;
             } 
             msgr_debug("Messager msg_meta recv done\n");    
@@ -317,7 +338,7 @@ static int _do_recv_message(msg * m) {
                 .iov_len = ms->state.data_rem_len
             };
             sock_rc = msgr->_net_impl->readv(sess->_sock, &data_iov , 1);
-            if ( ( err =  _sock_rw_rc_handle(sock_rc , &(ms->state.data_rem_len)) ) != SOCK_RWOK ) {
+            if ( ( err =  _sock_rc_handle(sock_rc , &(ms->state.data_rem_len)) ) != SOCK_RWOK ) {
                 return err;
             } 
             msgr_debug("Messager msg_data recv done\n");    
