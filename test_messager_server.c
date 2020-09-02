@@ -1,5 +1,6 @@
 
 #include "spdk/env.h"
+#include "spdk/thread.h"
 #include "spdk/event.h"
 #include "spdk/log.h"
 #include "spdk/net.h"
@@ -115,7 +116,7 @@ void _per_reactor_stop(void * ctx , void *err) {
     //...
     // rctx->dma_pages = fcache_constructor(8192, 0x1000, SPDK_MALLOC);
     fcache_destructor(rctx->dma_pages);
-    
+
     rctx->running = false;
     SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
     return;
@@ -166,6 +167,7 @@ void _per_reactor_boot(void * ctx , void *err) {
     rc = pmif->messager_start();
     assert (rc == 0);
     rctx->running = true;
+    // spdk_thread_get
     SPDK_NOTICELOG("Booting server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
 }
 
@@ -192,6 +194,8 @@ void _sys_init(void *arg)
             spdk_event_call(e);
         }      
     }
+
+    // spdk_poller_register()
 
     spdk_delay_us(1000);
     

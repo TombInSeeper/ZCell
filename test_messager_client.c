@@ -103,7 +103,6 @@ void*  client_task(void* arg)
         .header = {
             .seq = 0,
             .type = MSG_PING,
-            .prio = 0,
             .meta_length = 0,
             .data_length = g_data_sz,
         },

@@ -9,7 +9,6 @@
 
 enum SOCK_STATUS {
     SOCK_RWOK,
-    SOCK_ENOMSG,
     SOCK_EAGAIN,    
     SOCK_NEED_CLOSE,
 };
@@ -25,40 +24,24 @@ enum MessageType {
     MSG_OSS_OP_DELETE,
 };
 
-#define _msg_filed_get_set(msg_type, filed , filed_type) \
-    static inline filed_type msg_type ## _get_ ## filed ( msg_type * m) { \
-        return (m->filed); \
-    }; \
-    static inline void msg_type ## _set_ ## filed ( msg_type * m , filed_type var) { \
-        (m->filed) = (var); \
-    }
-
 /**
 
  * 
 
 */
 typedef struct msg_hdr_t {
-    _le64 seq;  //unique seq in a session
-    _le16 type; // message type
-    _le16 prio; //
-    _le32 meta_length;  //
+    _le32 seq;  //sequntial number in onesession
+    union {
+        _le16 type; // Operation type , for "request"
+        _le16 status; //Status Code, for "response"
+    };
+    _le16 meta_length;  //MAX 64K
     _le32 data_length;
 } msg_hdr_t;
 
-// static inline uint64_t msg_hdr_get_seq(msg_hdr_t *hdr) {
-//     return le64_to_cpu(hdr->seq);
-// }
-// _msg_filed_get_set(msg_hdr_t, seq , _le64);
-// _msg_filed_get_set(msg_hdr_t, type , _le16);
-// _msg_filed_get_set(msg_hdr_t, prio , _le16);
-// _msg_filed_get_set(msg_hdr_t, meta_length , _le32);
-// _msg_filed_get_set(msg_hdr_t, data_length , _le32);
-
-
 typedef struct message_state_object_t {
-    uint32_t hdr_rem_len;
-    uint32_t meta_rem_len;
+    uint16_t hdr_rem_len;
+    uint16_t meta_rem_len;
     uint32_t data_rem_len;
 }message_state_object_t;
 
@@ -68,12 +51,9 @@ typedef struct message_t {
         msg_hdr_t header;
         char *meta_buffer;
         char *data_buffer;
-        ///transparent ptr to privous context
-        ///e.g. session
-        ///Requst and  Response must be the same one 
-        void *priv_ctx;
-    };
-    
+    };   
+    void *priv_ctx; ////Session Context Pointer
+    // uint8_t pad[16];//align to CACAHE LINE SIZE
 } message_t;
 
 static void inline message_move(message_t *dst , message_t *src) {
