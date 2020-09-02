@@ -17,6 +17,7 @@ static int g_n_tasks = 1;
 static int g_n_servers = 1;
 static int g_qd = 64;
 static int g_data_sz = 0x1000;
+static int g_rqsts = 10000;
 
 int _system_init() {
     // struct spdk_env_opts opts;
@@ -179,7 +180,7 @@ void*  client_task(void* arg)
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "i:p:n:s:b:h:q:")) != -1) {
+	while ((opt = getopt(argc, argv, "i:p:n:s:b:h:q:r:")) != -1) {
 		switch (opt) {
 		case 'i':
 			g_base_ip = optarg;
@@ -198,6 +199,9 @@ static void parse_args(int argc , char **argv) {
 			break;  
         case 'q':
 			g_qd = atoi(optarg);
+			break; 
+        case 'r':
+			g_rqsts = atoi(optarg);
 			break; 
         case 'h':      
 		default:
@@ -221,7 +225,7 @@ int main(int argc, char **argv) {
             .srv_ip = g_base_ip,
             .srv_port = g_base_port + (i % g_n_servers),
             .cpuid = i,
-            .rqsts = 10000
+            .rqsts = g_rqsts
         };
         data[i] = _tmp;
 
