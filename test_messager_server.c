@@ -47,22 +47,25 @@ static inline int reactor_reduce_state() {
     return r;
 }
 
+static char fake_buffer[ 16 << 20];
+
 static void *alloc_data_buffer( uint32_t sz) {
-    if(sz <= 0x1000)
-        return fcache_get(reactor_ctx()->dma_pages); 
-    else {    
-        uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
-        return spdk_dma_malloc(sz, align, NULL);
-    }
+    // if(sz <= 0x1000)
+    //     return fcache_get(reactor_ctx()->dma_pages); 
+    // else {    
+    //     uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
+    //     return spdk_dma_malloc(sz, align, NULL);
+    // }
+    return fake_buffer;
 }
 
 static void free_data_buffer(void *p) {
-    fcache_t *fc = reactor_ctx()->dma_pages;
-    if(fcache_in(fc , p)) {
-        fcache_put(fc, p);
-    } else {
-        spdk_dma_free(p);
-    }
+    // fcache_t *fc = reactor_ctx()->dma_pages;
+    // if(fcache_in(fc , p)) {
+    //     fcache_put(fc, p);
+    // } else {
+    //     spdk_dma_free(p);
+    // }
 }
 
 static void parse_args(int argc , char **argv) {

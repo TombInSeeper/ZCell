@@ -66,9 +66,32 @@ typedef struct client_task_data {
     double bd; // MiB/s
 } client_task_data;
 
+static __thread char meta_buffer[128];
+static __thread char data_buffer[3 * 4096 * 1024];
+
+static void *alloc_data_buffer( uint32_t sz) {
+    // if(sz <= 0x1000)
+    //     return fcache_get(reactor_ctx()->dma_pages); 
+    // else {    
+    //     uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
+    //     return spdk_dma_malloc(sz, align, NULL);
+    // }
+    return data_buffer;
+}
+
+static void free_data_buffer(void *p) {
+    // fcache_t *fc = reactor_ctx()->dma_pages;
+    // if(fcache_in(fc , p)) {
+    //     fcache_put(fc, p);
+    // } else {
+    //     spdk_dma_free(p);
+    // }
+}
+
 void*  client_task(void* arg)
 {
     client_task_data *data = arg;
+
 
     printf("Task[%d] ,Staring...\n",data->cpuid);
 
@@ -81,14 +104,15 @@ void*  client_task(void* arg)
     msgr_client_if_init(&cif);
     messager_conf_t conf = {
         .on_send_message= on_send_message,
-        .on_recv_message = on_recv_message
+        .on_recv_message = on_recv_message,
+        .data_buffer_alloc = alloc_data_buffer,
+        .data_buffer_free = free_data_buffer
     };
     int rc = cif.messager_init(&conf);
     // printf("Task[%d] , Connect OK \n",data->cpuid);
     
     assert (rc== 0);
-    static char meta_buffer[128];
-    static char data_buffer[4096 * 1024];
+
     void *session1 = cif.messager_connect(data->srv_ip,data->srv_port);
     if(!session1) {
         return NULL;
