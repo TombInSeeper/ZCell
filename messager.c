@@ -63,13 +63,16 @@ static inline void msg_destruct(msg* m) {
     }
     free(m);
 }
-
-static inline uint32_t msg_rem_tlen(msg *m) {
+static inline bool msg_new(const msg *m) {
+    return m->message.state.hdr_rem_len == 
+        sizeof(m->message.header);
+}
+static inline uint32_t msg_rem_tlen(const msg *m) {
     return m->message.state.hdr_rem_len +
     m->message.state.meta_rem_len +
     m->message.state.data_rem_len;
 }
-static inline bool msg_rw_complete(msg *m) {
+static inline bool msg_rw_complete(const msg *m) {
     return msg_rem_tlen(m) == 0;
 }
 
