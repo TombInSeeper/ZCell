@@ -95,11 +95,15 @@ static void _on_recv_message(message_t *m)
      m->header.meta_length ,m->header.data_length);
     message_t _m ;
     message_move(&_m, m);
+
+    _m.header.data_length = 0;
+    _m.header.meta_length = 0;
+
+
     message_state_reset(&_m);
 
-    _m.header.data_length = 0 ;
-    _m.header.meta_length = 0 ;
-    
+
+
     msgr_info("Echo \n");
 
     reactor_ctx()->mimpl.messager_sendmsg(&_m);
