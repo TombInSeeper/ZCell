@@ -192,7 +192,7 @@ void*  client_task(void* arg)
     double tt =  (data->end - data->start) / 1e3;
     double avg_lat = tt / data->rqsts;
     double qps = data->rqsts * 1000 / tt ;
-    double bd = (g_rqsts * g_data_sz) / tt / 1e6;
+    double bd = (g_rqsts * g_data_sz) / tt ;
     printf("Task[%d] done, rqsts = %d, time = %lf us, avg_lat=%lf ,qps= %lf K, bd = %lf MB/s \n",
         data->cpuid, data->rqsts, (data->end - data->start) / 1e3, avg_lat , qps , bd);
     data->qps =qps;
