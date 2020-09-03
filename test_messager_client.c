@@ -63,7 +63,7 @@ typedef struct client_task_data {
     uint64_t start;
     uint64_t end;
     double qps; // K OPS
-    double bd; // MiB/s
+    double bd; // MB/s
 } client_task_data;
 
 static __thread char meta_buffer[128];
@@ -93,7 +93,7 @@ void*  client_task(void* arg)
     client_task_data *data = arg;
 
 
-    printf("Task[%d] ,Staring...\n",data->cpuid);
+    printf("Task[%d] ,Starting...\n",data->cpuid);
 
     // if ( sched_setaffinity(getpid(),sizeof(cpuset),&cpuset) )  {
     //     printf("sched_setaffinity failed\n");
@@ -259,9 +259,9 @@ int main(int argc, char **argv) {
         CPU_SET(data[i].cpuid,&cpuset);
         pthread_attr_t attr;
         pthread_attr_init(&attr);
-        pthread_attr_setaffinity_np(&attr,sizeof(cpuset),&cpuset);
+        // pthread_attr_setaffinity_np(&attr,sizeof(cpuset),&cpuset);
         pthread_attr_setstacksize(&attr , 16 << 20);
-        pthread_attr_setschedpolicy(&attr,SCHED_RR);
+        // pthread_attr_setschedpolicy(&attr,SCHED_RR);
         int t = pthread_create(&tasks[i],&attr,client_task,&data[i]);
         if(t) {
             printf("Thread create failed\n");
@@ -279,7 +279,7 @@ int main(int argc, char **argv) {
         bd += data[i].bd;
     }
     printf("====================[Main]====================\n");
-    printf("|| Sum:qps=%lf K , bandwidth=%lf MiB/s ||\n" , qps, bd );
+    printf("|| Sum:qps=%lf K , bandwidth=%lf MB/s ||\n" , qps, bd );
     printf("====================[Main]====================\n");
 
     _system_fini();
