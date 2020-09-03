@@ -236,13 +236,15 @@ static void parse_args(int argc , char **argv) {
 	}
 }
 
+#define NR_MAX_TASK 1024
+
 int main(int argc, char **argv) {
     
     parse_args(argc, argv);
     assert(_system_init() == 0);
-
-    pthread_t tasks[128];
-    client_task_data data[128];
+    
+    pthread_t tasks[NR_MAX_TASK];
+    client_task_data data[NR_MAX_TASK];
     int i;
     for ( i = 0 ; i < g_n_tasks ; ++i) {
         client_task_data _tmp = {
