@@ -32,7 +32,9 @@ typedef struct net_impl {
 	int (*close)(struct sock *sock);
 	// int (*read)(struct sock *sock, void *buf, uint32_t len);
 	// int (*write)(struct sock *sock, void *buf, uint32_t len);
-
+	int (*set_recvbuf)(struct sock *sock, int sz);
+	int (*set_sendbuf)(struct sock *sock, int sz);
+	
     ssize_t (*readv)(struct sock *sock, struct iovec *iov, uint32_t iovcnt);
 	ssize_t (*writev)(struct sock *sock, struct iovec *iov, uint32_t iovcnt);   
 

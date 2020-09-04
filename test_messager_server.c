@@ -160,14 +160,14 @@ void _per_reactor_boot(void * ctx , void *err) {
     msgr_server_if_init(&rctx->mimpl);
     msgr_server_if_t *pmif = &rctx->mimpl;
     messager_conf_t conf = {
-        // .ip = rctx->ip,
+        .ip = rctx->ip,
         .port = rctx->port,
         .on_recv_message = _on_recv_message,
         .on_send_message = _on_send_message,
         .data_buffer_alloc = alloc_data_buffer,
         .data_buffer_free = free_data_buffer
     };
-    strcpy(conf.ip , rctx->ip);
+    
     int rc = pmif->messager_init(&conf);
     assert (rc == 0);
     rc = pmif->messager_start();

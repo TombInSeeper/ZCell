@@ -94,10 +94,15 @@ typedef struct session_t {
     };
     void *msgr;
 
-    unsigned int recv_reap;
+
 
     TAILQ_HEAD(recv_queue, msg) recv_q;
+
+
+
+    int send_tokens;
     TAILQ_HEAD(send_queue, msg) send_q;
+    
     TAILQ_ENTRY(session_t) _session_list_hook;
 } session_t;
 
@@ -126,17 +131,17 @@ static inline messager_t* get_local_msgr() {
 }
 
 static inline session_t * session_construct(const char *ip , int port,  
-    struct sock * _sock, void *msgr)  {
+    struct sock * _sock)  {
+    messager_t * _msgr = get_local_msgr();
+
     session_t * s = malloc(sizeof(session_t));
     strcpy(s->ip , ip);
     s->port = port;
-    s->msgr = msgr;
     s->_sock = _sock;
     s->recv_reap = 0;
 
     set_sock_ctx(s->_sock , s);
 
-    messager_t * _msgr = msgr;
     TAILQ_INIT(&(s->recv_q));
     TAILQ_INIT(&(s->send_q));
     
@@ -151,7 +156,7 @@ static inline session_t * session_construct(const char *ip , int port,
 
 static inline void session_destruct(session_t *ss) {
 
-    messager_t* msgr = ss->msgr;
+    messager_t* msgr = get_local_msgr();
     msgr_debug("starting..\n");
     if(!TAILQ_EMPTY(&ss->recv_q)) {
         msg *h = TAILQ_FIRST(&ss->recv_q);
@@ -207,27 +212,6 @@ static inline void session_destruct(session_t *ss) {
         _r;\
     })
 
-// static inline int _sock_rc_handle_32( int rc , uint32_t *ptr) 
-// {
-//     if ( rc <= 0 ) {
-//         if (errno == EWOULDBLOCK || errno == EAGAIN) {
-//             //Send Buffer is full
-//             errno = 0;
-//             return SOCK_EAGAIN;
-//         } else {
-//             //Socket Error
-//             return SOCK_NEED_CLOSE;
-//         }
-//     }  else  {                
-//         *ptr -= rc;
-//         if ( *ptr) {
-//             //Uncompleted
-//             return SOCK_EAGAIN;
-//         } else {
-//             return SOCK_RWOK;
-//         }
-//     }
-// }
 
 /**
  * @brief 
@@ -376,12 +360,14 @@ static inline msg* _tail_recv_msg(session_t *ss) {
     return m;     
 }
 
-static void  _read_event_callback(void * sess , struct sock_group *_group, struct sock *_sock) {
+static int  _read_event_callback(void * sess , struct sock_group *_group, struct sock *_sock) {
+    messager_t *msgr = get_local_msgr();
     session_t *ss = sess;
-    messager_t *msgr = ss->msgr;
-    int err;
     (void)(_group);
     (void)(_sock);
+    
+    int err;
+    int cnt = 0;
     msg *m;
     //Recieve all
     for(;;) {
@@ -407,27 +393,29 @@ static void  _read_event_callback(void * sess , struct sock_group *_group, struc
                 break;
             } else {
                 msgr->conf.on_recv_message(&miter->message);
-                // ss->recv_reap++;
                 TAILQ_REMOVE(&ss->recv_q, miter, _msg_list_hook);
+                ++cnt;
                 msg_destruct(miter);
             }
         }
     }
 
-    // if(ss->recv_reap) {
-    //     msgr_debug("Reap %u messages\n", ss->recv_reap);
-    //     ss->recv_reap = 0;
-    // }
+    return cnt;
 }
 
-static inline int _push_msg(const message_t *_msg_rvalue_ref) {
-    session_t *s = _msg_rvalue_ref->priv_ctx;
-    msg* m = msg_construct(s); 
-    memcpy(&m->message, _msg_rvalue_ref , sizeof(message_t));
-
-    msgr_debug("_push_msg m->meta=%u, m->data=%u\n" , m->message.header.meta_length ,m->message.header.data_length);
-    TAILQ_INSERT_TAIL(&s->send_q, m , _msg_list_hook);
-    return 0;
+static inline int _push_msg(const message_t *_msg) {
+    session_t *s = _msg->priv_ctx;
+    if(s->send_tokens) {
+        msg* m = msg_construct(s); 
+        memcpy(&m->message, _msg , sizeof(message_t));
+        msgr_debug("_push_msg m->meta=%u, m->data=%u\n" , m->message.header.meta_length ,m->message.header.data_length);
+        TAILQ_INSERT_TAIL(&s->send_q, m , _msg_list_hook);
+        s->send_tokens -= msg_rem_tlen(_msg);
+        if(s->send_tokens < 0)
+            s->send_tokens = 0;
+        return 0;
+    }
+    return -SOCK_EAGAIN;
 }
 
 static int  _flush_all(messager_t *msgr) {
@@ -478,15 +466,16 @@ static int _poll_read_events() {
         return rc;
     }
     int i;
+    int total_cnt = 0;
     for (i = 0 ; i < rc ; ++i ) {
-        _read_event_callback( _results[i]->ctx , msgr->_sock_group,  _results[i]);
+        total_cnt += _read_event_callback( _results[i]->ctx , msgr->_sock_group,  _results[i]);
     }
-	return rc;
+	return total_cnt;
 }
 
-static int sock_accept_poll(void * messager)
-{
-	messager_t *msgr = messager;
+static int sock_accept_poll(void *arg)  {
+    (void)arg;
+	messager_t *msgr = get_local_msgr();
 	struct sock *sock;
 	int rc;
 	int count = 0;
@@ -519,18 +508,17 @@ static int sock_accept_poll(void * messager)
 			break;
 		}
 	}
-
 	return count;
 }
 
-static int sock_group_poll(void *arg)
-{
+static int sock_group_poll(void *arg) {
 	(void)arg;
     return _poll_read_events();
 }
 
 static int sock_reply_poll(void *arg) {
-    messager_t *msgr = arg;
+    (void)(arg);
+    messager_t *msgr = get_local_msgr();
     return _flush_all(msgr);
 }
 
@@ -687,7 +675,7 @@ static int _cli_messager_sendmsg(const message_t *_msg) {
     return _push_msg(_msg);
 }
 
-static int _cli_messager_flush( ) {
+static int _cli_messager_flush() {
     messager_t *msgr = get_local_msgr();
     return _flush_all(msgr);
 }
@@ -695,8 +683,6 @@ static int _cli_messager_flush( ) {
 static int _cli_messager_wait_msg() {
     return _poll_read_events();
 }
-    // int  (*messager_wait_msg)();
-
 
 extern int msgr_server_if_init(msgr_server_if_t * sif)  {
     sif->messager_init = _srv_messager_constructor;

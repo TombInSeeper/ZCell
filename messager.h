@@ -27,10 +27,12 @@
 
 typedef struct messager_conf_t {
 
+    //后端网络类型，POSIX 或者 RDMA
     int sock_type;
     
     // 对于服务端类型的messager需要指定 ip
-    char ip[46];
+    // char ip[46];
+    const char *ip;
     
 
     // 对于服务端类型的messager需要指定 server
@@ -61,14 +63,21 @@ typedef struct messager_conf_t {
 
 typedef struct msgr_server_if_t {
     
+    //初始化 messager内部的数据结构
     int  (*messager_init)(messager_conf_t *conf);
 
+    //启动 messager 内部的 Poller 
     int  (*messager_start)();
     
+    //停止messager 内部的 Poller 
     void (*messager_stop)();
     
+    //销毁 messager内部的数据结构
     void (*messager_fini)();
     
+    //把一个消息放到发送队列
+    //返回值：0 成功
+    //返回值：-EAGAIN，内部缓存已满，需要等待 reply_poller 将 inflight message 刷回
     int  (*messager_sendmsg)(const message_t *_msg);
 } msgr_server_if_t;
 
@@ -79,7 +88,7 @@ typedef struct msgr_server_if_t {
 
 // **messager**
 //messager 是一个 Per-thread 结构
-//用于维护与本thread相关的所有session
+//用于维护与当前 reactor 关联的所有session
 //并负责所有 session 上的消息收发
 typedef struct msgr_client_if_t {
     // messager 构造
@@ -88,20 +97,33 @@ typedef struct msgr_client_if_t {
     // messager 析构
     void (*messager_fini)();
 
-    ///return session ptr to A session
+    ///返回一个透明的 session 指针
     void* (*messager_connect)(const char *ip , int port);
-    //
-    void (*messager_close)(void *sess);
-
-    int  (*messager_sendmsg)(const message_t *_msg);
     
-    int  (*messager_flush)(); //try to flush all inflight msgs, return success number
+    //关闭一个session
+    void  (*messager_close)(void *sess);
 
-    int  (*messager_wait_msg)(); // Poll once for income messages, return income messages number 
+    //把一个消息放到发送队列
+    //返回值：0 成功
+    //返回值：-EAGAIN，内部缓存达到上限，需要调用 flush 
+    int   (*messager_sendmsg)(const message_t *_msg);
+    
+
+    //把所有发送队列中的消息flush
+    //返回值：>=0 成功发送的消息个数
+    //返回值：errno 不可挽救的内部错误
+    int   (*messager_flush)(); 
+
+
+    //轮询所有session，试图接收消息
+    //返回值：>=0 ，收到的消息个数
+    //返回值：errno 不可挽救的内部错误
+    int   (*messager_wait_msg)(); 
+    // Poll once for income messages, return income messages number 
 
 } msgr_client_if_t;
 
-extern int msgr_server_if_init(msgr_server_if_t * sif); 
-extern int msgr_client_if_init(msgr_client_if_t * cif); 
+extern int msgr_server_if_init(msgr_server_if_t *sif); 
+extern int msgr_client_if_init(msgr_client_if_t *cif); 
 
 #endif

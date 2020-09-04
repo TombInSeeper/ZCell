@@ -12,7 +12,8 @@ extern struct sock *posix_accept(struct sock *sock);
 extern int  posix_close(struct sock *sock);
 extern int  posix_read(struct sock *sock, void *buf, uint32_t len);
 extern int  posix_write(struct sock *sock, void *buf, uint32_t len);
-
+extern int posix_set_recvbuf(struct sock *sock, int sz);
+extern int posix_set_sendbuf(struct sock *sock, int sz);
 extern ssize_t  posix_readv (struct sock *sock, struct iovec *iov, uint32_t iovcnt);
 extern ssize_t  posix_writev (struct sock *sock, struct iovec *iov, uint32_t iovcnt);  
 

@@ -51,9 +51,8 @@ typedef struct message_t {
         msg_hdr_t header;
         char *meta_buffer;
         char *data_buffer;
+        void *priv_ctx;  //指针：属于哪个 session
     };   
-    void *priv_ctx; ////Session Context Pointer
-    // uint8_t pad[16];//align to CACAHE LINE SIZE
 } message_t;
 
 static void inline message_move(message_t *dst , message_t *src) {

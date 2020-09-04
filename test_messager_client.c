@@ -163,16 +163,6 @@ void*  client_task(void* arg)
                     break;
                 }
             } 
-            // else if (rc == 0) {
-            //     if(n_send > 0) {
-            //         break;
-            //     }
-            // }
-        }
-
-        if(n_send < qd) {
-            printf ("Qd is too big and reassign to %d\n", n_send);
-            qd = n_send;
         }
 
         int n_wait = n_send;

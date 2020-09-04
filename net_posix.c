@@ -57,8 +57,8 @@
 #define MAX_EVENTS_PER_POLL 32
 #define MAX_TMPBUF 1024
 #define PORTNUMLEN 32
-#define SO_RCVBUF_SIZE (4 * 1024 * 1024)
-#define SO_SNDBUF_SIZE (4 * 1024 * 1024)
+#define SO_RCVBUF_SIZE (1 * 1024 * 1024)
+#define SO_SNDBUF_SIZE (1 * 1024 * 1024)
 #define IOV_BATCH_SIZE 64
 
 #if defined(SO_ZEROCOPY) && defined(MSG_ZEROCOPY)
@@ -391,6 +391,14 @@ retry:
 
 	return &sock->base;
 }
+
+extern int posix_set_recvbuf(struct sock *sock, int sz) {
+	return _posix_sock_set_recvbuf(sock,sz);
+}
+extern int posix_set_sendbuf(struct sock *sock, int sz){
+	return _posix_sock_set_sendbuf(sock,sz);
+}
+
 
 extern struct sock *posix_connect(const char *ip, int port)
 {
