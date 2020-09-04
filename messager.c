@@ -493,7 +493,7 @@ static int sock_accept_poll(void *arg)  {
 			msgr_debug("Accepting a new connection from (%s, %hu) to (%s, %hu)\n",
 				       caddr, cport, saddr, sport);
             // struct client_t* c = _get_client_ctx(ctx,sock);
-            session_t *new_sess = session_construct(caddr,cport,sock,msgr);
+            session_t *new_sess = session_construct(caddr,cport,sock);
             if(new_sess) {
                 msgr_debug("New session to (%s, %hu) established OK\n " , caddr ,cport);
                 TAILQ_INSERT_TAIL(&msgr->session_q, new_sess , _session_list_hook);
@@ -657,7 +657,7 @@ static void*_cli_messager_connect (const char *ip , int port) {
     struct sock *_sock =  msgr->_net_impl->connect(ip, port);
     session_t *s = NULL;
     if(_sock) {
-        s = session_construct(ip,port, _sock, msgr);
+        s = session_construct(ip,port, _sock);
         TAILQ_INSERT_TAIL(&msgr->session_q, s , _session_list_hook);
     }
     return s;
