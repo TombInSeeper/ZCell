@@ -127,7 +127,7 @@ static void _on_recv_message(message_t *m)
      m->header.meta_length ,m->header.data_length);
     message_t _m ;
     message_move(&_m, m);
-    op_execute(m);
+    op_execute(&_m);
 }
 
 static void _on_send_message(message_t *m) {
