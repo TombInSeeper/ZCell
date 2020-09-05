@@ -91,7 +91,7 @@ static void parse_args(int argc , char **argv) {
 static void _on_recv_message(message_t *m)
 {
     // msgr_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
-    msgr_info("Recv a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
+    msgr_info("Recv a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
     message_t _m ;
     message_move(&_m, m);
@@ -106,7 +106,7 @@ static void _on_recv_message(message_t *m)
 
 static void _on_send_message(message_t *m)
 {
-    msgr_info("Send a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
+    msgr_info("Send a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
 }
 
