@@ -83,9 +83,6 @@ typedef struct msgr_server_if_t {
 
 
 
-
-
-
 // **messager**
 //messager 是一个 Per-thread 结构
 //用于维护与当前 reactor 关联的所有session
@@ -105,25 +102,25 @@ typedef struct msgr_client_if_t {
 
     //把一个消息放到发送队列
     //返回值：0 成功
-    //返回值：-EAGAIN，内部缓存达到上限，需要调用 flush 
+    //返回值：-1, 内部缓存达到上限，需要调用 flush 
     int   (*messager_sendmsg)(const message_t *_msg);
     
 
     //把所有发送队列中的消息flush
     //返回值：>=0 成功发送的消息个数
-    //返回值：errno 不可挽救的内部错误
+    //返回值：-1 内部错误
     int   (*messager_flush)(); 
 
 
     //轮询所有session，试图接收消息
     //返回值：>=0 ，收到的消息个数
-    //返回值：errno 不可挽救的内部错误
+    //返回值：-1 内部错误
     int   (*messager_wait_msg)(); 
     // Poll once for income messages, return income messages number 
 
 } msgr_client_if_t;
 
-extern int msgr_server_if_init(msgr_server_if_t *sif); 
-extern int msgr_client_if_init(msgr_client_if_t *cif); 
+extern const msgr_server_if_t *msgr_get_server_impl();
+extern const msgr_client_if_t *msgr_get_client_impl();
 
 #endif

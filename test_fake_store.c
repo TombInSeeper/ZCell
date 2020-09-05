@@ -1,9 +1,9 @@
 #include "objectstore.h"
-
+#include "errcode.h"
 #include "spdk/event.h"
 #include "spdk/env.h"
 
-objstore_interface_t *os;
+objstore_impl_t *os;
 
 char *wbuf;
 char *rbuf;
@@ -83,7 +83,7 @@ void _mount_cb(void * arg , int st)
 void _sys_init(void *arg)
 {
     (void)arg;
-    os = obj_if_construct(FAKESTORE);
+    os = ostore_get_impl(FAKESTORE);
     os->mount(NULL, FAKESTORE, _mount_cb , NULL);
 }
 

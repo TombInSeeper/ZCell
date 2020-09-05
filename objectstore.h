@@ -5,26 +5,12 @@
 
 
 
-
-enum Status {
-    OSTORE_EXECUTE_OK,
-    OSTORE_SUBMIT_OK,
-    OSTORE_UNSUPPORTED_OPERATION ,
-    OSTORE_OBJECT_EXIST,
-    OSTORE_OBJECT_NOT_EXIST,
-    OSTORE_NO_SPACE,
-    OSTORE_NO_NODE,
-    OSTORE_WRITE_OUT_MAX_SIZE,
-    OSTORE_READ_EOF,
-    OSTORE_INTERNAL_UNKOWN_ERROR
-};
-
 enum OBJECTSTORE_TYPE{
     FAKESTORE = 1,
     ZSTORE = 2
 };
 
-typedef struct objstore_interface_t {
+typedef struct objstore_interface_t {  
     int (*info)(char *out, uint32_t len);
     int (*mkfs) (const char* dev_list[], int store_type, cb_func_t , void*);
     int (*mount)(const char* dev_list[], /* size = 3*/  int store_type /**/, cb_func_t , void*);
@@ -35,8 +21,9 @@ typedef struct objstore_interface_t {
     int (*obj_write)(uint32_t oid, uint64_t off, uint32_t len, void* wbuf, cb_func_t , void*);
 } objstore_interface_t ;
 
+typedef objstore_interface_t objstore_impl_t;
 
-extern objstore_interface_t *obj_if_construct( int store_type );
-extern void obj_if_destruct( objstore_interface_t *);
+
+extern const objstore_impl_t* ostore_get_impl( int store_type );
 
 #endif

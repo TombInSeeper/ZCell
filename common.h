@@ -1,10 +1,11 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
-
-
 #include "stdint.h"
 #include "string.h"
 #include "stdbool.h"
+
+#include "errcode.h"
+
 
 typedef void (*cb_func_t) (void* , int status_code);
 

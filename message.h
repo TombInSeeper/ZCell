@@ -7,17 +7,12 @@
 #define MSGR_DEBUG_LEVEL 1
 #define NR_SESSION_MAX (10 * 1000)
 
-enum SOCK_STATUS {
-    SOCK_RWOK,
-    SOCK_EAGAIN,    
-    SOCK_NEED_CLOSE,
-};
 
 
 enum MessageType {
     MSG_HDR = 0,
     MSG_PING = 1, 
-    MSG_OSS_OP_NULL = 10,
+    MSG_OSS_STATE = 10,
     MSG_OSS_OP_CREATE,
     MSG_OSS_OP_READ,
     MSG_OSS_OP_WRITE,

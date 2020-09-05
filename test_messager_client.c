@@ -54,6 +54,7 @@ void on_recv_message(message_t *msg) {
 volatile unsigned int g_task_start = 0;
 
 typedef struct client_task_data {
+    const msgr_client_if_t * cif;
     int cpuid;
     int rqsts;
     int qd;
@@ -100,20 +101,19 @@ void*  client_task(void* arg)
     //     return NULL;
     // }
 
-    static msgr_client_if_t cif;
-    msgr_client_if_init(&cif);
+    data->cif = msgr_get_client_impl();
     messager_conf_t conf = {
         .on_send_message= on_send_message,
         .on_recv_message = on_recv_message,
         .data_buffer_alloc = alloc_data_buffer,
         .data_buffer_free = free_data_buffer
     };
-    int rc = cif.messager_init(&conf);
+    int rc = data->cif->messager_init(&conf);
     // printf("Task[%d] , Connect OK \n",data->cpuid);
     
     assert (rc== 0);
 
-    void *session1 = cif.messager_connect(data->srv_ip,data->srv_port);
+    void *session1 = data->cif->messager_connect(data->srv_ip,data->srv_port);
     if(!session1) {
         return NULL;
     }
@@ -149,14 +149,14 @@ void*  client_task(void* arg)
         int qd = g_qd;
         int j ;
         for ( j = 0 ; j < qd ; ++j) {
-            cif.messager_sendmsg(&msg);
+            data->cif->messager_sendmsg(&msg);
             msg.header.seq++;
         }
         int rc = 0;
         int n_send = 0 ;
 
         while(1) {
-            rc = cif.messager_flush();
+            rc = data->cif->messager_flush();
             if (rc > 0) {
                 n_send += rc;
                 if(n_send == qd) {
@@ -168,7 +168,7 @@ void*  client_task(void* arg)
         int n_wait = n_send;
         int recv = n_recv;
         do {
-            rc = cif.messager_wait_msg(0);
+            rc = data->cif->messager_wait_msg();
         } while (n_recv - recv != n_wait);
         assert (n_recv - recv == n_wait);
 
@@ -187,8 +187,8 @@ void*  client_task(void* arg)
         data->cpuid, data->rqsts, (data->end - data->start) / 1e3, avg_lat , qps , bd);
     data->qps =qps;
     data->bd = bd;
-    cif.messager_close(session1);
-    cif.messager_fini();
+    data->cif->messager_close(session1);
+    data->cif->messager_fini();
     return NULL;
 }
 

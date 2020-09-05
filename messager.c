@@ -8,10 +8,14 @@
 #include "messager.h"
 
 
+
 #define READ_EVENT_MAX 64
 
 #define RECV_BUF_SZ (4 << 20)
 #define SEND_BUF_SZ (4 << 20)
+
+
+
 
 static inline  void* alloc_meta_buffer(size_t sz){
     msgr_debug("Messager Internal alloc message meta buffer\n");
@@ -233,12 +237,7 @@ static inline void session_destruct(session_t *ss) {
     })
 
 
-/**
- * @brief 
- *  rc = 0 : Success (Send Done);
- *  rc = -1 : Uncompleted;
- *  rc = -2 : Socket Error;
- */
+
 static int _do_send_message(msg * m) {
     messager_t *msgr = get_local_msgr();
     message_t *ms = &m->message;
@@ -705,26 +704,30 @@ static int _cli_messager_wait_msg() {
     return _poll_read_events();
 }
 
-extern int msgr_server_if_init(msgr_server_if_t * sif)  {
-    sif->messager_init = _srv_messager_constructor;
-    sif->messager_start = _srv_messager_start;
-    sif->messager_stop = _srv_messager_stop;
-    sif->messager_fini = _srv_messager_destructor;
-    sif->messager_sendmsg = _srv_messager_sendmsg;
-    return 0;
+
+
+//------Extern API---------
+static __thread msgr_server_if_t msgr_server_impl = {
+    .messager_init = _srv_messager_constructor,
+    .messager_start = _srv_messager_start,
+    .messager_stop = _srv_messager_stop,
+    .messager_fini = _srv_messager_destructor,
+    .messager_sendmsg = _srv_messager_sendmsg,
+};
+static __thread msgr_client_if_t msgr_client_impl = {
+    .messager_init = _cli_messager_constructor,
+    .messager_fini = _cli_messager_destructor,
+    .messager_connect = _cli_messager_connect,
+    .messager_close = _cli_messager_close,
+    .messager_sendmsg = _cli_messager_sendmsg,
+    .messager_flush= _cli_messager_flush,
+    .messager_wait_msg = _cli_messager_wait_msg,
+};
+
+extern const msgr_server_if_t *msgr_get_server_impl() {
+    return &msgr_server_impl;
+} 
+extern const msgr_client_if_t *msgr_get_client_impl() {
+    return &msgr_client_impl;
 }
 
-extern int msgr_client_if_init(msgr_client_if_t * cif) {
-    msgr_client_if_t _c = {
-        .messager_init = _cli_messager_constructor,
-        .messager_fini = _cli_messager_destructor,
-        .messager_connect = _cli_messager_connect,
-        .messager_close = _cli_messager_close,
-        .messager_sendmsg = _cli_messager_sendmsg,
-        .messager_flush= _cli_messager_flush,
-        .messager_wait_msg = _cli_messager_wait_msg,
-    };
-    memcpy(cif, &_c , sizeof(msgr_client_if_t));
-    
-    return 0;
-}

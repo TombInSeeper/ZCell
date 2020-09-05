@@ -10,6 +10,12 @@ enum {
     SOCK_TYPE_POSIX,
 };
 
+enum SOCK_STATUS {
+    SOCK_RWOK,
+    SOCK_EAGAIN,    
+    SOCK_NEED_CLOSE,
+};
+
 typedef struct sock {
     int type_info;
 	void *ctx;
@@ -47,9 +53,10 @@ typedef struct net_impl {
 
 	// STAILQ_ENTRY(spdk_net_impl) link;
 } net_impl;
-extern net_impl *net_impl_constructor(int type);
-extern void net_impl_destructor(net_impl * impl);
-	
+// extern net_impl *net_impl_constructor(int type);
+// extern void net_impl_destructor(net_impl * impl);
+
+extern net_impl *net_get_impl(int type);
 
 // void (*writev_async)(struct sock *sock, struct sock_request *req);
 // int (*flush)(struct sock *sock);
