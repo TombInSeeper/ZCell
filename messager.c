@@ -96,13 +96,14 @@ static inline void qos_init(qos_control_t *qos , int tokens) {
     qos->tokens = tokens;
 }
 static inline void qos_recycle_tokens(qos_control_t *qos, int num) {
-    qos->tokens += num;
+    // qos->tokens += num;
 }
 static inline bool qos_release_tokens(qos_control_t *qos, int num) {
-    int tmp = qos->tokens;
-    bool r;
-    qos->tokens = (tmp-num) > 0 ? ( r = 1 ,tmp-num) : ( r = 0 , qos->tokens) ;
-    return r;
+    // int tmp = qos->tokens;
+    // bool r;
+    // qos->tokens = (tmp-num) > 0 ? ( r = 1 ,tmp-num) : ( r = 0 , qos->tokens) ;
+    // return r;
+    return true;
 }
 
 typedef struct session_t {
