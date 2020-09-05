@@ -56,7 +56,7 @@ typedef struct net_impl {
 // extern net_impl *net_impl_constructor(int type);
 // extern void net_impl_destructor(net_impl * impl);
 
-extern net_impl *net_get_impl(int type);
+extern const net_impl *net_get_impl(int type);
 
 // void (*writev_async)(struct sock *sock, struct sock_request *req);
 // int (*flush)(struct sock *sock);
