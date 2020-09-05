@@ -55,7 +55,7 @@ typedef struct message_t {
     };   
 } message_t;
 
-static void inline message_move(message_t *dst , const message_t *src) {
+static void inline message_move(message_t *dst ,  message_t *src) {
     memcpy(dst,src,sizeof(*src));
     memset(src,0,sizeof(*src));
 }
