@@ -10,8 +10,8 @@
 
 #define READ_EVENT_MAX 64
 
-#define RECV_BUF_SZ (1 << 20)
-#define SEND_BUF_SZ (1 << 20)
+#define RECV_BUF_SZ (2 << 20)
+#define SEND_BUF_SZ (2 << 20)
 
 static inline  void* alloc_meta_buffer(size_t sz){
     msgr_debug("Messager Internal alloc message meta buffer\n");
@@ -413,7 +413,7 @@ static inline int _push_msg(const message_t *_msg) {
         memcpy(&m->message, _msg , sizeof(message_t));
         msgr_debug("_push_msg m->meta=%u, m->data=%u\n" , m->message.header.meta_length ,m->message.header.data_length);
         TAILQ_INSERT_TAIL(&s->send_q, m , _msg_list_hook);
-        s->send_tokens -= msg_rem_tlen(_msg);
+        s->send_tokens -= msg_rem_tlen(m);
         if(s->send_tokens < 0)
             s->send_tokens = 0;
         return 0;
