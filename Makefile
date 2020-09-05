@@ -50,7 +50,7 @@ MSGR_OBJS = messager.o net.o net_posix.o
 OSTORE_OBJS = objectstore.o fakestore.o
 
 
-TEST_BIN=test_messager_server test_messager_client
+TEST_BIN=test_server test_messager_client
 
 BIN_TGT=server client $(TEST_BIN)
 
