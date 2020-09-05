@@ -10,6 +10,9 @@
 
 #define READ_EVENT_MAX 64
 
+#define RECV_BUF_SZ (1 << 20)
+#define SEND_BUF_SZ (1 << 20)
+
 static inline  void* alloc_meta_buffer(size_t sz){
     msgr_debug("Messager Internal alloc message meta buffer\n");
     return malloc(sz);
@@ -132,14 +135,14 @@ static inline messager_t* get_local_msgr() {
 
 static inline session_t * session_construct(const char *ip , int port,  
     struct sock * _sock)  {
+      
     messager_t * _msgr = get_local_msgr();
 
     session_t * s = malloc(sizeof(session_t));
     strcpy(s->ip , ip);
     s->port = port;
     s->_sock = _sock;
-    s->recv_reap = 0;
-
+    s->send_tokens = SEND_BUF_SZ;
     set_sock_ctx(s->_sock , s);
 
     TAILQ_INIT(&(s->recv_q));
