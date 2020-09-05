@@ -131,7 +131,7 @@ typedef struct session_t {
 typedef struct messager_t {
     messager_conf_t conf;
     bool is_running;
-    net_impl *_net_impl;
+    const net_impl *_net_impl;
     TAILQ_HEAD(session_queue, session_t) session_q;
     struct {
         union {
@@ -547,7 +547,7 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
     if(msgr->is_running) {
         return 0;
     }
-    msgr->_net_impl = net_impl_constructor(SOCK_TYPE_POSIX);
+    msgr->_net_impl = net_get_impl(SOCK_TYPE_POSIX);
     if(!msgr->_net_impl) {
         return -1;
     }
@@ -632,7 +632,7 @@ static void _messager_destructor( bool is_server) {
         msgr->_net_impl->group_remove_sock(msgr->_sock_group, msgr->listen_sock);
     }      
     msgr->_net_impl->group_close(msgr->_sock_group);
-    net_impl_destructor(msgr->_net_impl);
+    msgr->_net_impl = NULL;
 }
 
 static int _srv_messager_constructor(messager_conf_t *conf) {

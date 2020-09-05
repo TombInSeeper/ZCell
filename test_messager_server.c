@@ -158,7 +158,7 @@ void _per_reactor_boot(void * ctx , void *err) {
 
     // SPDK_NOTICELOG("Booting server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
     rctx->mimpl = msgr_get_server_impl();
-    msgr_server_if_t *pmif = rctx->mimpl;
+    const msgr_server_if_t *pmif = rctx->mimpl;
     messager_conf_t conf = {
         .ip = rctx->ip,
         .port = rctx->port,

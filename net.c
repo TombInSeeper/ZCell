@@ -3,7 +3,7 @@
 #include "string.h"
 
 
-const static __thread net_impl posix_net_impl = {
+static __thread net_impl posix_net_impl = {
     .type = SOCK_TYPE_POSIX,
     .name = "posix",
     .priority = 0,
@@ -23,7 +23,7 @@ const static __thread net_impl posix_net_impl = {
     .group_close = posix_group_close
 };
 
-extern net_impl *net_get_impl(int type) {
+extern const net_impl *net_get_impl(int type) {
     switch (type) {
         case SOCK_TYPE_POSIX:
             return &posix_net_impl;
