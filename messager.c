@@ -119,6 +119,8 @@ typedef struct session_t {
     };
     void *msgr;
 
+
+
     TAILQ_HEAD(recv_queue, msg) recv_q;
 
 
@@ -399,6 +401,10 @@ static int  _read_event_callback(void * sess , struct sock_group *_group, struct
         } else if ( err == SOCK_NEED_CLOSE) {
             TAILQ_REMOVE(&(msgr->session_q), ss , _session_list_hook);
             session_destruct(ss);
+
+            //Shutdown function
+            
+
             break;
         }
     }

@@ -13,6 +13,7 @@ enum allocator_type {
 typedef struct fcache_t {
     uint8_t mem_allocator;
     void  *elems;
+    void  *elems_tail;
     unsigned int *ptr_arr;
     unsigned int elem_size;
     unsigned int size;
@@ -50,6 +51,7 @@ static inline fcache_t *fcache_constructor(uint32_t cache_sz, uint32_t elem_sz ,
 
     f->size = cache_sz;
     f->elem_size = elem_sz;
+    f->elems_tail = (char*)(f->elems) + (f->elem_size * f->size);
     f->mem_allocator = mem_allocator;
     int i;
     for (i = 0 ; i < f->size; ++i) {

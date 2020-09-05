@@ -47,6 +47,8 @@ LINK_C=\
 
 
 MSGR_OBJS = messager.o net.o net_posix.o
+OSTORE_OBJS = objectstore.o fakestore.o
+
 
 TEST_BIN=test_messager_server test_messager_client
 
@@ -73,6 +75,9 @@ test_messager_server:test_messager_server.o $(MSGR_OBJS)
 	$(LINK_C)
 
 test_messager_client:test_messager_client.o $(MSGR_OBJS)
+	$(LINK_C)
+
+test_server:test_server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 	$(LINK_C)
 
 %.o: %.c %.d

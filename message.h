@@ -12,12 +12,20 @@
 enum MessageType {
     MSG_HDR = 0,
     MSG_PING = 1, 
-    MSG_OSS_STATE = 10,
+
+    MSG_OSS_OP_MIN = 10,
+    MSG_OSS_OP_STATE,
     MSG_OSS_OP_CREATE,
     MSG_OSS_OP_READ,
     MSG_OSS_OP_WRITE,
     MSG_OSS_OP_DELETE,
+    MGS_OSS_OP_MAX = 74,
+
 };
+
+static inline bool msg_type_is_oss( int op ) {
+    return MSG_OSS_OP_MIN < op && op < MGS_OSS_OP_MAX;
+}
 
 /**
 
