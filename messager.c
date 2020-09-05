@@ -10,8 +10,8 @@
 
 #define READ_EVENT_MAX 64
 
-#define RECV_BUF_SZ (2 << 20)
-#define SEND_BUF_SZ (2 << 20)
+#define RECV_BUF_SZ (4 << 20)
+#define SEND_BUF_SZ (4 << 20)
 
 static inline  void* alloc_meta_buffer(size_t sz){
     msgr_debug("Messager Internal alloc message meta buffer\n");
@@ -88,6 +88,23 @@ static inline void* get_sock_ctx(struct sock *_sock) {
 }
 
 
+typedef struct qos_control_t {
+    int tokens;
+} qos_control_t;
+
+static inline void qos_init(qos_control_t *qos , int tokens) {
+    qos->tokens = tokens;
+}
+static inline void qos_recycle_tokens(qos_control_t *qos, int num) {
+    qos->tokens += num;
+}
+static inline bool qos_release_tokens(qos_control_t *qos, int num) {
+    int tmp = qos->tokens;
+    bool r;
+    qos->tokens = (tmp-num) > 0 ? ( r = 1 ,tmp-num) : ( r = 0 , qos->tokens) ;
+    return r;
+}
+
 typedef struct session_t {
     sock *_sock;
     struct {
@@ -97,13 +114,10 @@ typedef struct session_t {
     };
     void *msgr;
 
-
-
     TAILQ_HEAD(recv_queue, msg) recv_q;
 
 
-
-    int send_tokens;
+    qos_control_t send_qos;
     TAILQ_HEAD(send_queue, msg) send_q;
     
     TAILQ_ENTRY(session_t) _session_list_hook;
@@ -142,7 +156,9 @@ static inline session_t * session_construct(const char *ip , int port,
     strcpy(s->ip , ip);
     s->port = port;
     s->_sock = _sock;
-    s->send_tokens = SEND_BUF_SZ;
+    
+    qos_init(&s->send_qos,SEND_BUF_SZ);
+
     set_sock_ctx(s->_sock , s);
 
     TAILQ_INIT(&(s->recv_q));
@@ -408,14 +424,12 @@ static int  _read_event_callback(void * sess , struct sock_group *_group, struct
 
 static inline int _push_msg(const message_t *_msg) {
     session_t *s = _msg->priv_ctx;
-    if(s->send_tokens) {
+    uint32_t len = message_len(_msg);
+    if(qos_release_tokens(&s->send_qos, len)){
         msg* m = msg_construct(s); 
         memcpy(&m->message, _msg , sizeof(message_t));
         msgr_debug("_push_msg m->meta=%u, m->data=%u\n" , m->message.header.meta_length ,m->message.header.data_length);
         TAILQ_INSERT_TAIL(&s->send_q, m , _msg_list_hook);
-        s->send_tokens -= msg_rem_tlen(m);
-        if(s->send_tokens < 0)
-            s->send_tokens = 0;
         return 0;
     }
     return -SOCK_EAGAIN;
@@ -437,6 +451,9 @@ static int  _flush_all(messager_t *msgr) {
             } else if (err == SOCK_RWOK) {
                 TAILQ_REMOVE(&s->send_q,miter,_msg_list_hook);
                 msgr->conf.on_send_message(&miter->message);
+
+                qos_recycle_tokens(&s->send_qos, message_len(&miter->message));
+
                 msg_destruct(miter);
                 miter = TAILQ_FIRST(&s->send_q);
                 ++cnt;

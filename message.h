@@ -60,10 +60,17 @@ static void inline message_move(message_t *dst , message_t *src) {
     memset(src,0,sizeof(*src));
 }
 
+static uint32_t inline message_len(message_t *m) {
+    uint32_t len = sizeof(m->header) + 
+        le16_to_cpu(m->header.meta_length) +
+        le32_to_cpu(m->header.data_length);
+    return len;   
+}
+
 static void inline message_state_reset(message_t *m) {
     m->state.hdr_rem_len = sizeof(m->header);
-    m->state.meta_rem_len = m->header.meta_length;
-    m->state.data_rem_len = m->header.data_length;
+    m->state.meta_rem_len = le16_to_cpu(m->header.meta_length);
+    m->state.data_rem_len = le32_to_cpu(m->header.data_length);
 }
 
 #endif
