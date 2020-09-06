@@ -44,7 +44,7 @@ typedef struct messager_conf_t {
     //【必须填写】
     //msg 参数指向的空间以及内部的 meta buffer 与 data buffer 将在回调执行完成后释放
     //如果要避免释放 meta buffer 和 data buffer 请使用如下方法：
-    // 1. 手动将 msg->data_buffer msg->meta_buffer 置 0 
+    // 1. 手动将 msg->data_buffer msg->meta_buffer 置 NULL 
     // 2. 使用 message_move 函数将源消息的正文（所属session,header+meta+data) 转移到目的 message
     //建议使用第2个方法
     void (*on_recv_message)(message_t *msg);
@@ -52,7 +52,7 @@ typedef struct messager_conf_t {
     //【必须填写】
     //msg 参数指向的空间以及内部的 meta buffer 与 data buffer 将在回调执行完成后释放
     //如果要避免释放 meta buffer 和 data buffer 请使用如下方法：
-    // 1. 手动将 msg->data_buffer msg->meta_buffer 置 0 
+    // 1. 手动将 msg->data_buffer msg->meta_buffer 置 NULL 
     // 2. 使用 message_move 函数将源消息的正文（所属session,header+meta+data) 转移到目的 message
     //建议使用第2个方法
     void (*on_send_message)(message_t *msg);

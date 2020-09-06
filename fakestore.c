@@ -63,16 +63,10 @@ extern int fakestore_info(char *out , uint32_t len)
     }
     return OSTORE_EXECUTE_OK;
 }
-
-extern int fakestore_mkfs (const char* dev_list[], int mkfs_flag, cb_func_t  cb , void* cb_arg)
-{
-    // Do nothing
-    fake_async_cb(cb , cb_arg);
-    return OSTORE_SUBMIT_OK;
+extern int fakestore_mkfs(const char* dev_list[], int flags) {
+    return OSTORE_EXECUTE_OK;
 }
-
-extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int mount_flag /**/, cb_func_t cb , void* cb_arg)
-{
+extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int flags /**/) {
     // Do in-memory object table create
     fakestore_t *fc = fakestore_ptr();
     fc->state = booting;
@@ -80,24 +74,42 @@ extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int mount_flag
     fc->data_cache = fcache_constructor(data_dev_size, block_size, SPDK_MALLOC);
     fc->node_cache = fcache_constructor(node_dev_size, block_size, SPDK_MALLOC);
     fc->state = running;
-    fake_async_cb(cb,cb_arg);
-    return OSTORE_SUBMIT_OK;
+    return OSTORE_EXECUTE_OK;
 }
 
-extern int fakestore_unmount(cb_func_t cb, void* cb_arg)
-{
-
-
+extern int fakestore_unmount() {
     fakestore_t *fc = fakestore_ptr();
     fc->state= stopping;
     fcache_destructor(fc->node_cache);
     fcache_destructor(fc->data_cache);
     free(fc->onodes);
     fc->state= died;
+    return OSTORE_EXECUTE_OK;
+}
 
+extern int fakestore_mkfs_async (const char* dev_list[], int mkfs_flag, cb_func_t  cb , void* cb_arg)
+{
+    // Do nothing
+    fake_async_cb(cb , cb_arg);
+    return OSTORE_SUBMIT_OK;
+}
+
+extern int fakestore_mount_async(const char* dev_list[], /* size = 3*/  int mount_flag /**/, cb_func_t cb , void* cb_arg)
+{
+    // Do in-memory object table create
+    fakestore_mount(dev_list, mount_flag);
     fake_async_cb(cb,cb_arg);
     return OSTORE_SUBMIT_OK;
 }
+
+extern int fakestore_unmount_async(cb_func_t cb, void* cb_arg)
+{
+    fakestore_unmount();
+    fake_async_cb(cb,cb_arg);
+    return OSTORE_SUBMIT_OK;
+}
+
+
 
 
 extern int fakestore_create(uint32_t oid , cb_func_t cb , void* cb_arg)

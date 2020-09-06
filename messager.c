@@ -112,14 +112,12 @@ static inline bool qos_release_tokens(qos_control_t *qos, int num) {
 
 typedef struct session_t {
     sock *_sock;
+    //peer information
     struct {
-        //peer information
         char ip[46];
         int port;
     };
-    void *msgr;
-
-
+    // void *msgr;
 
     TAILQ_HEAD(recv_queue, msg) recv_q;
 
@@ -396,15 +394,12 @@ static int  _read_event_callback(void * sess , struct sock_group *_group, struct
         err = _do_recv_message(m);
         if( err == SOCK_RWOK) {
             assert(msg_rw_complete(m));
-        } else if ( err == SOCK_EAGAIN) {
+        } else if (err == SOCK_EAGAIN) {
             break;
-        } else if ( err == SOCK_NEED_CLOSE) {
+        } else if (err == SOCK_NEED_CLOSE) {
             TAILQ_REMOVE(&(msgr->session_q), ss , _session_list_hook);
             session_destruct(ss);
-
             //Shutdown function
-            
-
             break;
         }
     }

@@ -1,13 +1,15 @@
 #include "objectstore.h"
 #include "fakestore.h"
-
 #include "string.h"
 
-static __thread  objstore_impl_t fakestore = {
+static __thread objstore_impl_t fakestore = {
     .info = fakestore_info,
     .mkfs = fakestore_mkfs,
     .mount = fakestore_mount,
-    .unmount = fakestore_unmount,
+    .unmount = fakestore_unmount,    
+    .mkfs_async = fakestore_mkfs_async,
+    .mount_async = fakestore_mount_async,
+    .unmount_async = fakestore_unmount_async,
     .obj_create = fakestore_create,
     .obj_delete = fakestore_delete,
     .obj_write = fakestore_write,

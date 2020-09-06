@@ -12,9 +12,19 @@ enum OBJECTSTORE_TYPE{
 
 typedef struct objstore_interface_t {  
     int (*info)(char *out, uint32_t len);
-    int (*mkfs) (const char* dev_list[], int store_type, cb_func_t , void*);
-    int (*mount)(const char* dev_list[], /* size = 3*/  int store_type /**/, cb_func_t , void*);
-    int (*unmount)(cb_func_t , void*);
+    //通常不会使用异步的 mount 和 unmount , mkfs
+    int (*mkfs_async) (const char* dev_list[], int mkfs_flag, cb_func_t , void*);
+    
+    //通常不会使用异步的 mount 和 unmount , mkfs
+    int (*mount_async)(const char* dev_list[], /* size = 3*/  int mount_flag /**/, cb_func_t , void*);
+    
+    //Generally we don't use asynchronous mount, unmount, mkfs
+    int (*unmount_async)(cb_func_t , void*);
+    
+    int (*mkfs) (const char* dev_list[], int mkfs_flag);
+    int (*mount)(const char* dev_list[], /* size = 3*/  int mount_flag /**/);
+    int (*unmount)();
+    
     int (*obj_create)(uint32_t oid , cb_func_t , void*);
     int (*obj_delete)(uint32_t oid , cb_func_t , void*);
     int (*obj_read)(uint32_t oid, uint64_t off, uint32_t len, void* rbuf, cb_func_t , void*);
