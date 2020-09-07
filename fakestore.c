@@ -74,8 +74,13 @@ extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int flags /**/
     fakestore_t *fc = fakestore_ptr();
     fc->state = booting;
     fc->onodes = malloc(sizeof(onode_t*) * onode_max);
+    assert(fc->onodes);
     fc->data_cache = fcache_constructor(data_dev_size, block_size, MALLOC);
+    assert(fc->data_cache);
+    
     fc->node_cache = fcache_constructor(node_dev_size, block_size, MALLOC);
+    assert(fc->node_cache);
+    
     fc->state = running;
     return OSTORE_EXECUTE_OK;
 }
