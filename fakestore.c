@@ -81,6 +81,10 @@ extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int flags /**/
     assert(fc->node_cache);
     
     fc->state = running;
+
+    SPDK_NOTICELOG("mount done , fakestore=%p,fc->node_cache=%p,fc->data_cache=%p,fc->onodes=%p\n",
+        fc, fc->node_cache,fc->data_cache,fc->onodes);
+
     return OSTORE_EXECUTE_OK;
 }
 
