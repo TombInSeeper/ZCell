@@ -4,7 +4,8 @@
 
 enum Status {
     SUCCESS = 0,
-    UNKOWN_OP,
+    UNKNOWN_OP,
+    INVALID_OP,
     MSGR_EAGAIN = 16,
     MSGR_CONNECT_EXCEPTION,
     OSTORE_SUBMIT_OK= 32,

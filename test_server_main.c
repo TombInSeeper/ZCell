@@ -3,8 +3,6 @@
 #include "spdk/thread.h"
 #include "spdk/event.h"
 #include "spdk/log.h"
-#include "spdk/net.h"
-#include "spdk/sock.h"
 #include "spdk/util.h"
 
 
@@ -92,15 +90,12 @@ static void free_data_buffer(void *p) {
 /**
  * 复用 request 结构生成 response
  * 这里我们对 request 的 meta_buffer 和 data_buffer 的处理方式是 lazy 的：
- * 只要将 header 的 meta_buffer 和 data_buffer 长度置 0， 
+ * 只要将 header 的 meta_length 和 data_length 长度置 0， 
  * 那么 messager 发送时就不会发送 meta_buffer 和 data_buffer 的内容，：
  * request message 析构时，meta_buffer 和 data_buffer 如果是非空指针，会被自动被释放
  * 
  * meta_buffer : glibc free (后续可能也加上用户重载函数)
  * data_buffer : .. 用户重载的函数
- * 
- * 对于 obj_create & obj_delete 操作
- * 对于 obj_write 操作：request  meta_buffer 和 
  * 
  * 
  */
@@ -125,7 +120,7 @@ static void oss_op_cb(void *ctx, int status_code) {
     message_t *request = ctx;
     if(status_code != SUCCESS || status_code != OSTORE_EXECUTE_OK) {
         //Broken operation
-
+        _response_broken_op(request,status_code);
     }
     _response_with_reusing_request(request, status_code);
     free(request);
@@ -148,18 +143,19 @@ static bool oss_op_valid(message_t *request) {
             rc = (le32_to_cpu(request->header.data_length) == 0) && 
             (le16_to_cpu(request->header.meta_length) == sizeof(op_delete_t)) && 
             (request->data_buffer == NULL) && 
-            (request->meta_buffer != NULL);       
+            (request->meta_buffer != NULL) ;       
         }
             break;
         case MSG_OSS_OP_WRITE:{
-            rc = (le32_to_cpu(request->header.data_length) > 0) && 
-            (le16_to_cpu(request->header.meta_length) > 0 ) && 
-            (request->data_buffer != NULL) && 
-            (request->meta_buffer != NULL);       
+            op_write_t *op = request->meta_buffer;
+            rc =  (request->data_buffer != NULL) && 
+            (request->meta_buffer != NULL) && 
+            (le32_to_cpu(request->header.data_length) == le32_to_cpu(op->len)) && 
+            (le16_to_cpu(request->header.meta_length) > 0 );       
         }
             break;
         case MSG_OSS_OP_READ:{
-            rc = (le32_to_cpu(request->header.data_length) > 0) && 
+            rc = (le32_to_cpu(request->header.data_length) == 0) && 
             (le16_to_cpu(request->header.meta_length) > 0 ) && 
             (request->data_buffer == NULL) && 
             (request->meta_buffer != NULL);       
@@ -172,37 +168,30 @@ static bool oss_op_valid(message_t *request) {
     return rc;
 }
 
-//Step2:prepare response structure reusing request 
+//Step2: prepare response structure reusing request 
+// 复用 request 结构填充成 response 结构
 static int  oss_op_refill_request_with_reponse(message_t *request) {
     int op = le16_to_cpu(request->header.type);
     int rc = 0;
     switch (op) {
         case MSG_OSS_OP_CREATE: {
-            rc = (le32_to_cpu(request->header.data_length) == 0) && 
-            (le16_to_cpu(request->header.meta_length) == sizeof(op_create_t)) && 
-            (request->data_buffer == NULL) && 
-            (request->meta_buffer != NULL);       
+            request->header.meta_length = 0;      
         }
             break; 
         case MSG_OSS_OP_DELETE: {
-            rc = (le32_to_cpu(request->header.data_length) == 0) && 
-            (le16_to_cpu(request->header.meta_length) == sizeof(op_delete_t)) && 
-            (request->data_buffer == NULL) && 
-            (request->meta_buffer != NULL);       
+            request->header.meta_length = 0;            
         }
             break;
         case MSG_OSS_OP_WRITE:{
-            rc = (le32_to_cpu(request->header.data_length) > 0) && 
-            (le16_to_cpu(request->header.meta_length) > 0 ) && 
-            (request->data_buffer != NULL) && 
-            (request->meta_buffer != NULL);       
+            request->header.meta_length = 0;             
+            request->header.data_length = 0;             
         }
             break;
         case MSG_OSS_OP_READ:{
-            rc = (le32_to_cpu(request->header.data_length) > 0) && 
-            (le16_to_cpu(request->header.meta_length) > 0 ) && 
-            (request->data_buffer == NULL) && 
-            (request->meta_buffer != NULL);       
+            op_read_t *op = request->meta_buffer;
+            request->header.meta_length = 0;             
+            request->header.data_length = op->len; 
+            request->data_buffer = alloc_data_buffer(le32_to_cpu(op->len));           
         }
             /* code */
             break;        
@@ -212,31 +201,33 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
     return rc;
 }
 
-static inline void _do_obj_create_op(message_t *request) {
-    
-}
+
 
 /** 
  * 由于是异步操作，所以需要复制 request 内容到全局
  * 需要 malloc 
  * 子例程的异步上下文指针一般是就是 request 本身
  * 所以必须保证调用子例程传入的 request 指针的生命周期是全局的
- * ostore 在处理读写请求时
- * 会回填 request 里面的 data_buffer 和 header_length 字段
  */ 
 static void _do_op_oss(message_t * _request) {
+    const objstore_impl_t *os_impl = reactor_ctx()->os_impl;
     message_t *request = malloc(sizeof(message_t));
     memcpy(request, _request, sizeof(message_t));
-    
-    if(!oss_op_valid(request)) {
-        //Need to drop it
 
+    int rc = INVALID_OP;
+    if(!oss_op_valid(request)) {
+        goto label_broken_op;
+    }
+    oss_op_refill_request_with_reponse(request);
+    int rc = os_impl->obj_async_op_call(request,oss_op_cb);
+    if(rc == OSTORE_SUBMIT_OK) {
         return;
     }
 
-
-
-
+label_broken_op:
+    _response_broken_op(request, rc );
+    free(request);
+    return;
 }
 
 
@@ -267,13 +258,11 @@ static void _on_recv_message(message_t *m) {
     // msgr_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
     msgr_info("Recv a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
-    
- 
     message_t _m ;
     /**
      * 承接 original message *m* 中的所有内容
-     * 阻止 _on_** 调用后释放掉 m 内的 meta_buffer 和 data_buffer
-     * 尽管这个操作看起来有些奇怪和难以理解
+     * 阻止 _on_** 调用后释放 m 内的 meta_buffer 和 data_buffer
+     * 尽管这个操作看起来有些奇怪
      */
     message_move(&_m, m);
 

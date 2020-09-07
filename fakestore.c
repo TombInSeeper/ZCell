@@ -2,6 +2,9 @@
 #include "fakestore.h"
 #include "fixed_cache.h"
 
+#include "message.h"
+#include "operation.h"
+
 #include "spdk/event.h"
 #include "spdk/env.h"
 #include "spdk/log.h"
@@ -54,7 +57,7 @@ static void fake_async_cb(cb_func_t  cb , void * cb_arg)
     return;
 }
 
-extern int fakestore_info(char *out , uint32_t len)
+extern int fakestore_stat(char *out , uint32_t len)
 {
     fakestore_t *fs = fakestore_ptr();
     if ( fs->state == running ) {
@@ -112,7 +115,7 @@ extern int fakestore_unmount_async(cb_func_t cb, void* cb_arg)
 
 
 
-extern int fakestore_create(uint32_t oid , cb_func_t cb , void* cb_arg)
+extern int fakestore_obj_create(uint32_t oid , cb_func_t cb , void* cb_arg)
 {
     fakestore_t *fs = fakestore_ptr();
     onode_t *o = fs->onodes[oid];
@@ -132,7 +135,7 @@ extern int fakestore_create(uint32_t oid , cb_func_t cb , void* cb_arg)
     return OSTORE_SUBMIT_OK;
 }
 
-extern int fakestore_delete(uint32_t oid , cb_func_t cb , void* cb_arg)
+extern int fakestore_obj_delete(uint32_t oid , cb_func_t cb , void* cb_arg)
 {
     fakestore_t *fs = fakestore_ptr();
     onode_t *o = fs->onodes[oid];
@@ -157,7 +160,7 @@ extern int fakestore_delete(uint32_t oid , cb_func_t cb , void* cb_arg)
     return OSTORE_SUBMIT_OK;
 }
 
-extern int fakestore_read(uint32_t oid, uint64_t off, uint32_t len, void* rbuf, cb_func_t cb , void* cb_arg)
+extern int fakestore_obj_read(uint32_t oid, uint64_t off, uint32_t len, void* rbuf, cb_func_t cb , void* cb_arg)
 {
     fakestore_t *fs = fakestore_ptr();
     onode_t *o = fs->onodes[oid];
@@ -184,7 +187,7 @@ extern int fakestore_read(uint32_t oid, uint64_t off, uint32_t len, void* rbuf, 
     return OSTORE_SUBMIT_OK;
 }
 
-extern int fakestore_write(uint32_t oid, uint64_t off, uint32_t len, void* wbuf, cb_func_t cb, void* cb_arg)
+extern int fakestore_obj_write(uint32_t oid, uint64_t off, uint32_t len, void* wbuf, cb_func_t cb, void* cb_arg)
 {
     fakestore_t *fs = fakestore_ptr();
     onode_t *o = fs->onodes[oid];
@@ -214,6 +217,164 @@ extern int fakestore_write(uint32_t oid, uint64_t off, uint32_t len, void* wbuf,
     }
     fake_async_cb(cb , cb_arg);
     return OSTORE_SUBMIT_OK;
+}
+
+
+typedef struct async_state_t {
+    int st;
+    int err;
+    int rsv[2];
+} async_state_t;
+
+extern const int fakestore_obj_async_op_context_size() {
+    return sizeof(async_state_t);
+}
+
+static int _do_write(void *request_msg_with_op_context, cb_func_t cb) {
+    message_t *request = request_msg_with_op_context;
+    async_state_t *st = (void*)(request + 1);    
+    
+    op_write_t* op = request->meta_buffer;
+    uint32_t oid = le32_to_cpu(op->oid);
+    uint32_t off = le32_to_cpu(op->ofst);
+    uint32_t len = le32_to_cpu(op->len);
+    void *wbuf = request->data_buffer;
+
+    void *cb_arg = request_msg_with_op_context;
+
+    fakestore_t *fs = fakestore_ptr();
+    onode_t *o = fs->onodes[oid];
+    if (!o) {
+        return OSTORE_OBJECT_NOT_EXIST;
+    }
+    uint32_t soff = off / 0x1000;
+    uint32_t slen = len / 0x1000;
+
+    int i;
+    for ( i = soff ; i < soff + slen ; ++i) {
+        if( i >= 1024) {
+            return OSTORE_WRITE_OUT_MAX_SIZE;
+        }
+        void *this_page;
+        if (o->_data[i] == 0xffffffff) {
+            void *data_page = fcache_get(fs->data_cache);
+            if(!data_page) {
+                return OSTORE_NO_SPACE;
+            }
+            this_page = data_page;
+            o->_data[i] = fcache_elem_id(fs->data_cache,data_page);
+        } else {
+            this_page = fcahe_id_elem(fs->data_cache , o->_data[i]);
+        }
+        memcpy(this_page ,(char*)wbuf + i * 0x1000, 0x1000);
+    }
+    fake_async_cb(cb , cb_arg);
+    return OSTORE_SUBMIT_OK; 
+}
+static int _do_read(void *request_msg_with_op_context, cb_func_t cb) {
+    message_t *request = request_msg_with_op_context;
+    async_state_t *st = (void*)(request + 1);    
+    
+    op_read_t* op = request->meta_buffer;
+    uint32_t oid = le32_to_cpu(op->oid);
+    uint32_t off = le32_to_cpu(op->ofst);
+    uint32_t len = le32_to_cpu(op->len);
+    void *rbuf = request->data_buffer;
+
+    void *cb_arg = request_msg_with_op_context;
+
+    fakestore_t *fs = fakestore_ptr();
+    onode_t *o = fs->onodes[oid];
+    if (!o) {
+        return OSTORE_OBJECT_NOT_EXIST;
+    }
+
+    uint32_t soff = off / 0x1000;
+    uint32_t slen = len / 0x1000;
+
+    int i;
+    for ( i = soff ; i < soff + slen ; ++i) {
+        if( i >= 1024) {
+            return OSTORE_READ_EOF;
+        }
+        if ( o->_data[i] == 0xffffffff) {
+            memset((char*)rbuf + i * 0x1000, 0 , 0x1000);      
+        } else {
+            void *data_page = fcahe_id_elem(fs->data_cache , o->_data[i]);
+            memcpy((char*)rbuf + i * 0x1000, data_page , 0x1000);
+        }
+    }
+    fake_async_cb(cb , cb_arg);
+    return OSTORE_SUBMIT_OK;
+}
+static int _do_create(void *request_msg_with_op_context, cb_func_t cb) {
+    message_t *request = request_msg_with_op_context;
+    async_state_t *st = (void*)(request + 1); 
+    op_create_t *op = request->meta_buffer;
+    uint32_t oid = le32_to_cpu(op->oid);
+    
+    void *cb_arg = request_msg_with_op_context;
+
+    fakestore_t *fs = fakestore_ptr();
+    onode_t *o = fs->onodes[oid];
+    if (o) {
+        return OSTORE_OBJECT_EXIST;
+    }
+    onode_t *new_o = fcache_get(fs->node_cache);
+    if(!new_o) {
+        return OSTORE_NO_NODE;
+    }
+
+    memset(new_o, 0xff ,sizeof(onode_t));
+
+    fs->onodes[oid] = new_o;
+
+    fake_async_cb(cb, cb_arg);
+    return OSTORE_SUBMIT_OK; 
+}
+static int _do_delete(void *request_msg_with_op_context, cb_func_t cb) {
+    message_t *request = request_msg_with_op_context;
+    async_state_t *st = (void*)(request + 1); 
+    op_create_t *op = request->meta_buffer;
+    uint32_t oid = le32_to_cpu(op->oid);
+    
+    void *cb_arg = request_msg_with_op_context;
+    fakestore_t *fs = fakestore_ptr();
+    onode_t *o = fs->onodes[oid];
+    if (!o) {
+        return OSTORE_OBJECT_NOT_EXIST;
+    }
+
+    //Give back data cache
+    for ( int i = 0 ; i < 1024 ; ++i) {
+        fcache_id_put(fs->data_cache, o->_data[i]);
+    }
+
+    //...
+    // Onode put back
+    fcache_put(fs->node_cache, o);
+
+    fs->onodes[oid] = NULL;
+
+    // memset(new_o, 0 ,sizeof(onode_t));
+
+    fake_async_cb(cb, cb_arg);
+    return OSTORE_SUBMIT_OK;
+}
+
+typedef int (*os_op_func_ptr_t)(void*, cb_func_t);
+const os_op_func_ptr_t obj_op_table[] = {
+    [MSG_OSS_OP_CREATE] = _do_create,
+    [MSG_OSS_OP_DELETE] = _do_delete,
+    [MSG_OSS_OP_WRITE] = _do_write,
+    [MSG_OSS_OP_READ] = _do_read,
+};
+
+extern int fakestore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
+    message_t *request = request_msg_with_op_context;
+    int op = le16_to_cpu(request->header.type);
+    os_op_func_ptr_t op_func = obj_op_table[op];
+    return op_func(request_msg_with_op_context , _cb);
 }
 
 
