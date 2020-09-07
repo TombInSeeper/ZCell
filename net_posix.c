@@ -54,7 +54,7 @@
 #include <sys/event.h>
 #endif
 
-#define MAX_EVENTS_PER_POLL 32
+#define MAX_EVENTS_PER_POLL 64
 #define MAX_TMPBUF 1024
 #define PORTNUMLEN 32
 #define SO_RCVBUF_SIZE (1 * 1024 * 1024)
