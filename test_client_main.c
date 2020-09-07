@@ -200,6 +200,8 @@ int main(int argc, char **argv) {
     parse_args(argc, argv);
     assert(_system_init() == 0);
     
+    const int NR_cpu = 24;
+
     pthread_t tasks[NR_MAX_TASK];
     client_task_data data[NR_MAX_TASK];
     int i;
@@ -207,7 +209,7 @@ int main(int argc, char **argv) {
         client_task_data _tmp = {
             .srv_ip = g_base_ip,
             .srv_port = g_base_port + (i % g_n_servers),
-            .cpuid = i,
+            .cpuid = i % NR_cpu,
             .rqsts = g_rqsts
         };
         data[i] = _tmp;
@@ -218,9 +220,8 @@ int main(int argc, char **argv) {
         CPU_SET(data[i].cpuid,&cpuset);
         pthread_attr_t attr;
         pthread_attr_init(&attr);
-        // pthread_attr_setaffinity_np(&attr,sizeof(cpuset),&cpuset);
+        pthread_attr_setaffinity_np(&attr,sizeof(cpuset),&cpuset);
         pthread_attr_setstacksize(&attr , 16 << 20);
-        // pthread_attr_setschedpolicy(&attr,SCHED_RR);
         int t = pthread_create(&tasks[i],&attr,client_task,&data[i]);
         if(t) {
             printf("Thread create failed\n");
