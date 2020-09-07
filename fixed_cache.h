@@ -23,7 +23,6 @@ typedef struct fcache_t {
 
 static inline fcache_t *fcache_constructor(uint32_t cache_sz, uint32_t elem_sz , uint8_t mem_allocator)
 {
-
     fcache_t *f;
     if(mem_allocator == MALLOC) {
         f = (fcache_t *)calloc( 1, sizeof(fcache_t)); 

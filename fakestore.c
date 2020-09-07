@@ -75,6 +75,7 @@ extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int flags /**/
     fc->state = booting;
     fc->onodes = malloc(sizeof(onode_t*) * onode_max);
     assert(fc->onodes);
+    
     fc->data_cache = fcache_constructor(data_dev_size, block_size, MALLOC);
     assert(fc->data_cache);
     
@@ -91,9 +92,12 @@ extern int fakestore_unmount() {
 
     fc->state= stopping;
     SPDK_NOTICELOG("node_cache\n");
+    assert(fc->node_cache);
     fcache_destructor(fc->node_cache);
     
     SPDK_NOTICELOG("data_cache\n");
+    assert(fc->data_cache);
+
     fcache_destructor(fc->data_cache);
 
     SPDK_NOTICELOG("onodes\n");
