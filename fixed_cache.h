@@ -2,6 +2,7 @@
 #define FIXED_CACHE_H
 
 #include "stdint.h"
+#include "stdio.h"
 #include "spdk/env.h"
 #include "spdk/util.h"
 
@@ -64,6 +65,7 @@ static inline fcache_t *fcache_constructor(uint32_t cache_sz, uint32_t elem_sz ,
 
 static inline void fcache_destructor(fcache_t * fc)
 {
+    printf("fcache_destructor elems\n");
     if(fc->mem_allocator == SPDK_MALLOC) {
         spdk_free(fc->elems);
     } else if (fc->mem_allocator == MALLOC) {
@@ -71,7 +73,10 @@ static inline void fcache_destructor(fcache_t * fc)
     } else {
         return;
     }
+    printf("fcache_destructor ptr_arr\n");
     free(fc->ptr_arr);
+    printf("fcache_destructor fc\n");
+
     free(fc);
 }
 
