@@ -28,9 +28,7 @@ enum FAKESTORE_STATE {
 };
 
 typedef struct fakestore_t {
-
     int state;
-
     fcache_t *data_cache;
     fcache_t *node_cache;
     onode_t **onodes;
@@ -88,7 +86,8 @@ extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int flags /**/
 
 extern int fakestore_unmount() {
     fakestore_t *fc = fakestore_ptr();
-    SPDK_NOTICELOG("start\n");
+    SPDK_NOTICELOG("start , fakestore=%p,fc->node_cache=%p,fc->data_cache=%p,fc->onodes=%p\n",
+        fc, fc->node_cache,fc->data_cache,fc->onodes);
 
     fc->state= stopping;
     SPDK_NOTICELOG("node_cache\n");
