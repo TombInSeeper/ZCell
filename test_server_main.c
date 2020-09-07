@@ -147,7 +147,7 @@ static bool oss_op_valid(message_t *request) {
         }
             break;
         case MSG_OSS_OP_WRITE:{
-            op_write_t *op = request->meta_buffer;
+            op_write_t *op = (op_write_t *)request->meta_buffer;
             rc =  (request->data_buffer != NULL) && 
             (request->meta_buffer != NULL) && 
             (le32_to_cpu(request->header.data_length) == le32_to_cpu(op->len)) && 
@@ -188,7 +188,7 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
         }
             break;
         case MSG_OSS_OP_READ:{
-            op_read_t *op = request->meta_buffer;
+            op_read_t *op = (op_read_t *)request->meta_buffer;
             request->header.meta_length = 0;             
             request->header.data_length = op->len; 
             request->data_buffer = alloc_data_buffer(le32_to_cpu(op->len));           
@@ -219,7 +219,7 @@ static void _do_op_oss(message_t * _request) {
         goto label_broken_op;
     }
     oss_op_refill_request_with_reponse(request);
-    int rc = os_impl->obj_async_op_call(request,oss_op_cb);
+    rc = os_impl->obj_async_op_call(request,oss_op_cb);
     if(rc == OSTORE_SUBMIT_OK) {
         return;
     }
@@ -323,7 +323,7 @@ void _sys_fini() {
 int _ostore_boot(const objstore_impl_t *oimpl , int new) {
     //TODO get ostore global config
     //....
-    const char *dev_list = NULL;
+    const char *dev_list[] = {NULL , NULL ,NULL};
     int flags = 0;
     int rc;
     if(new) {
