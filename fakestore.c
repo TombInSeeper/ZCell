@@ -82,31 +82,31 @@ extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int flags /**/
     
     fc->state = running;
 
-    SPDK_NOTICELOG("mount done , fakestore=%p,fc->node_cache=%p,fc->data_cache=%p,fc->onodes=%p\n",
-        fc, fc->node_cache,fc->data_cache,fc->onodes);
+    // SPDK_NOTICELOG("mount done , fakestore=%p,fc->node_cache=%p,fc->data_cache=%p,fc->onodes=%p\n",
+    //     fc, fc->node_cache,fc->data_cache,fc->onodes);
 
     return OSTORE_EXECUTE_OK;
 }
 
 extern int fakestore_unmount() {
     fakestore_t *fc = fakestore_ptr();
-    SPDK_NOTICELOG("start , fakestore=%p,fc->node_cache=%p,fc->data_cache=%p,fc->onodes=%p\n",
-        fc, fc->node_cache,fc->data_cache,fc->onodes);
+    // SPDK_NOTICELOG("start , fakestore=%p,fc->node_cache=%p,fc->data_cache=%p,fc->onodes=%p\n",
+    //     fc, fc->node_cache,fc->data_cache,fc->onodes);
 
     fc->state= stopping;
-    SPDK_NOTICELOG("node_cache\n");
+    // SPDK_NOTICELOG("node_cache\n");
     assert(fc->node_cache);
     fcache_destructor(fc->node_cache);
     
-    SPDK_NOTICELOG("data_cache\n");
+    // SPDK_NOTICELOG("data_cache\n");
     assert(fc->data_cache);
 
     fcache_destructor(fc->data_cache);
 
-    SPDK_NOTICELOG("onodes\n");
+    // SPDK_NOTICELOG("onodes\n");
     free(fc->onodes);
     fc->state= died;
-    SPDK_NOTICELOG("done\n");
+    // SPDK_NOTICELOG("done\n");
     return OSTORE_EXECUTE_OK;
 }
 

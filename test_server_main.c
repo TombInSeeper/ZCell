@@ -354,9 +354,7 @@ int _ostore_boot(const objstore_impl_t *oimpl , int new) {
     int rc;
     if(new) {
         rc = oimpl->mkfs(dev_list,flags);
-        if(rc) {
-            return rc;
-        }
+        assert (rc == OSTORE_EXECUTE_OK);
     }
     rc = oimpl->mount(dev_list,flags);
     return rc;
