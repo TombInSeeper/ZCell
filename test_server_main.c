@@ -321,7 +321,6 @@ void _per_reactor_stop(void * ctx , void *err) {
     
     //...
     fcache_destructor(rctx->dma_pages);
-    SPDK_NOTICELOG("Stopping server[%d],[%s:%d] ostore .... done \n", rctx->reactor_id,rctx->ip,rctx->port);
 
     rctx->running = false;
     SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);

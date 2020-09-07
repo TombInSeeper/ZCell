@@ -87,11 +87,14 @@ extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int flags /**/
 
 extern int fakestore_unmount() {
     fakestore_t *fc = fakestore_ptr();
+    SPDK_NOTICELOG("start\n");
+
     fc->state= stopping;
     fcache_destructor(fc->node_cache);
     fcache_destructor(fc->data_cache);
     free(fc->onodes);
     fc->state= died;
+    SPDK_NOTICELOG("done\n");
     return OSTORE_EXECUTE_OK;
 }
 
