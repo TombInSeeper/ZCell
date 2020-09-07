@@ -91,10 +91,9 @@ extern int fakestore_unmount() {
 
     fc->state= stopping;
     SPDK_NOTICELOG("node_cache\n");
-
     fcache_destructor(fc->node_cache);
+    
     SPDK_NOTICELOG("data_cache\n");
-
     fcache_destructor(fc->data_cache);
 
     SPDK_NOTICELOG("onodes\n");

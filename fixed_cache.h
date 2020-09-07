@@ -31,7 +31,7 @@ static inline fcache_t *fcache_constructor(uint32_t cache_sz, uint32_t elem_sz ,
         f->elems = malloc(elem_sz *cache_sz); 
         assert(f->elems);
 
-        f->ptr_arr = (unsigned int *)malloc(sizeof(void*)*cache_sz);
+        f->ptr_arr = (unsigned int *)malloc(sizeof(unsigned int)*cache_sz);
         assert(f->ptr_arr);
     }
     else if(mem_allocator == SPDK_MALLOC) {
