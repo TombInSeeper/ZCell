@@ -233,8 +233,8 @@ extern const int fakestore_obj_async_op_context_size() {
 static int _do_write(void *request_msg_with_op_context, cb_func_t cb) {
     message_t *request = request_msg_with_op_context;
     async_state_t *st = (void*)(request + 1);    
-    
-    op_write_t* op = request->meta_buffer;
+    (void)st;
+    op_write_t* op = (void*)request->meta_buffer;
     uint32_t oid = le32_to_cpu(op->oid);
     uint32_t off = le32_to_cpu(op->ofst);
     uint32_t len = le32_to_cpu(op->len);
@@ -274,8 +274,9 @@ static int _do_write(void *request_msg_with_op_context, cb_func_t cb) {
 static int _do_read(void *request_msg_with_op_context, cb_func_t cb) {
     message_t *request = request_msg_with_op_context;
     async_state_t *st = (void*)(request + 1);    
+    (void)st;
     
-    op_read_t* op = request->meta_buffer;
+    op_read_t* op = (void*)request->meta_buffer;
     uint32_t oid = le32_to_cpu(op->oid);
     uint32_t off = le32_to_cpu(op->ofst);
     uint32_t len = le32_to_cpu(op->len);
@@ -310,7 +311,8 @@ static int _do_read(void *request_msg_with_op_context, cb_func_t cb) {
 static int _do_create(void *request_msg_with_op_context, cb_func_t cb) {
     message_t *request = request_msg_with_op_context;
     async_state_t *st = (void*)(request + 1); 
-    op_create_t *op = request->meta_buffer;
+    (void)st;
+    op_create_t *op = (void*)request->meta_buffer;
     uint32_t oid = le32_to_cpu(op->oid);
     
     void *cb_arg = request_msg_with_op_context;
@@ -335,7 +337,8 @@ static int _do_create(void *request_msg_with_op_context, cb_func_t cb) {
 static int _do_delete(void *request_msg_with_op_context, cb_func_t cb) {
     message_t *request = request_msg_with_op_context;
     async_state_t *st = (void*)(request + 1); 
-    op_create_t *op = request->meta_buffer;
+    (void)st;
+    op_create_t *op = (void*)request->meta_buffer;
     uint32_t oid = le32_to_cpu(op->oid);
     
     void *cb_arg = request_msg_with_op_context;

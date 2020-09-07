@@ -22,7 +22,7 @@ enum MessageType {
 
 };
 
-#define MSG_TYPE_OSS(_op) ({typeof(_op) op; MSG_OSS_OP_MIN < op && op < MGS_OSS_OP_MAX; })
+#define MSG_TYPE_OSS(_op) ({typeof(_op) op = (_op); MSG_OSS_OP_MIN < op && op < MGS_OSS_OP_MAX; })
 
 
 /**
