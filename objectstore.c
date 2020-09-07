@@ -19,7 +19,7 @@ static __thread objstore_impl_t fakestore = {
     .obj_async_op_call = fakestore_obj_async_op_call
 };
 
-const objstore_impl_t* get_ostore_impl(int store_type) {
+extern const objstore_impl_t* ostore_get_impl(int store_type) {
     if(store_type == FAKESTORE) {
         return &fakestore;
     } else  {
