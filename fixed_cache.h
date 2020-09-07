@@ -66,6 +66,7 @@ static inline fcache_t *fcache_constructor(uint32_t cache_sz, uint32_t elem_sz ,
 static inline void fcache_destructor(fcache_t * fc)
 {
     printf("fcache_destructor elems\n");
+    assert(fc);
     if(fc->mem_allocator == SPDK_MALLOC) {
         spdk_free(fc->elems);
     } else if (fc->mem_allocator == MALLOC) {
