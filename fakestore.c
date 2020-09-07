@@ -75,7 +75,7 @@ extern int fakestore_mount(const char* dev_list[], /* size = 3*/  int flags /**/
     fc->state = booting;
     fc->onodes = malloc(sizeof(onode_t*) * onode_max);
     assert(fc->onodes);
-    
+
     fc->data_cache = fcache_constructor(data_dev_size, block_size, MALLOC);
     assert(fc->data_cache);
     
@@ -105,135 +105,6 @@ extern int fakestore_unmount() {
     fc->state= died;
     SPDK_NOTICELOG("done\n");
     return OSTORE_EXECUTE_OK;
-}
-
-extern int fakestore_mkfs_async (const char* dev_list[], int mkfs_flag, cb_func_t  cb , void* cb_arg)
-{
-    // Do nothing
-    fake_async_cb(cb , cb_arg);
-    return OSTORE_SUBMIT_OK;
-}
-
-extern int fakestore_mount_async(const char* dev_list[], /* size = 3*/  int mount_flag /**/, cb_func_t cb , void* cb_arg)
-{
-    // Do in-memory object table create
-    fakestore_mount(dev_list, mount_flag);
-    fake_async_cb(cb,cb_arg);
-    return OSTORE_SUBMIT_OK;
-}
-
-extern int fakestore_unmount_async(cb_func_t cb, void* cb_arg)
-{
-    fakestore_unmount();
-    fake_async_cb(cb,cb_arg);
-    return OSTORE_SUBMIT_OK;
-}
-
-
-
-
-extern int fakestore_obj_create(uint32_t oid , cb_func_t cb , void* cb_arg)
-{
-    fakestore_t *fs = fakestore_ptr();
-    onode_t *o = fs->onodes[oid];
-    if (o) {
-        return OSTORE_OBJECT_EXIST;
-    }
-    onode_t *new_o = fcache_get(fs->node_cache);
-    if(!new_o) {
-        return OSTORE_NO_NODE;
-    }
-
-    memset(new_o, 0xff ,sizeof(onode_t));
-
-    fs->onodes[oid] = new_o;
-
-    fake_async_cb(cb, cb_arg);
-    return OSTORE_SUBMIT_OK;
-}
-
-extern int fakestore_obj_delete(uint32_t oid , cb_func_t cb , void* cb_arg)
-{
-    fakestore_t *fs = fakestore_ptr();
-    onode_t *o = fs->onodes[oid];
-    if (!o) {
-        return OSTORE_OBJECT_NOT_EXIST;
-    }
-
-    //Give back data cache
-    for ( int i = 0 ; i < 1024 ; ++i) {
-        fcache_id_put(fs->data_cache, o->_data[i]);
-    }
-
-    //...
-    // Onode put back
-    fcache_put(fs->node_cache, o);
-
-    fs->onodes[oid] = NULL;
-
-    // memset(new_o, 0 ,sizeof(onode_t));
-
-    fake_async_cb(cb, cb_arg);
-    return OSTORE_SUBMIT_OK;
-}
-
-extern int fakestore_obj_read(uint32_t oid, uint64_t off, uint32_t len, void* rbuf, cb_func_t cb , void* cb_arg)
-{
-    fakestore_t *fs = fakestore_ptr();
-    onode_t *o = fs->onodes[oid];
-    if (!o) {
-        return OSTORE_OBJECT_NOT_EXIST;
-    }
-
-    uint32_t soff = off / 0x1000;
-    uint32_t slen = len / 0x1000;
-
-    int i;
-    for ( i = soff ; i < soff + slen ; ++i) {
-        if( i >= 1024) {
-            return OSTORE_READ_EOF;
-        }
-        if ( o->_data[i] == 0xffffffff) {
-            memset((char*)rbuf + i * 0x1000, 0 , 0x1000);      
-        } else {
-            void *data_page = fcahe_id_elem(fs->data_cache , o->_data[i]);
-            memcpy((char*)rbuf + i * 0x1000, data_page , 0x1000);
-        }
-    }
-    fake_async_cb(cb , cb_arg);
-    return OSTORE_SUBMIT_OK;
-}
-
-extern int fakestore_obj_write(uint32_t oid, uint64_t off, uint32_t len, void* wbuf, cb_func_t cb, void* cb_arg)
-{
-    fakestore_t *fs = fakestore_ptr();
-    onode_t *o = fs->onodes[oid];
-    if (!o) {
-        return OSTORE_OBJECT_NOT_EXIST;
-    }
-    uint32_t soff = off / 0x1000;
-    uint32_t slen = len / 0x1000;
-
-    int i;
-    for ( i = soff ; i < soff + slen ; ++i) {
-        if( i >= 1024) {
-            return OSTORE_WRITE_OUT_MAX_SIZE;
-        }
-        void *this_page;
-        if (o->_data[i] == 0xffffffff) {
-            void *data_page = fcache_get(fs->data_cache);
-            if(!data_page) {
-                return OSTORE_NO_SPACE;
-            }
-            this_page = data_page;
-            o->_data[i] = fcache_elem_id(fs->data_cache,data_page);
-        } else {
-            this_page = fcahe_id_elem(fs->data_cache , o->_data[i]);
-        }
-        memcpy(this_page ,(char*)wbuf + i * 0x1000, 0x1000);
-    }
-    fake_async_cb(cb , cb_arg);
-    return OSTORE_SUBMIT_OK;
 }
 
 
