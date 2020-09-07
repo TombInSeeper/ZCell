@@ -314,11 +314,14 @@ void _per_reactor_stop(void * ctx , void *err) {
     // SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
     
     _msgr_stop(rctx->msgr_impl);
+    SPDK_NOTICELOG("Stopping server[%d],[%s:%d] msgr .... done \n", rctx->reactor_id,rctx->ip,rctx->port);
 
     _ostore_stop(rctx->os_impl);
+    SPDK_NOTICELOG("Stopping server[%d],[%s:%d] ostore .... done \n", rctx->reactor_id,rctx->ip,rctx->port);
     
     //...
     fcache_destructor(rctx->dma_pages);
+    SPDK_NOTICELOG("Stopping server[%d],[%s:%d] ostore .... done \n", rctx->reactor_id,rctx->ip,rctx->port);
 
     rctx->running = false;
     SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
