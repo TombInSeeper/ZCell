@@ -66,7 +66,15 @@ static int reactor_reduce_state() {
     return r;
 }
 
-static void *alloc_data_buffer( uint32_t sz) {
+
+static void *alloc_meta_buffer(uint32_t sz) {
+    return malloc(sz);
+}
+static void free_meta_buffer(void *p) {
+    free(p);
+}
+
+static void *alloc_data_buffer(uint32_t sz) {
     void *ptr;
     if(sz <= 0x1000)
         ptr =  fcache_get(reactor_ctx()->dma_pages); 
@@ -76,7 +84,6 @@ static void *alloc_data_buffer( uint32_t sz) {
     }
     return ptr;
 }
-
 static void free_data_buffer(void *p) {
     fcache_t *fc = reactor_ctx()->dma_pages;
     if(fcache_in(fc , p)) {
@@ -132,6 +139,13 @@ static bool oss_op_valid(message_t *request) {
     int op = le16_to_cpu(request->header.type);
     bool rc = false;
     switch (op) {
+        case MSG_OSS_OP_STATE: {
+            rc = (le32_to_cpu(request->header.data_length) == 0) && 
+            (le16_to_cpu(request->header.meta_length) == 0) && 
+            (request->data_buffer == NULL) && 
+            (request->meta_buffer == NULL);       
+        }
+            break;
         case MSG_OSS_OP_CREATE: {
             rc = (le32_to_cpu(request->header.data_length) == 0) && 
             (le16_to_cpu(request->header.meta_length) == sizeof(op_create_t)) && 
@@ -174,6 +188,11 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
     int op = le16_to_cpu(request->header.type);
     int rc = 0;
     switch (op) {
+        case MSG_OSS_OP_STATE : {
+            request->header.meta_length = sizeof(op_stat_t);
+            request->meta_buffer = alloc_meta_buffer(sizeof(op_stat_t));
+        }
+            break;
         case MSG_OSS_OP_CREATE: {
             request->header.meta_length = 0;      
         }
@@ -206,12 +225,16 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
 /** 
  * 由于是异步操作，所以需要复制 request 内容到全局
  * 需要 malloc 
- * 子例程的异步上下文指针一般是就是 request 本身
- * 所以必须保证调用子例程传入的 request 指针的生命周期是全局的
+ * 子例程的异步上下文指针是 request 本身加上一段 store_type 依赖的上下文
  */ 
 static void _do_op_oss(message_t * _request) {
+
     const objstore_impl_t *os_impl = reactor_ctx()->os_impl;
-    message_t *request = malloc(sizeof(message_t));
+
+    const int async_op_ctx_sz = os_impl->obj_async_op_context_size();
+    void *ctx = malloc(sizeof(message_t) + async_op_ctx_sz);
+    
+    message_t *request = ctx;
     memcpy(request, _request, sizeof(message_t));
 
     int rc = INVALID_OP;
