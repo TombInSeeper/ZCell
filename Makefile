@@ -84,7 +84,8 @@ test_server:test_server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 test_client:test_client_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 	$(LINK_C)
 
-
+test_messager_client:test_messager_client.o $(MSGR_OBJS) $(OSTORE_OBJS)
+	$(LINK_C)
 
 
 

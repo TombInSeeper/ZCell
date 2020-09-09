@@ -49,8 +49,7 @@ void on_send_message(message_t *msg) {
 void on_recv_message(message_t *msg) {
     // message_t m;
     // message_move(&m , msg); // prevent from free msg_buffer
-    // printf("recv msg OK\n");
-
+    // // printf("recv msg OK\n");
     ++n_recv;
 }
 
