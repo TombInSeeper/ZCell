@@ -110,7 +110,10 @@ static void free_data_buffer(void *p) {
 static inline void _response_with_reusing_request(message_t *request, uint16_t status_code) {
     request->header.status = cpu_to_le16(status_code);
     message_state_reset(request);
-    msgr_debug("Perpare to send reponse :[status=%u]\n",request->header.status);
+    msgr_debug("Perpare to send response :[status=%u , meta_len=%u, data_len=%u]\n",
+        request->header.status,
+        request->header.meta_length,
+        request->header.data_length);
     reactor_ctx()->msgr_impl->messager_sendmsg(request);
 }
 
