@@ -110,6 +110,7 @@ static void free_data_buffer(void *p) {
 static inline void _response_with_reusing_request(message_t *request, uint16_t status_code) {
     request->header.status = cpu_to_le16(status_code);
     message_state_reset(request);
+    msgr_debug("Perpare to send reponse :[status=%u]\n",request->header.status);
     reactor_ctx()->msgr_impl->messager_sendmsg(request);
 }
 
@@ -237,6 +238,9 @@ static void _do_op_oss(message_t * _request) {
     
     message_t *request = ctx;
     memcpy(request, _request, sizeof(message_t));
+
+    msgr_debug("Prepare to execute op:[seq=%u,op_code=%u,meta_len=%u,data_len=%u]", request->header.seq,
+        request->header.type, request->header.meta_length, request->header.data_length);
 
     int rc = INVALID_OP;
     if(!oss_op_valid(request)) {
