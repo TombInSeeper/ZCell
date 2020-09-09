@@ -3,7 +3,7 @@ CXX=g++
 Q=@
 
 
-ver=debug
+ver=release
 ifeq ($(ver), debug)
 CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -fno-strict-aliasing  -g -O0 
 else
