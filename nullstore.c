@@ -61,7 +61,7 @@ static int _do_read(void *req_ctx, cb_func_t cb) {
     return OSTORE_SUBMIT_OK;
 }
 typedef int (*os_op_func_ptr_t)(void*, cb_func_t);
-const os_op_func_ptr_t obj_op_table[] = {
+static const os_op_func_ptr_t obj_op_table[] = {
     [MSG_OSS_OP_CREATE] = _do_create,
     [MSG_OSS_OP_DELETE] = _do_delete,
     [MSG_OSS_OP_WRITE] = _do_write,
