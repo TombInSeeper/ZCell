@@ -24,7 +24,7 @@ typedef struct reactor_ctx_t {
     int reactor_id;
     const char *ip;
     int port;
-    const msgr_server_if_t *mimpl;
+    const msgr_server_if_t *msgr_impl;
 
     struct fcache_t *dma_pages;
 
@@ -101,7 +101,7 @@ static void _on_recv_message(message_t *m)
 
     message_state_reset(&_m);
     msgr_info("Echo \n");
-    reactor_ctx()->mimpl->messager_sendmsg(&_m);
+    reactor_ctx()->msgr_impl->messager_sendmsg(&_m);
 }
 
 static void _on_send_message(message_t *m)
@@ -116,8 +116,8 @@ void _per_reactor_stop(void * ctx , void *err) {
     reactor_ctx_t * rctx = reactor_ctx();
     // SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
 
-    rctx->mimpl->messager_stop();
-    rctx->mimpl->messager_fini();
+    rctx->msgr_impl->messager_stop();
+    rctx->msgr_impl->messager_fini();
 
     //...
     // rctx->dma_pages = fcache_constructor(8192, 0x1000, SPDK_MALLOC);
@@ -157,8 +157,8 @@ void _per_reactor_boot(void * ctx , void *err) {
     assert(rctx->dma_pages);
 
     // SPDK_NOTICELOG("Booting server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
-    rctx->mimpl = msgr_get_server_impl();
-    const msgr_server_if_t *pmif = rctx->mimpl;
+    rctx->msgr_impl = msgr_get_server_impl();
+    const msgr_server_if_t *pmif = rctx->msgr_impl;
     messager_conf_t conf = {
         .ip = rctx->ip,
         .port = rctx->port,

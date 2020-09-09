@@ -49,10 +49,10 @@ LINK_C=\
 MSGR_OBJS = messager.o net.o net_posix.o
 OSTORE_OBJS = objectstore.o fakestore.o
 
-
+DRAFT_BIN=a.out
 TEST_BIN=test_server test_messager_client
 
-BIN_TGT=server client $(TEST_BIN)
+BIN_TGT=server client $(TEST_BIN) $(DRAFT_BIN)
 
 .PHONY: all clean test
 	
@@ -78,6 +78,9 @@ test_messager_client:test_messager_client.o $(MSGR_OBJS)
 	$(LINK_C)
 
 test_server:test_server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
+	$(LINK_C)
+
+a.out:draft.o
 	$(LINK_C)
 
 %.o: %.c %.d
