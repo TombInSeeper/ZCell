@@ -104,7 +104,7 @@ void*  client_task(void* arg) {
             .meta_length = 0,
             .data_length = 0,
         },
-        .meta_buffer = &read_op_meta,
+        .meta_buffer = (char*)&read_op_meta,
         .data_buffer = NULL,
         .priv_ctx = session1 
     };
