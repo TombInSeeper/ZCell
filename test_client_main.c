@@ -88,7 +88,7 @@ void*  client_task(void* arg) {
     }
     // printf("Task[%d] , Connect OK \n",data->cpuid);
 
-    static op_read_t read_op_meta = {
+    op_read_t read_op_meta = {
         .oid = cpu_to_le32(0),
         .ofst= cpu_to_le32(0),
         .len = cpu_to_le32(g_data_sz),
