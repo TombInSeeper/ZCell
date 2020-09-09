@@ -1,5 +1,7 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
+
+#include <emmintrin.h>
 #include "stdint.h"
 #include "memory.h"
 #include "string.h"
