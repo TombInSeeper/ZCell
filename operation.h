@@ -5,6 +5,15 @@
 
 
 
+// static inline const char* opcode_str(int op_code) {
+//     static const char* opcode_strs[] = {
+//         [MSG_OSS_OP_CREATE] = "MSG_OSS_OP_CREATE",
+//         [MSG_OSS_OP_DELETE] = "MSG_OSS_OP_DELETE",
+//         [MSG_OSS_OP_WRITE] = "MSG_OSS_OP_WRITE",
+//         [MSG_OSS_OP_READ] = "MSG_OSS_OP_READ",
+//         [MSG_OSS_OP_CREATE] = "MSG_OSS_OP_CREATE",
+//     }
+// }
 
 
 //Operation 从消息的 meta_buffer 中解码出来
