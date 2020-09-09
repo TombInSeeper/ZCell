@@ -91,7 +91,7 @@ void*  client_task(void* arg) {
     static op_read_t read_op_meta = {
         .oid = cpu_to_le32(0),
         .ofst= cpu_to_le32(0),
-        .len = cpu_to_le32(0x1000),
+        .len = cpu_to_le32(g_data_sz),
         .flags = cpu_to_le32(0),
     };
 
