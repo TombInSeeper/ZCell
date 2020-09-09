@@ -2,10 +2,15 @@ CC=gcc
 CXX=g++
 Q=@
 
+
+ver=debug
+ifeq ($(ver), debug)
+CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -fno-strict-aliasing  -g -O0 
+else
+CFLAGS=-D_GNU_SOURCE -DNDEBUG -Wall -std=gnu99 -O3 -march=native -fno-strict-aliasing 
+endif
+
 SPDK_PATH_PREFIX=/home/wuyue
-
-
-CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -O3 -march=native -fno-strict-aliasing 
 SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
 SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
 	-L$(SPDK_PATH_PREFIX)/spdk/dpdk/build/lib -ldpdk  \

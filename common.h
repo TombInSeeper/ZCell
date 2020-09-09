@@ -8,6 +8,23 @@
 #include "errcode.h"
 
 
+/**
+ * 
+ * DEBUG LEVEL
+ * 
+ * 
+ */
+#ifndef NDEBUG
+#define MSGR_DEBUG 
+#define MSGR_DEBUG_LEVEL 10
+#else
+#define MSGR_DEBUG 
+#define MSGR_DEBUG_LEVEL 1
+#endif
+
+
+
+
 typedef void (*cb_func_t) (void* , int status_code);
 
 

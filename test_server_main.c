@@ -130,7 +130,7 @@ static void _do_op_unknown(message_t *request) {
 
 static void oss_op_cb(void *ctx, int status_code) {
     message_t *request = ctx;
-    if(status_code != SUCCESS || status_code != OSTORE_EXECUTE_OK) {
+    if(status_code != OSTORE_EXECUTE_OK) {
         //Broken operation
         _response_broken_op(request,status_code);
         free(request);
@@ -195,11 +195,6 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
     int op = le16_to_cpu(request->header.type);
     int rc = 0;
     switch (op) {
-        case MSG_OSS_OP_STATE : {
-            request->header.meta_length = sizeof(op_stat_t);
-            request->meta_buffer = alloc_meta_buffer(sizeof(op_stat_t));
-        }
-            break;
         case MSG_OSS_OP_CREATE: {
             request->header.meta_length = 0;      
         }
@@ -252,7 +247,10 @@ static void _do_op_oss(message_t * _request) {
         goto label_broken_op;
     }
     oss_op_refill_request_with_reponse(request);
+
     rc = os_impl->obj_async_op_call(request,oss_op_cb);
+    
+    
     if(rc == OSTORE_SUBMIT_OK) {
         return;
     }
