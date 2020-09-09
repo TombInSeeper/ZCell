@@ -486,6 +486,13 @@ static int _poll_read_events() {
 		msgr_err("Failed to poll sock_group=%p\n", msgr->_sock_group);
         return rc;
     }
+
+    if (rc == 0) {
+        int i = 10;
+        while (--i)
+            _mm_pause();
+    }
+
     int i;
     int total_cnt = 0;
     for (i = 0 ; i < rc ; ++i ) {
