@@ -83,6 +83,9 @@ static void *alloc_data_buffer(uint32_t sz) {
         uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
         ptr =  spdk_dma_malloc(sz, align, NULL);
     }
+
+    
+
     return ptr;
 }
 static void free_data_buffer(void *p) {

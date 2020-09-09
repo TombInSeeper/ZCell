@@ -40,7 +40,7 @@ static __thread int  n_recv = 0;
 void on_send_message(message_t *msg) {
     message_t m;
     message_move(&m , msg); // prevent from free msg_buffer
-    // msgr_info("send one message\n");
+    // msgr_info("send one message\n")
 }
 
 void on_recv_message(message_t *msg) {
@@ -191,6 +191,7 @@ void*  client_task(void* arg)
     data->cif->messager_fini();
     return NULL;
 }
+
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;

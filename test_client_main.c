@@ -64,12 +64,29 @@ typedef struct client_task_data {
     int qd;
     const char *srv_ip;
     int srv_port;
+
     //........
     uint64_t start;
     uint64_t end;
     double qps; // K OPS
     double bd; // MB/s
 } client_task_data;
+
+static __thread data_buffer[ 4 << 20 ];
+
+static void *alloc_data_buffer( uint32_t sz) {
+    // if(sz <= 0x1000)
+    //     return fcache_get(reactor_ctx()->dma_pages); 
+    // else {    
+    //     uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
+    //     return spdk_dma_malloc(sz, align, NULL);
+    // }
+    return data_buffer;
+}
+
+static void free_data_buffer(void *p) {
+
+}
 
 void*  client_task(void* arg) {
     client_task_data *data = arg;
