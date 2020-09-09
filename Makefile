@@ -49,7 +49,7 @@ MSGR_OBJS = messager.o net.o net_posix.o
 OSTORE_OBJS = objectstore.o fakestore.o nullstore.o
 
 DRAFT_BIN=a.out
-TEST_BIN=test_server test_messager_client
+TEST_BIN=test_server test_client
 
 BIN_TGT=server client $(TEST_BIN) $(DRAFT_BIN)
 
@@ -65,14 +65,21 @@ server:
 client:
 
 
-test_messager_server:test_messager_server.o $(MSGR_OBJS)
-	$(LINK_C)
+# test_messager_server:test_messager_server.o $(MSGR_OBJS)
+# 	$(LINK_C)
 
-test_messager_client:test_messager_client.o $(MSGR_OBJS)
-	$(LINK_C)
+# test_messager_client:test_messager_client.o $(MSGR_OBJS)
+# 	$(LINK_C)
 
 test_server:test_server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 	$(LINK_C)
+
+test_client:test_client_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
+	$(LINK_C)
+
+
+
+
 
 %.o: %.c %.d
 	$(COMPILE_C)
