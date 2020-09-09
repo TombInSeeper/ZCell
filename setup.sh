@@ -1,0 +1,1 @@
+HUGEMEM=4096 /home/wuyue/spdk/scripts/setup.sh reset
