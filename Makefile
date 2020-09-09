@@ -27,7 +27,6 @@ SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspd
 MAKEFLAGS += --no-print-directory
 
 C_SRCS += $(wildcard *.c)
-# CXX_SRCS += $(CXX_SRCS-y)
 
 OBJS = $(C_SRCS:.c=.o) 
 
@@ -47,7 +46,7 @@ LINK_C=\
 
 
 MSGR_OBJS = messager.o net.o net_posix.o
-OSTORE_OBJS = objectstore.o fakestore.o
+OSTORE_OBJS = objectstore.o fakestore.o nullstore.o
 
 DRAFT_BIN=a.out
 TEST_BIN=test_server test_messager_client
@@ -65,11 +64,6 @@ server:
 
 client:
 
-test_fixed_cache:test_fixed_cache.o
-	$(LINK_C)
-
-test_fake_store:test_fake_store.o objectstore.o fakestore.o
-	$(LINK_C)
 
 test_messager_server:test_messager_server.o $(MSGR_OBJS)
 	$(LINK_C)
@@ -78,9 +72,6 @@ test_messager_client:test_messager_client.o $(MSGR_OBJS)
 	$(LINK_C)
 
 test_server:test_server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
-	$(LINK_C)
-
-a.out:draft.o
 	$(LINK_C)
 
 %.o: %.c %.d

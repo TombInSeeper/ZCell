@@ -5,9 +5,12 @@
 
 
 
+
+
 enum OBJECTSTORE_TYPE{
     FAKESTORE = 1,
-    ZSTORE = 2
+    NULLSTORE,
+    ZSTORE
 };
 
 typedef struct objstore_interface_t {  

@@ -1,9 +1,5 @@
-#include "objectstore.h"
+#include "store_common.h"
 #include "fakestore.h"
-#include "fixed_cache.h"
-
-#include "message.h"
-#include "operation.h"
 
 #include "spdk/event.h"
 #include "spdk/env.h"
