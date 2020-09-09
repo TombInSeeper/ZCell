@@ -130,6 +130,8 @@ static void oss_op_cb(void *ctx, int status_code) {
     if(status_code != SUCCESS || status_code != OSTORE_EXECUTE_OK) {
         //Broken operation
         _response_broken_op(request,status_code);
+        free(request);
+        return;
     }
     _response_with_reusing_request(request, status_code);
     free(request);
