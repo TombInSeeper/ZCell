@@ -121,6 +121,10 @@ void*  client_task(void* arg) {
     clock_gettime(CLOCK_MONOTONIC, &ts);
     data->start = ts.tv_nsec  + ts.tv_sec * 1000000000ULL;
     int i;
+    
+    printf("Task[%d] ,prepare to send request...\n",data->cpuid);
+
+    
     for ( i = 0 ; i < data->rqsts ; ) {
         int qd = g_qd;
         int j ;
