@@ -72,7 +72,7 @@ typedef struct client_task_data {
     double bd; // MB/s
 } client_task_data;
 
-static __thread data_buffer[ 4 << 20 ];
+static __thread char data_buffer[ 4 << 20 ];
 
 static void *alloc_data_buffer( uint32_t sz) {
     // if(sz <= 0x1000)
