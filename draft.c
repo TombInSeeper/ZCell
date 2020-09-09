@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 unsigned int g_sleep_time_us = 1;
 
