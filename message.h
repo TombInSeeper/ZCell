@@ -4,7 +4,7 @@
 #include "common.h"
 
 #define MSGR_DEBUG 
-#define MSGR_DEBUG_LEVEL 1
+#define MSGR_DEBUG_LEVEL 10
 #define NR_SESSION_MAX (10 * 1000)
 
 
