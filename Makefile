@@ -5,6 +5,7 @@ Q=@
 
 ver=debug
 ifeq ($(ver), debug)
+@echo "Making Debug version"
 CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -fno-strict-aliasing  -g -O0 
 else
 CFLAGS=-D_GNU_SOURCE -DNDEBUG -Wall -std=gnu99 -O3 -march=native -fno-strict-aliasing 
