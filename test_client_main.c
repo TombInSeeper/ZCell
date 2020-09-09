@@ -43,11 +43,14 @@ static __thread int  n_recv = 0;
 void on_send_message(message_t *msg) {
     message_t m;
     message_move(&m , msg); // prevent from free msg_buffer
+    printf("send msg OK\n");
 }
 
 void on_recv_message(message_t *msg) {
     // message_t m;
     // message_move(&m , msg); // prevent from free msg_buffer
+    printf("recv msg OK\n");
+
     ++n_recv;
 }
 
