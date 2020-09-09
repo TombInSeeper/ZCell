@@ -160,7 +160,8 @@ void*  client_task(void* arg) {
                 if(n_send == qd) {
                     break;
                 }
-            } 
+            }
+            _mm_pause(); 
         }
 
         int n_wait = n_send;
