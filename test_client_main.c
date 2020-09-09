@@ -95,6 +95,8 @@ void*  client_task(void* arg) {
     messager_conf_t conf = {
         .on_send_message= on_send_message,
         .on_recv_message = on_recv_message,
+        .data_buffer_alloc = alloc_data_buffer,
+        .data_buffer_free = free_data_buffer
     };
     int rc = data->cif->messager_init(&conf);
     assert (rc== 0);
