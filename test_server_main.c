@@ -239,7 +239,7 @@ static void _do_op_oss(message_t * _request) {
     message_t *request = ctx;
     memcpy(request, _request, sizeof(message_t));
 
-    msgr_debug("Prepare to execute op:[seq=%u,op_code=%u,meta_len=%u,data_len=%u]", request->header.seq,
+    msgr_debug("Prepare to execute op:[seq=%u,op_code=%u,meta_len=%u,data_len=%u]\n", request->header.seq,
         request->header.type, request->header.meta_length, request->header.data_length);
 
     int rc = INVALID_OP;
