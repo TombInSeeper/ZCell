@@ -17,6 +17,7 @@
 static const char *g_base_ip = "0.0.0.0";
 static int g_base_port = 18000;
 static const char *g_core_mask = "0x1";
+static const int g_store_type = NULLSTORE;
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
@@ -314,10 +315,10 @@ void _per_reactor_stop(void * ctx , void *err) {
     // SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
     
     _msgr_stop(rctx->msgr_impl);
-    SPDK_NOTICELOG("Stopping server[%d],[%s:%d] msgr .... done \n", rctx->reactor_id,rctx->ip,rctx->port);
+    // SPDK_NOTICELOG("Stopping server[%d],[%s:%d] msgr .... done \n", rctx->reactor_id,rctx->ip,rctx->port);
 
     _ostore_stop(rctx->os_impl);
-    SPDK_NOTICELOG("Stopping server[%d],[%s:%d] ostore .... done \n", rctx->reactor_id,rctx->ip,rctx->port);
+    // SPDK_NOTICELOG("Stopping server[%d],[%s:%d] ostore .... done \n", rctx->reactor_id,rctx->ip,rctx->port);
     
     //...
     fcache_destructor(rctx->dma_pages);
@@ -390,7 +391,7 @@ void _per_reactor_boot(void * ctx , void *err) {
     assert(rctx->dma_pages);
 
     //ObjectStore initialize
-    rctx->os_impl = ostore_get_impl(FAKESTORE);
+    rctx->os_impl = ostore_get_impl(g_store_type);
     _ostore_boot(rctx->os_impl,true);
 
     //Msgr initialize

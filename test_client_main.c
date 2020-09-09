@@ -43,14 +43,12 @@ static __thread int  n_recv = 0;
 void on_send_message(message_t *msg) {
     message_t m;
     message_move(&m , msg); // prevent from free msg_buffer
-
 }
 
 void on_recv_message(message_t *msg) {
-    message_t m;
-    message_move(&m , msg); // prevent from free msg_buffer
+    // message_t m;
+    // message_move(&m , msg); // prevent from free msg_buffer
     ++n_recv;
-
 }
 
 
@@ -87,20 +85,27 @@ void*  client_task(void* arg) {
     }
     // printf("Task[%d] , Connect OK \n",data->cpuid);
 
+    static op_read_t read_op_meta = {
+        .oid = cpu_to_le32(0),
+        .ofst= cpu_to_le32(0),
+        .len = cpu_to_le32(0x1000),
+        .flags = cpu_to_le32(0),
+    };
+
     message_t msg = {
         .state = {
             .hdr_rem_len = sizeof(msg_hdr_t),
-            .meta_rem_len = 0,
-            .data_rem_len = g_data_sz
+            .meta_rem_len = sizeof(op_read_t),
+            .data_rem_len = 0
         },
         .header = {
             .seq = 0,
-            .type = MSG_PING,
+            .type = MSG_OSS_OP_READ,
             .meta_length = 0,
-            .data_length = g_data_sz,
+            .data_length = 0,
         },
-        // .meta_buffer = meta_buffer,
-        // .data_buffer = data_buffer,
+        .meta_buffer = &read_op_meta,
+        .data_buffer = NULL,
         .priv_ctx = session1 
     };
     printf("Task[%d] Wait for starting.., rqsts = %d, connect with[%s:%d]\n",data->cpuid, data->rqsts,
@@ -213,7 +218,6 @@ int main(int argc, char **argv) {
             .rqsts = g_rqsts
         };
         data[i] = _tmp;
-
 
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
