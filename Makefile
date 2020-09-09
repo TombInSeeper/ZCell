@@ -5,7 +5,6 @@ Q=@
 
 ver=debug
 ifeq ($(ver), debug)
-@echo "Making Debug version"
 CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -fno-strict-aliasing  -g -O0 
 else
 CFLAGS=-D_GNU_SOURCE -DNDEBUG -Wall -std=gnu99 -O3 -march=native -fno-strict-aliasing 
@@ -41,13 +40,13 @@ DEPFLAGS = -MMD -MP -MF $*.d.tmp
 
 # Compile first input $< (.c) into $@ (.o)
 COMPILE_C=\
-	$(Q)echo "  CC $S/$@"; \
+	$(Q)echo "  CC [$(ver)] $@"; \
 	$(CC) -o $@  $(SPDK_INCLUDE_FLAGS) $(DEPFLAGS) $(CFLAGS) -c $< && \
 	mv -f $*.d.tmp $*.d && touch -c $@
 
 # Link $(OBJS) and $(LIBS) into $@ (app)
 LINK_C=\
-	$(Q)echo "  LINK $S/$@"; \
+	$(Q)echo "  LINK [$(ver)] $@"; \
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS)  $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
 
 
