@@ -157,7 +157,7 @@ void _write_complete(void *ctx, int sts) {
 void _do_uint_test() {
     int dp = 16;
     while (--dp) {
-        void *op = _alloc_op();
+        void *op = _alloc_write_op();
         os->obj_async_op_call(op, _write_complete);
     }
 }
