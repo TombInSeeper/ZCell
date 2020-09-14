@@ -168,7 +168,7 @@ void _write_complete(void *ctx, int sts) {
 }
 
 void _do_uint_test() {
-    int dp = 1;
+    int dp = 20;
     while (dp--) {
         void *op = _alloc_write_op();
         if(os->obj_async_op_call(op, _write_complete)) {
