@@ -175,9 +175,9 @@ op_handler(write) {
         return OSTORE_IO_ERROR;
     }
 
-    SPDK_NOTICELOG("seq=%u,oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu submit OK\n",
-        m->header.seq,
-        op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
+    // SPDK_NOTICELOG("seq=%u,oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu submit OK\n",
+    //     m->header.seq,
+    //     op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
     return OSTORE_SUBMIT_OK;
 }
 
