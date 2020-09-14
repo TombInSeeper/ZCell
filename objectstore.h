@@ -3,9 +3,6 @@
 
 #include  "common.h"
 
-
-
-
 enum OBJECTSTORE_TYPE{
     NULLSTORE,
     CHUNKSTORE,
@@ -41,7 +38,6 @@ typedef struct objstore_interface_t {
 } objstore_interface_t ;
 
 typedef objstore_interface_t objstore_impl_t;
-
 
 extern const objstore_impl_t* ostore_get_impl( int store_type );
 
