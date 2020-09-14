@@ -3,7 +3,7 @@
 #include "spdk/log.h"
 #include "store_common.h"
 
-#define op_handler(name) static void _do_ ## name ( void* ctx, cb_func_t cb) 
+#define op_handler(name) static int _do_ ## name ( void* ctx, cb_func_t cb) 
 
 static void fake_async_cb_wrapper(void *cb  , void* cb_arg) {
     cb_func_t _cb =  cb;
@@ -142,9 +142,14 @@ op_handler(read) {
     SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
         op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
 
-    spdk_bdev_read_blocks(cs->device.bdev_desc,
+    int rc = spdk_bdev_read_blocks(cs->device.bdev_desc,
         cs->device.ioch, m->data_buffer,bdev_ofst,bdev_len,
         rw_cb, ctx);
+
+    if(rc) {
+        return OSTORE_IO_ERROR;
+    }
+    return OSTORE_SUBMIT_OK;
 }
 
 op_handler(write) {
@@ -160,9 +165,14 @@ op_handler(write) {
     SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
         op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
 
-    spdk_bdev_write_blocks(cs->device.bdev_desc,
+    int rc = spdk_bdev_write_blocks(cs->device.bdev_desc,
         cs->device.ioch, m->data_buffer,bdev_ofst,bdev_len,
         rw_cb, ctx);
+    
+    if(rc) {
+        return OSTORE_IO_ERROR;
+    }
+    return OSTORE_SUBMIT_OK;
 }
 
 typedef int (*os_op_func_ptr_t)(void*, cb_func_t);
