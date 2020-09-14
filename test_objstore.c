@@ -8,12 +8,12 @@
 #include "spdk/event.h"
 #include "spdk/env.h"
 
-static int g_store = CHUNKSTORE;
-static const char* g_nvme_dev[] = { "Nvme0n1" , NULL, NULL };
-static int g_nr_ops = 100;
-static int g_nr_submit = 0;
-static int g_nr_cpl = 0;
-static int g_dbg_level = 10;
+static __thread int g_store = CHUNKSTORE;
+static __thread const char* g_nvme_dev[] = { "Nvme0n1" , NULL, NULL };
+static __thread int g_nr_ops = 100;
+static __thread int g_nr_submit = 0;
+static __thread int g_nr_cpl = 0;
+static __thread int g_dbg_level = 10;
 
 // static uint64_t g_start_tsc;
 // static uint64_t g_end_tsc;
