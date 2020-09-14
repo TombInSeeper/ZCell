@@ -107,10 +107,14 @@ const message_t fake_read_request_msg = {
 
 
 void* _alloc_write_op() {
+
+    static int seq = 0;
+
     void *p = calloc(1, sizeof(message_t) + 16);
     memcpy(p, &fake_write_request_msg, sizeof(fake_write_request_msg));
 
     message_t *m = p;
+    m->header.seq = seq++;
     m->meta_buffer = malloc(sizeof(op_write_t));
     op_write_t *_op_args = (void*)m->meta_buffer;
     _op_args->len = 0x1000;

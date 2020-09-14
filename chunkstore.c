@@ -165,8 +165,7 @@ op_handler(write) {
     uint64_t bdev_ofst = (op_args->oid * (1024)) + (op_args->ofst >> 12);
     uint64_t bdev_len = op_args->len >> 12;
 
-    // SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
-    //     op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
+
 
     int rc = spdk_bdev_write_blocks(cs->device.bdev_desc,
         cs->device.ioch, m->data_buffer,bdev_ofst,bdev_len,
@@ -175,6 +174,10 @@ op_handler(write) {
     if(rc) {
         return OSTORE_IO_ERROR;
     }
+
+    SPDK_NOTICELOG("seq=%u,oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu submit OK\n",
+        m->header.seq,
+        op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
     return OSTORE_SUBMIT_OK;
 }
 
