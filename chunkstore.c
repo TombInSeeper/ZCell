@@ -123,6 +123,7 @@ op_handler(delete) {
 
 void rw_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
     // message_t *m = cb_arg;
+    spdk_bdev_free_io(bdev_io);
     async_op_context_t *actx = ostore_async_ctx(cb_arg);
     if(success) {
         actx->err = OSTORE_EXECUTE_OK;
@@ -130,7 +131,6 @@ void rw_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
         actx->err = OSTORE_IO_ERROR;
     }
     actx->end_cb(cb_arg, actx->err);
-    spdk_bdev_free_io(bdev_io);
 }
 
 op_handler(read) {
@@ -142,8 +142,8 @@ op_handler(read) {
     uint64_t bdev_ofst = (op_args->oid * (1024)) + (op_args->ofst >> 12);
     uint64_t bdev_len = op_args->len >> 12;
 
-    SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
-        op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
+    // SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
+    //     op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
 
     int rc = spdk_bdev_read_blocks(cs->device.bdev_desc,
         cs->device.ioch, m->data_buffer,bdev_ofst,bdev_len,
@@ -165,8 +165,8 @@ op_handler(write) {
     uint64_t bdev_ofst = (op_args->oid * (1024)) + (op_args->ofst >> 12);
     uint64_t bdev_len = op_args->len >> 12;
 
-    SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
-        op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
+    // SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
+    //     op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
 
     int rc = spdk_bdev_write_blocks(cs->device.bdev_desc,
         cs->device.ioch, m->data_buffer,bdev_ofst,bdev_len,
