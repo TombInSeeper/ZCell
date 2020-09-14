@@ -104,12 +104,25 @@ const message_t fake_read_request_msg = {
 };
 
 
-void* _alloc_op() {
+void* _alloc_write_op() {
     void *p = calloc(1, sizeof(message_t) + 16);
+    memcpy(p, &fake_write_request_msg, sizeof(fake_write_request_msg));
+
+    message_t *m = p;
+    m->meta_buffer = malloc(sizeof(op_write_t));
+    op_write_t *_op_args = (void*)m->meta_buffer;
+    _op_args->len = 0x1000;
+    _op_args->ofst = 0x0;
+    _op_args->oid = 0x0;
+    _op_args->flags = 0x0;
+    m->data_buffer = spdk_dma_zmalloc(0x1000,0x1000,NULL);
     return p;
 }
 
-void _free_op(void *p) {
+void _free_write_op(void *p) {
+    message_t *m = p;
+    spdk_free(m->data_buffer);
+    free(m->meta_buffer);
     free(p);
 }
 
@@ -126,33 +139,26 @@ void _sys_fini()
 
 
 void _write_complete(void *ctx, int sts) {
+    if(sts) {
+        assert("status code error\n" == NULL);
+    }
+
+
+    _free_write_op(ctx);
     g_nr_cpl++;
     if(g_nr_cpl >= g_nr_ops) {
-        free(ctx);
         _sys_fini();
     } else {
-       os->obj_async_op_call(ctx, _write_complete);
+       void *op = _alloc_write_op();
+       os->obj_async_op_call(op, _write_complete);
     }
 }
 
 void _do_uint_test() {
-    int dp = 64;
-    void *op = _alloc_op();
-    memcpy(op, &fake_write_request_msg,sizeof(fake_read_request_msg));
-
-    message_t *m = op;
-    m->meta_buffer = meta_buffer;
-
-    op_write_t *_op_args = (void*)m->meta_buffer;
-    _op_args->len = 0x1000;
-    _op_args->ofst = 0x10000;
-    _op_args->oid = 0x0;
-    _op_args->flags = 0x0;
-
-    m->data_buffer = wbuf;
-
+    int dp = 16;
     while (--dp) {
-       os->obj_async_op_call(op, _write_complete);
+        void *op = _alloc_op();
+        os->obj_async_op_call(op, _write_complete);
     }
 }
 
