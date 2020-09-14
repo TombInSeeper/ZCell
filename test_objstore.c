@@ -14,6 +14,7 @@ static __thread int g_nr_ops = 100 * 10000;
 static __thread int g_nr_submit = 0;
 static __thread int g_nr_cpl = 0;
 static __thread int g_qd = 32;
+static __thread int g_max_oid = 10000;
 
 static uint64_t g_start_us;
 static uint64_t g_end_us;
@@ -123,7 +124,7 @@ void* _alloc_write_op() {
     op_write_t *_op_args = (void*)m->meta_buffer;
     _op_args->len = 0x1000;
     _op_args->ofst = 0x0;
-    _op_args->oid = 0x0 + m->header.seq;
+    _op_args->oid = (m->header.seq) % ;
     _op_args->flags = 0x0;
     // m->data_buffer = spdk_dma_zmalloc(0x1000,0x1000,NULL);
 
@@ -212,13 +213,16 @@ void _sys_init(void *arg) {
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "q:c:")) != -1) {
+	while ((opt = getopt(argc, argv, "q:c:o:")) != -1) {
 		switch (opt) {
 		case 'q':
 			g_qd = atoi(optarg);
 			break;
         case 'c':
 			g_nr_ops = atoi(optarg);
+			break;
+        case 'o':
+			g_max_oid = atoi(optarg);
 			break;
 		default:
 			fprintf(stderr, "Usage: %s [-q qd] [-c nr_ops] \n", argv[0]);
