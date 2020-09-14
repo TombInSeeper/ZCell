@@ -12,8 +12,10 @@ static int g_store = CHUNKSTORE;
 static const char* g_nvme_dev[] = { "Nvme0n1" , NULL, NULL };
 static int g_nr_ops = 10000;
 static int g_nr_cpl = 0;
-static uint64_t g_start_tsc;
-static uint64_t g_end_tsc;
+static int g_dbg_level = 10;
+
+// static uint64_t g_start_tsc;
+// static uint64_t g_end_tsc;
 
 const objstore_impl_t *os;
 void *session;
@@ -142,15 +144,16 @@ void _write_complete(void *ctx, int sts) {
     if(sts) {
         assert("status code error\n" == NULL);
     }
-
-
     _free_write_op(ctx);
     g_nr_cpl++;
     if(g_nr_cpl >= g_nr_ops) {
         _sys_fini();
     } else {
        void *op = _alloc_write_op();
-       os->obj_async_op_call(op, _write_complete);
+       int rc = os->obj_async_op_call(op, _write_complete);
+       if(rc) {
+            assert("submit error\n" == NULL);
+       }
     }
 }
 
@@ -158,7 +161,9 @@ void _do_uint_test() {
     int dp = 16;
     while (--dp) {
         void *op = _alloc_write_op();
-        os->obj_async_op_call(op, _write_complete);
+        if(os->obj_async_op_call(op, _write_complete)) {
+            assert("submit error\n" == NULL);
+        }
     }
 }
 
@@ -179,8 +184,21 @@ void _sys_init(void *arg) {
     _do_uint_test();
 }
 
+static void parse_args(int argc , char **argv) {
+    int opt = -1;
+	while ((opt = getopt(argc, argv, "d:")) != -1) {
+		switch (opt) {
+		case 'd':
+			g_dbg_level = atoi(optarg);
+			break;
+		default:
+			fprintf(stderr, "Usage: %s [-d dbg_level]\n", argv[0]);
+			exit(1);
+		}
+	}
+}
 
-int main()
+int main( int argc , char **argv)
 {
     struct spdk_app_opts opts;
     spdk_app_opts_init(&opts);
@@ -188,6 +206,10 @@ int main()
     opts.config_file = "spdk.conf";
     opts.reactor_mask = "0x1";
     opts.shutdown_cb = _sys_fini;
+
+    parse_args(argc,argv);
+    spdk_log_set_level(g_dbg_level);
+
     SPDK_NOTICELOG("starting app\n");
     int rc = spdk_app_start(&opts , _sys_init , NULL);
     if(rc) {
