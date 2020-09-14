@@ -5,7 +5,7 @@
 
 extern int chunkstore_stat(char *out , uint32_t len);
 extern int chunkstore_mkfs(const char* dev_list[], int flags);
-extern int chunklstore_mount(const char* dev_list[], /* size = 3*/  int flags /**/);
+extern int chunkstore_mount(const char* dev_list[], /* size = 3*/  int flags /**/);
 extern int chunkstore_unmount();
 
 extern const int chunkstore_obj_async_op_context_size();

@@ -1,5 +1,6 @@
 #include "chunkstore.h"
 #include "spdk/bdev.h"
+#include "spdk/log.h"
 #include "store_common.h"
 
 #define op_handler(name) static void _do_ ## name ( void* ctx, cb_func_t cb) 
@@ -78,7 +79,7 @@ extern int chunkstore_stat(char *out , uint32_t len) {
 extern int chunkstore_mkfs(const char* dev_list[], int flags) {
     return OSTORE_EXECUTE_OK;
 }
-extern int chunklstore_mount(const char* dev_list[], /* size = 3*/  int flags /**/) {
+extern int chunkstore_mount(const char* dev_list[], /* size = 3*/  int flags /**/) {
     _bdev_open(dev_list[0]);
     _hardcode_stat();
     return OSTORE_EXECUTE_OK;
@@ -117,7 +118,6 @@ op_handler(delete) {
     return OSTORE_SUBMIT_OK;
 }
 
-
 void rw_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
     message_t *m = cb_arg;
     async_op_context_t *actx = ostore_async_ctx(cb_arg);
@@ -138,6 +138,10 @@ op_handler(read) {
     uint64_t bdev_ofst = (op_args->oid * (4 << 20 >> 12)) + 
         op_args->ofst >> 12;
     uint64_t bdev_len = op_args->len >> 12;
+
+    SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
+        op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
+
     spdk_bdev_read_blocks(cs->device.bdev_desc,
         cs->device.ioch, m->data_buffer,bdev_ofst,bdev_len,
         rw_cb, ctx);
@@ -148,9 +152,14 @@ op_handler(write) {
     async_op_context_t *actx = ostore_async_ctx(ctx);
     struct chunkstore_context_t* cs = get_local_store_ptr();
     op_write_t *op_args = m->meta_buffer;
+
     uint64_t bdev_ofst = (op_args->oid * (4 << 20 >> 12)) + 
         op_args->ofst >> 12;
     uint64_t bdev_len = op_args->len >> 12;
+
+    SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
+        op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
+
     spdk_bdev_write_blocks(cs->device.bdev_desc,
         cs->device.ioch, m->data_buffer,bdev_ofst,bdev_len,
         rw_cb, ctx);

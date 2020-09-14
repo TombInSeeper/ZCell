@@ -1,14 +1,14 @@
 #include "objectstore.h"
 #include "nullstore.h"
-#include "fakestore.h"
+#include "chunkstore.h"
 #include "string.h"
 
 
-const static __thread objstore_impl_t fakestore = {
-    .stat = fakestore_stat,
-    .mkfs = fakestore_mkfs,
-    .mount = fakestore_mount,
-    .unmount = fakestore_unmount,    
+const static __thread objstore_impl_t chunkstore = {
+    .stat = chunkstore_stat,
+    .mkfs = chunkstore_mkfs,
+    .mount = chunkstore_mount,
+    .unmount = chunkstore_unmount,    
     // .mkfs_async = fakestore_mkfs_async,
     // .mount_async = fakestore_mount_async,
     // .unmount_async = fakestore_unmount_async,
@@ -16,8 +16,8 @@ const static __thread objstore_impl_t fakestore = {
     // .obj_delete = fakestore_obj_delete,
     // .obj_write = fakestore_obj_write,
     // .obj_read = fakestore_obj_read,
-    .obj_async_op_context_size = fakestore_obj_async_op_context_size,
-    .obj_async_op_call = fakestore_obj_async_op_call
+    .obj_async_op_context_size = chunkstore_obj_async_op_context_size,
+    .obj_async_op_call = chunkstore_obj_async_op_call
 };
 const static __thread objstore_impl_t nullstore = {
     .stat = nullstore_stat,
