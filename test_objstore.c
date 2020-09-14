@@ -211,13 +211,16 @@ void _sys_init(void *arg) {
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "d:")) != -1) {
+	while ((opt = getopt(argc, argv, "q:c:")) != -1) {
 		switch (opt) {
 		case 'q':
 			g_qd = atoi(optarg);
 			break;
+        case 'c':
+			g_nr_ops = atoi(optarg);
+			break;
 		default:
-			fprintf(stderr, "Usage: %s [-q qd]\n", argv[0]);
+			fprintf(stderr, "Usage: %s [-q qd] [-c nr_ops] \n", argv[0]);
 			exit(1);
 		}
 	}
