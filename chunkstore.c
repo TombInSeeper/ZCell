@@ -99,7 +99,7 @@ typedef struct async_op_context_t {
 
 op_handler(state) {
     message_t *m = ctx;
-    async_op_context_t *actx = ostore_async_ctx(m);
+    // async_op_context_t *actx = ostore_async_ctx(m);
     op_stat_t *stat =(void*)m->meta_buffer;
     stat->max_obj_size_kib = cpu_to_le32(0x1000);
     stat->capcity_mib = cpu_to_le32(100 * 1024);
@@ -119,7 +119,7 @@ op_handler(delete) {
 }
 
 void rw_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
-    message_t *m = cb_arg;
+    // message_t *m = cb_arg;
     async_op_context_t *actx = ostore_async_ctx(cb_arg);
     if(success) {
         actx->err = OSTORE_EXECUTE_OK;
@@ -135,7 +135,7 @@ op_handler(read) {
     async_op_context_t *actx = ostore_async_ctx(ctx);
     actx->end_cb = cb;
     struct chunkstore_context_t* cs = get_local_store_ptr();
-    op_write_t *op_args = m->meta_buffer;
+    op_read_t *op_args = (void*) m->meta_buffer;
     uint64_t bdev_ofst = (op_args->oid * (4 << 20 >> 12)) + 
         op_args->ofst >> 12;
     uint64_t bdev_len = op_args->len >> 12;
@@ -158,7 +158,7 @@ op_handler(write) {
     async_op_context_t *actx = ostore_async_ctx(ctx);
     actx->end_cb = cb;
     struct chunkstore_context_t* cs = get_local_store_ptr();
-    op_write_t *op_args = m->meta_buffer;
+    op_write_t *op_args =(void*) m->meta_buffer;
 
     uint64_t bdev_ofst = (op_args->oid * (4 << 20 >> 12)) + 
         op_args->ofst >> 12;

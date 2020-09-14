@@ -11,7 +11,7 @@
 static int g_store = CHUNKSTORE;
 static const char* g_nvme_dev[] = { "Nvme0n1" , NULL, NULL };
 
-objstore_impl_t *os;
+const objstore_impl_t *os;
 void *session;
 
 char meta_buffer[0x1000];
