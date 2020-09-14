@@ -11,6 +11,7 @@
 static int g_store = CHUNKSTORE;
 static const char* g_nvme_dev[] = { "Nvme0n1" , NULL, NULL };
 static int g_nr_ops = 100;
+static int g_nr_submit = 0;
 static int g_nr_cpl = 0;
 static int g_dbg_level = 10;
 
@@ -151,6 +152,10 @@ void _write_complete(void *ctx, int sts) {
     _free_write_op(ctx);
     g_nr_cpl++;
     if(g_nr_cpl >= g_nr_ops) {
+        SPDK_NOTICELOG("g_nr_cpl=%d,g_nr_ops=%d,g_nr_submit=%d\n",
+            g_nr_cpl,
+            g_nr_ops,
+            g_nr_submit);
         _sys_fini();
     } else {
        void *op = _alloc_write_op();
@@ -158,16 +163,18 @@ void _write_complete(void *ctx, int sts) {
        if(rc) {
             assert("submit error\n" == NULL);
        }
+       g_nr_submit++;
     }
 }
 
 void _do_uint_test() {
     int dp = 1;
-    while (--dp) {
+    while (dp--) {
         void *op = _alloc_write_op();
         if(os->obj_async_op_call(op, _write_complete)) {
             assert("submit error\n" == NULL);
         }
+        g_nr_submit++;
     }
 }
 
