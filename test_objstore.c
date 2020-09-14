@@ -124,7 +124,7 @@ void* _alloc_write_op() {
     op_write_t *_op_args = (void*)m->meta_buffer;
     _op_args->len = 0x1000;
     _op_args->ofst = 0x0;
-    _op_args->oid = (m->header.seq) % ;
+    _op_args->oid = (m->header.seq) % g_max_oid;
     _op_args->flags = 0x0;
     // m->data_buffer = spdk_dma_zmalloc(0x1000,0x1000,NULL);
 
