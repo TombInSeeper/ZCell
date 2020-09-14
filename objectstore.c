@@ -10,7 +10,7 @@
     .stat = name ## _stat,\
     .mkfs = name ## _mkfs,\
     .mount = name ## _mount,\
-    .unmount = name ## _unmount,\    
+    .unmount = name ## _unmount,\
     .obj_async_op_context_size = name ## _obj_async_op_context_size,\
     .obj_async_op_call =  name ## _obj_async_op_call\
 }
