@@ -133,6 +133,7 @@ void rw_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
 op_handler(read) {
     message_t *m = ctx;
     async_op_context_t *actx = ostore_async_ctx(ctx);
+    actx->end_cb = cb;
     struct chunkstore_context_t* cs = get_local_store_ptr();
     op_write_t *op_args = m->meta_buffer;
     uint64_t bdev_ofst = (op_args->oid * (4 << 20 >> 12)) + 
@@ -155,6 +156,7 @@ op_handler(read) {
 op_handler(write) {
     message_t *m = ctx;
     async_op_context_t *actx = ostore_async_ctx(ctx);
+    actx->end_cb = cb;
     struct chunkstore_context_t* cs = get_local_store_ptr();
     op_write_t *op_args = m->meta_buffer;
 
