@@ -40,12 +40,18 @@ static void parse_args(int argc , char **argv) {
 }
 
 
+struct small_object_t {
+    uint8_t raw[120];
+    SLIST_ENTRY(small_object_t) hook;
+};
+
+
 typedef struct reactor_ctx_t {
     int reactor_id;
     const char *ip;
     int port;
 
-    
+
     const msgr_server_if_t *msgr_impl;
     const objstore_impl_t  *os_impl;
 
@@ -284,10 +290,6 @@ static void op_execute(message_t *request) {
 }
 
 
-
-
-
-
 static void _on_recv_message(message_t *m) {
     // msgr_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
     msgr_info("Recv a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
@@ -299,7 +301,6 @@ static void _on_recv_message(message_t *m) {
      * 尽管这个操作看起来有些奇怪
      */
     message_move(&_m, m);
-
     op_execute(&_m);
 }
 static void _on_send_message(message_t *m) {
@@ -360,7 +361,7 @@ void _sys_fini() {
 int _ostore_boot(const objstore_impl_t *oimpl , int new) {
     //TODO get ostore global config
     //....
-    const char *dev_list[] = {NULL , NULL ,NULL};
+    const char *dev_list[] = {"Nvme0n1" , NULL ,NULL};
     int flags = 0;
     int rc;
     if(new) {
@@ -397,8 +398,9 @@ void _per_reactor_boot(void * ctx , void *err) {
     reactor_ctx_t *rctx = reactor_ctx();
 
     //Load dma page pool
-    rctx->dma_pages = fcache_constructor(15000, 0x1000, SPDK_MALLOC);
+    rctx->dma_pages = fcache_constructor(128 * 1024, 0x1000, SPDK_MALLOC);
     assert(rctx->dma_pages);
+    
 
     //ObjectStore initialize
     rctx->os_impl = ostore_get_impl(g_store_type);
@@ -450,6 +452,8 @@ int spdk_app_run() {
     spdk_app_opts_init(&opts);
     opts.reactor_mask = g_core_mask;
     opts.shutdown_cb = _sys_fini;
+    opts.config_file = "spdk.conf";
+    opts.print_level = 1;
     int rc = spdk_app_start(&opts , _sys_init , NULL);
     if(rc) {
         return -1;

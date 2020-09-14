@@ -15,10 +15,14 @@ enum Status {
     OSTORE_NO_NODE,
     OSTORE_WRITE_OUT_MAX_SIZE,
     OSTORE_READ_EOF,
+    OSTORE_IO_ERROR,
     OSTORE_INTERNAL_UNKOWN_ERROR
 };
 
 #define OSTORE_SUBMIT_OK SUCCESS
 #define OSTORE_EXECUTE_OK SUCCESS
+
+#define errstr(code) #code
+
 
 #endif

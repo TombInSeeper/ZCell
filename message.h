@@ -55,6 +55,8 @@ typedef struct message_t {
     };   
 } message_t;
 
+#define message_get_op(m) (le16_to_cpu((((message_t*)(m))->header.type)))
+
 static void inline message_move(message_t *dst ,  message_t *src) {
     memcpy(dst,src,sizeof(*src));
     memset(src,0,sizeof(*src));

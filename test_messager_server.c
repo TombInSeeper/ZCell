@@ -17,7 +17,7 @@
 static const char *g_base_ip = "0.0.0.0";
 static int g_base_port = 18000;
 static const char *g_core_mask = "0x1";
-const int g_store_type = NULLSTORE;
+
 
 
 typedef struct reactor_ctx_t {

@@ -4,8 +4,6 @@
 #include "spdk/thread.h"
 #include "spdk/event.h"
 #include "spdk/env.h"
-
-
 #include "message.h"
 #include "operation.h"
 #include "fixed_cache.h"

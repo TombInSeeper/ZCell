@@ -21,15 +21,29 @@ extern int nullstore_stat(char *out , uint32_t len) {
     return OSTORE_EXECUTE_OK;
 }
 
-extern int nullstore_mkfs(const char* dev_list[], int flags) {
+// extern int nullstore_mkfs(const char* dev_list[], int mkfs_flag, cb_func_t cb, void* cb_arg) {
+//     fake_async_cb(cb,cb_arg);
+//     return OSTORE_SUBMIT_OK;
+// }
+// extern int nullstore_mount(const char* dev_list[], /* size = 3*/  int mount_flag /**/, cb_func_t cb , void* cb_arg) {
+//     fake_async_cb(cb,cb_arg);
+//     return OSTORE_SUBMIT_OK;
+// }
+// extern int nullstore_unmount(cb_func_t cb , void* cb_arg) {
+//     fake_async_cb(cb,cb_arg);
+//     return OSTORE_SUBMIT_OK;
+// }
+
+extern int nullstore_mkfs(const char* dev_list[], int mkfs_flag) {
     return OSTORE_EXECUTE_OK;
 }
-extern int nullstore_mount(const char* dev_list[], /* size = 3*/  int flags /**/){
+extern int nullstore_mount(const char* dev_list[], /* size = 3*/  int mount_flag /**/) {
     return OSTORE_EXECUTE_OK;
 }
-extern int nullstore_unmount(){
+extern int nullstore_unmount() {
     return OSTORE_EXECUTE_OK;
 }
+
 
 extern const int nullstore_obj_async_op_context_size() {
     return 16;

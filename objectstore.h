@@ -6,29 +6,29 @@
 
 
 
-
 enum OBJECTSTORE_TYPE{
-    FAKESTORE = 1,
     NULLSTORE,
-    ZSTORE
+    CHUNKSTORE,
+    ZSTORE,
 };
 
 typedef struct objstore_interface_t {  
-    //通常不会使用异步的 mount 和 unmount , mkfs
-    // int (*mkfs_async) (const char* dev_list[], int mkfs_flag, cb_func_t , void*);
-    
-    // //通常不会使用异步的 mount 和 unmount , mkfs
-    // int (*mount_async)(const char* dev_list[], /* size = 3*/  int mount_flag /**/, cb_func_t , void*);
-    
-    // //Generally we don't use asynchronous mount, unmount, mkfs
-    // int (*unmount_async)(cb_func_t , void*);
     int (*stat)(char *out, uint32_t len);
+
+
+
+    //通常不会使用异步的 mount 和 unmount , mkfs
+    // int (*mkfs) (const char* dev_list[], int mkfs_flag, cb_func_t , void*);
+    // int (*mount)(const char* dev_list[], /* size = 3*/  int mount_flag /**/, cb_func_t , void*);
+    // int (*unmount)(cb_func_t , void*);
+
+
     int (*mkfs) (const char* dev_list[], int mkfs_flag);
     int (*mount)(const char* dev_list[], /* size = 3*/  int mount_flag /**/);
     int (*unmount)();
 
-    const int (*obj_async_op_context_size)();
 
+    const int (*obj_async_op_context_size)();
 
     //Enter of specific operation
     //see op_***_t in "operation.h"

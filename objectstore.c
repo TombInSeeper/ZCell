@@ -36,9 +36,6 @@ const static __thread objstore_impl_t nullstore = {
 };
 
 extern const objstore_impl_t* ostore_get_impl(int store_type) {
-    if(store_type == FAKESTORE) {
-        return &fakestore;
-    } 
     if(store_type == NULLSTORE) {
         return &nullstore;
     }
