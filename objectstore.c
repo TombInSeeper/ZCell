@@ -5,7 +5,7 @@
 
 
 
-#define REGISTER_OSTORE(idx, name) \ 
+#define REGISTER_OSTORE(idx, name) \
     [idx] = {\
     .stat = name ## _stat,\
     .mkfs = name ## _mkfs,\
