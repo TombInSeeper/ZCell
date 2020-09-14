@@ -151,19 +151,21 @@ void _write_complete(void *ctx, int sts) {
     }
     _free_write_op(ctx);
     g_nr_cpl++;
-    if(g_nr_cpl >= g_nr_ops) {
+    if(g_nr_cpl == g_nr_submit) {
         SPDK_NOTICELOG("g_nr_cpl=%d,g_nr_ops=%d,g_nr_submit=%d\n",
             g_nr_cpl,
             g_nr_ops,
             g_nr_submit);
         _sys_fini();
-    } else {
+    } else if (g_nr_submit < g_nr_ops){
        void *op = _alloc_write_op();
        int rc = os->obj_async_op_call(op, _write_complete);
        if(rc) {
             assert("submit error\n" == NULL);
        }
        g_nr_submit++;
+    } else {
+
     }
 }
 
