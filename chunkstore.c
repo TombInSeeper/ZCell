@@ -136,8 +136,7 @@ op_handler(read) {
     actx->end_cb = cb;
     struct chunkstore_context_t* cs = get_local_store_ptr();
     op_read_t *op_args = (void*) m->meta_buffer;
-    uint64_t bdev_ofst = (op_args->oid * (1024)) + 
-        op_args->ofst >> 12;
+    uint64_t bdev_ofst = (op_args->oid * (1024)) + (op_args->ofst >> 12);
     uint64_t bdev_len = op_args->len >> 12;
 
     SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
@@ -160,8 +159,7 @@ op_handler(write) {
     struct chunkstore_context_t* cs = get_local_store_ptr();
     op_write_t *op_args =(void*) m->meta_buffer;
 
-    uint64_t bdev_ofst = (op_args->oid * (1024)) + 
-        op_args->ofst >> 12;
+    uint64_t bdev_ofst = (op_args->oid * (1024)) + (op_args->ofst >> 12);
     uint64_t bdev_len = op_args->len >> 12;
 
     SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
