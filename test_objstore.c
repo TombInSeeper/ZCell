@@ -166,6 +166,7 @@ void _write_complete(void *ctx, int sts) {
     g_nr_cpl++;
     if(g_nr_cpl == g_nr_submit) {
         g_end_us = now();
+        _dump_perf();
         _sys_fini();
     } else if (g_nr_submit < g_nr_ops){
        void *op = _alloc_write_op();
