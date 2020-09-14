@@ -169,6 +169,7 @@ void _do_uint_test() {
 
 void _sys_init(void *arg) {
     (void)arg;
+    spdk_log_set_level(g_dbg_level);
 
     rbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     wbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
@@ -208,7 +209,6 @@ int main( int argc , char **argv)
     opts.shutdown_cb = _sys_fini;
 
     parse_args(argc,argv);
-    spdk_log_set_level(g_dbg_level);
 
     SPDK_NOTICELOG("starting app\n");
     int rc = spdk_app_start(&opts , _sys_init , NULL);
