@@ -51,6 +51,8 @@ static void _bdev_open(const char *name) {
 		return;  
     }
 
+    SPDK_NOTICELOG("Open bdev %s OK\n");
+
     cs->device.ioch = spdk_bdev_get_io_channel(cs->device.bdev_desc);
     if(!cs->device.ioch) {
        	SPDK_ERRLOG("Could not spdk_bdev_get_io_channel %s,\n" , name);
@@ -58,6 +60,7 @@ static void _bdev_open(const char *name) {
 		return;         
     }
 
+    SPDK_NOTICELOG("Get io channel %s OK\n");
 }
 static void _hardcode_stat() {
     struct chunkstore_context_t *cs = get_local_store_ptr();
