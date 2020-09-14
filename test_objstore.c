@@ -9,7 +9,7 @@
 #include "spdk/env.h"
 
 static int g_store = CHUNKSTORE;
-static const char* g_nvme_dev[] = { "Nvme0" , NULL, NULL };
+static const char* g_nvme_dev[] = { "Nvme0n1" , NULL, NULL };
 
 const objstore_impl_t *os;
 void *session;
