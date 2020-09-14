@@ -10,7 +10,7 @@
 
 static int g_store = CHUNKSTORE;
 static const char* g_nvme_dev[] = { "Nvme0n1" , NULL, NULL };
-static int g_nr_ops = 10;
+static int g_nr_ops = 100;
 static int g_nr_cpl = 0;
 static int g_dbg_level = 10;
 
