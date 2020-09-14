@@ -1,6 +1,6 @@
 #include "objectstore.h"
 #include "errcode.h"
-
+#include "chrono.h"
 
 #include "message.h"
 #include "operation.h"
@@ -10,13 +10,13 @@
 
 static __thread int g_store = CHUNKSTORE;
 static __thread const char* g_nvme_dev[] = { "Nvme0n1" , NULL, NULL };
-static __thread int g_nr_ops = 100;
+static __thread int g_nr_ops = 100 * 10000;
 static __thread int g_nr_submit = 0;
 static __thread int g_nr_cpl = 0;
-static __thread int g_dbg_level = 10;
+static __thread int g_qd = 32;
 
-// static uint64_t g_start_tsc;
-// static uint64_t g_end_tsc;
+static uint64_t g_start_us;
+static uint64_t g_end_us;
 
 const objstore_impl_t *os;
 void *session;
@@ -116,20 +116,26 @@ void* _alloc_write_op() {
 
     message_t *m = p;
     m->header.seq = seq++;
-    m->meta_buffer = malloc(sizeof(op_write_t));
+    // m->meta_buffer = malloc(sizeof(op_write_t));
+
+    m->meta_buffer = meta_buffer;
+
     op_write_t *_op_args = (void*)m->meta_buffer;
     _op_args->len = 0x1000;
     _op_args->ofst = 0x0;
     _op_args->oid = 0x0;
     _op_args->flags = 0x0;
-    m->data_buffer = spdk_dma_zmalloc(0x1000,0x1000,NULL);
+    // m->data_buffer = spdk_dma_zmalloc(0x1000,0x1000,NULL);
+
+    m->data_buffer = wbuf;
+
     return p;
 }
 
 void _free_write_op(void *p) {
-    message_t *m = p;
-    spdk_free(m->data_buffer);
-    free(m->meta_buffer);
+    // message_t *m = p;
+    // // spdk_free(m->data_buffer);
+    // // free(m->meta_buffer);
     free(p);
 }
 
@@ -145,6 +151,13 @@ void _sys_fini()
 }
 
 
+void _dump_perf() {
+    double time = g_end_us - g_start_us; 
+    double qps = (g_nr_ops / time) * 1e3;
+    SPDK_NOTICELOG("qps=%lf K/s \n" , qps);
+    SPDK_NOTICELOG("avg_lat= %lf us \n" , time / g_nr_ops);
+}
+
 void _write_complete(void *ctx, int sts) {
     if(sts) {
         assert("status code error\n" == NULL);
@@ -152,10 +165,7 @@ void _write_complete(void *ctx, int sts) {
     _free_write_op(ctx);
     g_nr_cpl++;
     if(g_nr_cpl == g_nr_submit) {
-        SPDK_NOTICELOG("g_nr_cpl=%d,g_nr_ops=%d,g_nr_submit=%d\n",
-            g_nr_cpl,
-            g_nr_ops,
-            g_nr_submit);
+        g_end_us = now();
         _sys_fini();
     } else if (g_nr_submit < g_nr_ops){
        void *op = _alloc_write_op();
@@ -170,7 +180,8 @@ void _write_complete(void *ctx, int sts) {
 }
 
 void _do_uint_test() {
-    int dp = 20;
+    int dp = g_qd;
+    g_start_us = now();
     while (dp--) {
         void *op = _alloc_write_op();
         if(os->obj_async_op_call(op, _write_complete)) {
@@ -182,7 +193,7 @@ void _do_uint_test() {
 
 void _sys_init(void *arg) {
     (void)arg;
-    spdk_log_set_level(g_dbg_level);
+
 
     rbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     wbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
@@ -202,11 +213,11 @@ static void parse_args(int argc , char **argv) {
     int opt = -1;
 	while ((opt = getopt(argc, argv, "d:")) != -1) {
 		switch (opt) {
-		case 'd':
-			g_dbg_level = atoi(optarg);
+		case 'q':
+			g_qd = atoi(optarg);
 			break;
 		default:
-			fprintf(stderr, "Usage: %s [-d dbg_level]\n", argv[0]);
+			fprintf(stderr, "Usage: %s [-q qd]\n", argv[0]);
 			exit(1);
 		}
 	}
