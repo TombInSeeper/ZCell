@@ -20,7 +20,7 @@ enum message_type {
     msg_oss_op_max = 74,
 };
 
-#define MSG_TYPE_OSS(_op) ({typeof(_op) op = (_op); msg_oss_op_min < op && op < MGS_OSS_OP_MAX; })
+#define MSG_TYPE_OSS(_op) ({typeof(_op) op = (_op); msg_oss_op_min < op && op < msg_oss_op_max; })
 
 
 /**

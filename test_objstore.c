@@ -39,8 +39,8 @@ const message_t fake_stat_request_msg = {
     },
     .header = {
         .seq = 0,
-        .type = MSG_OSS_OP_STATE,
-        .meta_length = sizeof(op_stat_t),
+        .type = msg_oss_op_state,
+        .meta_length = sizeof(op_state_t),
         .data_length = 0,
     },
     .meta_buffer = meta_buffer,
@@ -55,7 +55,7 @@ const message_t fake_create_request_msg = {
     },
     .header = {
         .seq = 0,
-        .type = MSG_OSS_OP_CREATE,
+        .type = msg_oss_op_create,
         .meta_length = sizeof(op_create_t),
         .data_length = 0,
     },
@@ -71,8 +71,8 @@ const message_t fake_delete_request_msg = {
     },
     .header = {
         .seq = 0,
-        .type = MSG_OSS_OP_DELETE,
-        .meta_length = sizeof(op_stat_t),
+        .type = msg_oss_op_delete,
+        .meta_length = sizeof(op_state_t),
         .data_length = 0,
     },
     .meta_buffer = meta_buffer,
@@ -87,7 +87,7 @@ const message_t fake_write_request_msg = {
     },
     .header = {
         .seq = 0,
-        .type = MSG_OSS_OP_WRITE,
+        .type = msg_oss_op_write,
         .meta_length = sizeof(op_write_t),
         .data_length = 0,
     },
@@ -103,7 +103,7 @@ const message_t fake_read_request_msg = {
     },
     .header = {
         .seq = 0,
-        .type = MSG_OSS_OP_READ,
+        .type = msg_oss_op_read,
         .meta_length = sizeof(op_read_t),
         .data_length = 0,
     },
@@ -111,6 +111,9 @@ const message_t fake_read_request_msg = {
     .data_buffer = NULL,
     .priv_ctx = NULL 
 };
+
+#define _alloc_op(op_name) \
+
 
 
 void* _alloc_write_op() {
@@ -205,7 +208,7 @@ void _stat_cb( void* rqst ,int st) {
 }
 void _do_uint_test() {
 
-    void *op = 
+    // void *op = 
 }
 
 void _sys_init(void *arg) {
