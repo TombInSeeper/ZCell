@@ -50,6 +50,10 @@ typedef uint64_t _le64;
 #define _packed __attribute__((packed))
 
 
+//concat macro function
+#define LC_CONCAT2(s1, s2) s1##s2
+#define LC_CONCAT(s1, s2) LC_CONCAT2(s1, s2)
+
 //Mfence
 #define mb()    asm volatile("mfence":::"memory")
 #define rmb()   asm volatile("lfence":::"memory")

@@ -7,6 +7,8 @@
 
 #include "spdk/event.h"
 #include "spdk/env.h"
+#include "spdk/util.h"
+
 
 static __thread int g_store = CHUNKSTORE;
 static __thread const char* g_nvme_dev[] = { "Nvme0n1" , NULL, NULL };
@@ -25,6 +27,9 @@ void *session;
 char meta_buffer[0x1000];
 void *rbuf;
 void *wbuf;
+
+
+
 
 const message_t fake_stat_request_msg = {
     .state = {
@@ -180,8 +185,9 @@ void _write_complete(void *ctx, int sts) {
 
     }
 }
-
-void _do_uint_test() {
+void _do_write_test( void* ctx , int st) {
+    (void)ctx;
+    (void)st;
     int dp = g_qd;
     g_start_us = now();
     while (dp--) {
@@ -193,9 +199,17 @@ void _do_uint_test() {
     }
 }
 
+
+void _stat_cb( void* rqst ,int st) {
+
+}
+void _do_uint_test() {
+
+    void *op = 
+}
+
 void _sys_init(void *arg) {
     (void)arg;
-
 
     rbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     wbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
@@ -208,7 +222,6 @@ void _sys_init(void *arg) {
     rc = os->mount(g_nvme_dev,0);
     assert(rc == SUCCESS);
 
-    _do_uint_test();
 }
 
 static void parse_args(int argc , char **argv) {

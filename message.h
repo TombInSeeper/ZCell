@@ -8,20 +8,19 @@
 
 
 
-enum MessageType {
-    MSG_HDR = 0,
-    MSG_PING = 1, 
-    MSG_OSS_OP_MIN = 10,
-    MSG_OSS_OP_STATE = 11,
-    MSG_OSS_OP_CREATE = 12,
-    MSG_OSS_OP_READ = 13,
-    MSG_OSS_OP_WRITE = 14,
-    MSG_OSS_OP_DELETE = 15,
-    MGS_OSS_OP_MAX = 74,
-
+enum message_type {
+    msg_hdr = 0,
+    msg_ping = 1, 
+    msg_oss_op_min = 10,
+    msg_oss_op_state = 11,
+    msg_oss_op_create = 12,
+    msg_oss_op_read = 13,
+    msg_oss_op_write = 14,
+    msg_oss_op_delete = 15,
+    msg_oss_op_max = 74,
 };
 
-#define MSG_TYPE_OSS(_op) ({typeof(_op) op = (_op); MSG_OSS_OP_MIN < op && op < MGS_OSS_OP_MAX; })
+#define MSG_TYPE_OSS(_op) ({typeof(_op) op = (_op); msg_oss_op_min < op && op < MGS_OSS_OP_MAX; })
 
 
 /**

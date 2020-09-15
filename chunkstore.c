@@ -5,6 +5,18 @@
 
 #define op_handler(name) static int _do_ ## name ( void* ctx, cb_func_t cb) 
 
+
+/**
+ * 
+ * 
+ * 
+ * 
+ * Chunk Store Staic Divide the block device into N 4MiB objects
+ * 
+ * 
+ * 
+ * 
+ */ 
 static void fake_async_cb_wrapper(void *cb  , void* cb_arg) {
     cb_func_t _cb =  cb;
     if(_cb) {
@@ -27,9 +39,9 @@ struct chunkstore_context_t {
     } device;
 
     struct {
-        uint32_t data_gb;
-        uint32_t max_oid;
-        uint32_t max_obj_sz;
+        uint64_t data_gb;
+        uint64_t max_oid;
+        uint64_t max_obj_sz;
     }stat;
 };
 
@@ -64,9 +76,14 @@ static void _bdev_open(const char *name) {
 }
 static void _hardcode_stat() {
     struct chunkstore_context_t *cs = get_local_store_ptr();
-    cs->stat.data_gb = 100;
+    assert(spdk_bdev_get_block_size(cs->device.bdev) == 4096);
+
+    uint64_t cb = spdk_bdev_get_num_blocks(cs->device.bdev) * 
+        spdk_bdev_get_block_size(cs->device.bdev);
     cs->stat.max_obj_sz = 4 << 20;
-    cs->stat.max_oid = 25 << 10;
+    cs->stat.max_oid = cb / (cs->stat.max_obj_sz);
+    cs->stat.data_gb =  cb / (1024 * 1024 * 1024);
+
 }
 
 
@@ -101,12 +118,13 @@ typedef struct async_op_context_t {
 
 
 op_handler(state) {
+    struct chunkstore_context_t* cs = get_local_store_ptr();
     message_t *m = ctx;
     // async_op_context_t *actx = ostore_async_ctx(m);
     op_stat_t *stat =(void*)m->meta_buffer;
     stat->max_obj_size_kib = cpu_to_le32(0x1000);
-    stat->capcity_mib = cpu_to_le32(100 * 1024);
-    stat->max_oid = cpu_to_le32(100000);
+    stat->capcity_gib = cpu_to_le32((uint32_t)(cs->stat.data_gb));
+    stat->max_oid = cpu_to_le32(cs->stat.max_oid);
     stat->obj_blk_sz_kib = cpu_to_le32(0x1000);
     stat->type = cpu_to_le32(1);
     fake_async_cb(cb,ctx);
