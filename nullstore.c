@@ -88,11 +88,11 @@ static const op_handle_func_ptr_t obj_op_table[] = {
     [msg_oss_op_read] = _do_read,
 };
 
-extern const int chunkstore_obj_async_op_context_size() {
+extern const int nullstore_obj_async_op_context_size() {
     return sizeof(async_ctx_t);
 }
 
-extern int chunkstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
+extern int nullstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
     uint16_t op = message_get_op(request_msg_with_op_context);
     return (obj_op_table[op])(request_msg_with_op_context, _cb);
 }
