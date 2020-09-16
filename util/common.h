@@ -1,5 +1,5 @@
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef COMMON_H
+#define COMMON_H
 
 #include <emmintrin.h>
 #include "stdint.h"
@@ -7,7 +7,7 @@
 #include "string.h"
 #include "stdbool.h"
 
-#include "errcode.h"
+#include "./errcode.h"
 
 
 /**

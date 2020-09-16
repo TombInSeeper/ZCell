@@ -90,8 +90,8 @@ static void parse_args(int argc , char **argv) {
 
 static void _on_recv_message(message_t *m)
 {
-    // msgr_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
-    msgr_info("Recv a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
+    // log_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
+    log_info("Recv a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
     message_t _m ;
     message_move(&_m, m);
@@ -100,13 +100,13 @@ static void _on_recv_message(message_t *m)
     // _m.header.meta_length = 0;
 
     message_state_reset(&_m);
-    msgr_info("Echo \n");
+    log_info("Echo \n");
     reactor_ctx()->msgr_impl->messager_sendmsg(&_m);
 }
 
 static void _on_send_message(message_t *m)
 {
-    msgr_info("Send a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
+    log_info("Send a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
 }
 

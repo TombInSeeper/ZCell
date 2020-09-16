@@ -1,7 +1,7 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#include "common.h"
+#include "util/common.h"
 
 
 #define NR_SESSION_MAX (10 * 1000)

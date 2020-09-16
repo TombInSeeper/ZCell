@@ -5,6 +5,7 @@
 #include "spdk/log.h"
 #include "spdk/util.h"
 
+#include "util/log.h"
 
 #include "messager.h"
 #include "objectstore.h"
