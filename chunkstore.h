@@ -1,7 +1,7 @@
 #ifndef CHUNKSTORE_H
 #define CHUNKSTORE_H
 
-#include "common.h"
+#include "util/common.h"
 
 extern int chunkstore_stat(char *out , uint32_t len);
 extern int chunkstore_mkfs(const char* dev_list[], int flags);

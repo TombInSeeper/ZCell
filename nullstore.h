@@ -1,7 +1,7 @@
 #ifndef NULLSTORE_H
 #define NULLSTORE_H
 
-#include "common.h"
+#include "util/common.h"
 
 extern int nullstore_stat(char *out , uint32_t len);
 
