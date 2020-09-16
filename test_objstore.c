@@ -210,12 +210,14 @@ void _stat_cb( void* rqst ,int st) {
     _sys_fini();
 }
 void _do_uint_test() {
+    SPDK_NOTICELOG("enter\n");
     void *op = malloc(sizeof(message_t) + os->obj_async_op_context_size());
     memcpy(op,&fake_stat_request_msg,sizeof(message_t));
     message_t *m = op;
     m->meta_buffer = malloc(sizeof(op_stat_t));
     int rc = os->obj_async_op_call(op,_stat_cb);    
     assert(rc == OSTORE_SUBMIT_OK);
+    SPDK_NOTICELOG("end\n");
 }
 
 void _sys_init(void *arg) {
