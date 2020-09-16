@@ -205,9 +205,13 @@ void _do_write_test( void* ctx , int st) {
 void _stat_cb( void* rqst ,int st) {
     message_t *m = rqst;
     op_stat_t *rst = (void*)(m->meta_buffer);    
-    SPDK_NOTICELOG("ostore state:max_oid=%u ,cap_gb=%u G ,obj_sz=%u K ,obj_blksz=%u K",
+    SPDK_NOTICELOG("ostore state:max_oid=%u ,cap_gb=%u G ,obj_sz=%u K ,obj_blksz=%u K\n",
         rst->max_oid ,rst->capcity_gib, rst->max_obj_size_kib, rst->obj_blk_sz_kib);
-    _sys_fini();
+    g_max_oid = rst->max_oid;
+    free(rqst);
+    // _sys_fini();
+
+    _do_write_test(NULL,0);
 }
 void _do_uint_test() {
     SPDK_NOTICELOG("enter\n");
