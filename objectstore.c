@@ -7,7 +7,6 @@
 
 #define REGISTER_OSTORE(idx, name) \
     [idx] = {\
-    .stat = name ## _stat,\
     .mkfs = name ## _mkfs,\
     .mount = name ## _mount,\
     .unmount = name ## _unmount,\
