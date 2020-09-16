@@ -78,6 +78,7 @@ static void _bdev_open(const char *name) {
 }
 static void _hardcode_stat() {
     struct chunkstore_context_t *cs = get_local_store_ptr();
+    cs->device.bdev = spdk_bdev_desc_get_bdev(cs->device.bdev_desc);
     assert(spdk_bdev_get_block_size(cs->device.bdev) == 4096);
 
     uint64_t cb = spdk_bdev_get_num_blocks(cs->device.bdev) * 
