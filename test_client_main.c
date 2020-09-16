@@ -121,7 +121,7 @@ void*  client_task(void* arg) {
         },
         .header = {
             .seq = 0,
-            .type = MSG_OSS_OP_READ,
+            .type = msg_oss_op_read,
             .meta_length = sizeof(op_read_t),
             .data_length = 0,
         },

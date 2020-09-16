@@ -39,7 +39,7 @@ const message_t fake_stat_request_msg = {
     },
     .header = {
         .seq = 0,
-        .type = msg_oss_op_state,
+        .type = msg_oss_op_stat,
         .meta_length = sizeof(op_stat_t),
         .data_length = 0,
     },
@@ -112,7 +112,6 @@ const message_t fake_read_request_msg = {
     .priv_ctx = NULL 
 };
 
-#define _alloc_op(op_name) \
 
 
 
@@ -208,7 +207,7 @@ void _stat_cb( void* rqst ,int st) {
 }
 void _do_uint_test() {
 
-    // void *op = 
+    void *op = _alloc_op
 }
 
 void _sys_init(void *arg) {
@@ -224,6 +223,8 @@ void _sys_init(void *arg) {
 
     rc = os->mount(g_nvme_dev,0);
     assert(rc == SUCCESS);
+
+    _do_uint_test();
 
 }
 

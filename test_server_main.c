@@ -155,28 +155,28 @@ static bool oss_op_valid(message_t *request) {
     int op = le16_to_cpu(request->header.type);
     bool rc = false;
     switch (op) {
-        case MSG_OSS_OP_STATE: {
+        case msg_oss_op_stat: {
             rc = (le32_to_cpu(request->header.data_length) == 0) && 
             (le16_to_cpu(request->header.meta_length) == 0) && 
             (request->data_buffer == NULL) && 
             (request->meta_buffer == NULL);       
         }
             break;
-        case MSG_OSS_OP_CREATE: {
+        case msg_oss_op_create: {
             rc = (le32_to_cpu(request->header.data_length) == 0) && 
             (le16_to_cpu(request->header.meta_length) == sizeof(op_create_t)) && 
             (request->data_buffer == NULL) && 
             (request->meta_buffer != NULL);       
         }
             break; 
-        case MSG_OSS_OP_DELETE: {
+        case msg_oss_op_delete: {
             rc = (le32_to_cpu(request->header.data_length) == 0) && 
             (le16_to_cpu(request->header.meta_length) == sizeof(op_delete_t)) && 
             (request->data_buffer == NULL) && 
             (request->meta_buffer != NULL) ;       
         }
             break;
-        case MSG_OSS_OP_WRITE:{
+        case msg_oss_op_write:{
             op_write_t *op = (op_write_t *)request->meta_buffer;
             rc =  (request->data_buffer != NULL) && 
             (request->meta_buffer != NULL) && 
@@ -184,7 +184,7 @@ static bool oss_op_valid(message_t *request) {
             (le16_to_cpu(request->header.meta_length) > 0 );       
         }
             break;
-        case MSG_OSS_OP_READ:{
+        case msg_oss_op_read:{
             rc = (le32_to_cpu(request->header.data_length) == 0) && 
             (le16_to_cpu(request->header.meta_length) > 0 ) && 
             (request->data_buffer == NULL) && 
@@ -204,20 +204,25 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
     int op = le16_to_cpu(request->header.type);
     int rc = 0;
     switch (op) {
-        case MSG_OSS_OP_CREATE: {
+        case msg_oss_op_stat: {
+            request->header.meta_length = sizeof(op_stat_t);
+            request->meta_buffer = alloc_meta_buffer(sizeof(op_stat_t));
+        }
+            break; 
+        case msg_oss_op_create: {
             request->header.meta_length = 0;      
         }
             break; 
-        case MSG_OSS_OP_DELETE: {
+        case msg_oss_op_delete: {
             request->header.meta_length = 0;            
         }
             break;
-        case MSG_OSS_OP_WRITE:{
+        case msg_oss_op_write:{
             request->header.meta_length = 0;             
             request->header.data_length = 0;             
         }
             break;
-        case MSG_OSS_OP_READ:{
+        case msg_oss_op_read:{
             op_read_t *op = (op_read_t *)request->meta_buffer;
             request->header.meta_length = 0;             
             request->header.data_length = op->len; 
@@ -280,7 +285,7 @@ static void _do_op_ping(message_t *request) {
 
 static void op_execute(message_t *request) {
     int op_code = le16_to_cpu(request->header.type);
-    if(op_code == MSG_PING) {
+    if(op_code == msg_ping) {
         _do_op_ping(request);
     } else if (MSG_TYPE_OSS(op_code)) {
         _do_op_oss(request);
