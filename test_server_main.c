@@ -6,11 +6,11 @@
 #include "spdk/util.h"
 
 #include "util/log.h"
+#include "util/fixed_cache.h"
 
 #include "messager.h"
 #include "objectstore.h"
 #include "operation.h"
-#include "fixed_cache.h"
 
 
 #define NR_REACTOR_MAX 256
@@ -120,7 +120,7 @@ static void free_data_buffer(void *p) {
 static inline void _response_with_reusing_request(message_t *request, uint16_t status_code) {
     request->header.status = cpu_to_le16(status_code);
     message_state_reset(request);
-    msgr_debug("Perpare to send response :[status=%u , meta_len=%u, data_len=%u]\n",
+    log_debug("Perpare to send response :[status=%u , meta_len=%u, data_len=%u]\n",
         request->header.status,
         request->header.meta_length,
         request->header.data_length);
@@ -254,7 +254,7 @@ static void _do_op_oss(message_t * _request) {
     message_t *request = ctx;
     memcpy(request, _request, sizeof(message_t));
 
-    msgr_debug("Prepare to execute op:[seq=%u,op_code=%u,meta_len=%u,data_len=%u]\n", request->header.seq,
+    log_debug("Prepare to execute op:[seq=%u,op_code=%u,meta_len=%u,data_len=%u]\n", request->header.seq,
         request->header.type, request->header.meta_length, request->header.data_length);
 
     int rc = INVALID_OP;
@@ -297,8 +297,8 @@ static void op_execute(message_t *request) {
 
 
 static void _on_recv_message(message_t *m) {
-    // msgr_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
-    msgr_info("Recv a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
+    // log_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
+    log_info("Recv a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
     message_t _m ;
     /**
@@ -310,7 +310,7 @@ static void _on_recv_message(message_t *m) {
     op_execute(&_m);
 }
 static void _on_send_message(message_t *m) {
-    msgr_info("Send a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
+    log_info("Send a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
 }
 
