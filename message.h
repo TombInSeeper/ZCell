@@ -12,7 +12,7 @@ enum message_type {
     msg_hdr = 0,
     msg_ping = 1, 
     msg_oss_op_min = 10,
-    msg_oss_op_state = 11,
+    msg_oss_op_stat = 11,
     msg_oss_op_create = 12,
     msg_oss_op_read = 13,
     msg_oss_op_write = 14,

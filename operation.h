@@ -29,12 +29,12 @@ typedef struct op_write_t {
 } _packed op_write_t;
 
 //Result
-typedef struct op_state_t {
+typedef struct op_stat_t {
     _le32 type;
     _le32 capcity_gib;
     _le32 obj_blk_sz_kib;
     _le32 max_oid;
     _le32 max_obj_size_kib;
-} _packed op_state_t;
+} _packed op_stat_t;
 
 #endif

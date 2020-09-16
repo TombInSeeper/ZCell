@@ -40,7 +40,7 @@ const message_t fake_stat_request_msg = {
     .header = {
         .seq = 0,
         .type = msg_oss_op_state,
-        .meta_length = sizeof(op_state_t),
+        .meta_length = sizeof(op_stat_t),
         .data_length = 0,
     },
     .meta_buffer = meta_buffer,
@@ -72,7 +72,7 @@ const message_t fake_delete_request_msg = {
     .header = {
         .seq = 0,
         .type = msg_oss_op_delete,
-        .meta_length = sizeof(op_state_t),
+        .meta_length = sizeof(op_stat_t),
         .data_length = 0,
     },
     .meta_buffer = meta_buffer,

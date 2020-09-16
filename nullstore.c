@@ -45,14 +45,19 @@ extern int nullstore_unmount() {
 }
 
 
-extern const int nullstore_obj_async_op_context_size() {
-    return 16;
-}
+
 
 typedef struct async_ctx_t {
     uint8_t dummpy[16];
 }async_ctx_t;
 
+
+
+static int _do_stat(void *req_ctx, cb_func_t cb) {
+    (void)req_ctx;
+    fake_async_cb(cb , req_ctx);
+    return OSTORE_SUBMIT_OK;
+}
 
 static int _do_create(void *req_ctx, cb_func_t cb) {
     (void)req_ctx;
@@ -74,17 +79,20 @@ static int _do_read(void *req_ctx, cb_func_t cb) {
     fake_async_cb(cb , req_ctx);
     return OSTORE_SUBMIT_OK;
 }
-typedef int (*os_op_func_ptr_t)(void*, cb_func_t);
-static const os_op_func_ptr_t obj_op_table[] = {
-    [MSG_OSS_OP_CREATE] = _do_create,
-    [MSG_OSS_OP_DELETE] = _do_delete,
-    [MSG_OSS_OP_WRITE] = _do_write,
-    [MSG_OSS_OP_READ] = _do_read,
+
+static const op_handle_func_ptr_t obj_op_table[] = {
+    [msg_oss_op_stat] = _do_stat,
+    [msg_oss_op_create] = _do_create,
+    [msg_oss_op_delete] = _do_delete,
+    [msg_oss_op_write] = _do_write,
+    [msg_oss_op_read] = _do_read,
 };
 
-extern int nullstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
-    message_t *request = request_msg_with_op_context;
-    int op = le16_to_cpu(request->header.type);
-    os_op_func_ptr_t op_func = obj_op_table[op];
-    return op_func(request_msg_with_op_context , _cb);
+extern const int chunkstore_obj_async_op_context_size() {
+    return sizeof(async_ctx_t);
+}
+
+extern int chunkstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
+    uint16_t op = message_get_op(request_msg_with_op_context);
+    return (obj_op_table[op])(request_msg_with_op_context, _cb);
 }

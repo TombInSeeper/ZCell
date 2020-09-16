@@ -1,7 +1,7 @@
 #include "chunkstore.h"
+#include "objectstore.h"
 #include "spdk/bdev.h"
 #include "spdk/log.h"
-#include "store_common.h"
 
 #define op_handler(name) static int _do_ ## name ( void* ctx, cb_func_t cb) 
 
@@ -13,8 +13,10 @@
  * 
  * Chunk Store Staic Divide the block device into N 4MiB objects
  * 
+ * [BLock Lba]
  * 
- * 
+ * [---] [---] [---] [---] [---][---][---][---]
+ *  obj0 obj1 obj2 obj3
  * 
  */ 
 static void fake_async_cb_wrapper(void *cb  , void* cb_arg) {
@@ -117,7 +119,7 @@ typedef struct async_op_context_t {
 }async_op_context_t;
 
 
-op_handler(state) {
+op_handler(stat) {
     struct chunkstore_context_t* cs = get_local_store_ptr();
     message_t *m = ctx;
     // async_op_context_t *actx = ostore_async_ctx(m);
@@ -151,14 +153,24 @@ void rw_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
     actx->end_cb(cb_arg, actx->err);
 }
 
+
+static void _obj2blk(uint32_t oid , uint32_t o_ofst, uint32_t o_len, 
+    uint64_t *b_ofst, uint64_t *b_len)
+{
+    *b_ofst = (oid * (1024)) + (o_ofst >> 12);
+    *b_len = (o_len)   >> 12;
+}
+
 op_handler(read) {
     message_t *m = ctx;
     async_op_context_t *actx = ostore_async_ctx(ctx);
     actx->end_cb = cb;
     struct chunkstore_context_t* cs = get_local_store_ptr();
     op_read_t *op_args = (void*) m->meta_buffer;
-    uint64_t bdev_ofst = (op_args->oid * (1024)) + (op_args->ofst >> 12);
-    uint64_t bdev_len = op_args->len >> 12;
+    uint64_t bdev_ofst, bdev_len;
+    _obj2blk(le32_to_cpu(op_args->oid), le32_to_cpu(op_args->ofst),le32_to_cpu(op_args->len),
+        &bdev_ofst,&bdev_len);
+
 
     // SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
     //     op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
@@ -180,10 +192,9 @@ op_handler(write) {
     struct chunkstore_context_t* cs = get_local_store_ptr();
     op_write_t *op_args =(void*) m->meta_buffer;
 
-    uint64_t bdev_ofst = (op_args->oid * (1024)) + (op_args->ofst >> 12);
-    uint64_t bdev_len = op_args->len >> 12;
-
-
+    uint64_t bdev_ofst, bdev_len;
+    _obj2blk(le32_to_cpu(op_args->oid), le32_to_cpu(op_args->ofst),le32_to_cpu(op_args->len),
+        &bdev_ofst,&bdev_len);
 
     int rc = spdk_bdev_write_blocks(cs->device.bdev_desc,
         cs->device.ioch, m->data_buffer,bdev_ofst,bdev_len,
@@ -192,25 +203,24 @@ op_handler(write) {
     if(rc) {
         return OSTORE_IO_ERROR;
     }
-
     // SPDK_NOTICELOG("seq=%u,oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu submit OK\n",
     //     m->header.seq,
     //     op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
     return OSTORE_SUBMIT_OK;
 }
 
-typedef int (*os_op_func_ptr_t)(void*, cb_func_t);
-static const os_op_func_ptr_t obj_op_table[] = {
-    [MSG_OSS_OP_STATE] = _do_state,
-    [MSG_OSS_OP_CREATE] = _do_create,
-    [MSG_OSS_OP_DELETE] = _do_delete,
-    [MSG_OSS_OP_WRITE] = _do_write,
-    [MSG_OSS_OP_READ] = _do_read,
-};
+
 
 extern const int chunkstore_obj_async_op_context_size() {
     return sizeof(async_op_context_t);
 }
+static const op_handle_func_ptr_t obj_op_table[] = {
+    [msg_oss_op_stat] = _do_stat,
+    [msg_oss_op_create] = _do_create,
+    [msg_oss_op_delete] = _do_delete,
+    [msg_oss_op_write] = _do_write,
+    [msg_oss_op_read] = _do_read,
+};
 
 extern int chunkstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
     uint16_t op = message_get_op(request_msg_with_op_context);
