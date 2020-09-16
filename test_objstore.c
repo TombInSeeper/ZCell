@@ -203,11 +203,19 @@ void _do_write_test( void* ctx , int st) {
 
 
 void _stat_cb( void* rqst ,int st) {
-
+    message_t *m = rqst;
+    op_stat_t *rst = (void*)(m->meta_buffer);    
+    SPDK_NOTICELOG("ostore state:max_oid=%u ,cap_gb=%u G ,obj_sz=%u K ,obj_blksz=%u K",
+        rst->max_oid ,rst->capcity_gib, rst->max_obj_size_kib, rst->obj_blk_sz_kib);
+    _sys_fini();
 }
 void _do_uint_test() {
-
-    void *op = _alloc_op
+    void *op = malloc(sizeof(message_t) + os->obj_async_op_context_size());
+    memcpy(op,&fake_stat_request_msg,sizeof(message_t));
+    message_t *m = op;
+    m->meta_buffer = malloc(sizeof(op_stat_t));
+    int rc = os->obj_async_op_call(op,_stat_cb);    
+    assert(rc == OSTORE_SUBMIT_OK);
 }
 
 void _sys_init(void *arg) {
