@@ -1,3 +1,5 @@
+#include "assert.h"
+
 #include "util/bitmap.h"
 #include "util/log.h"
 #include "util/chrono.h"
