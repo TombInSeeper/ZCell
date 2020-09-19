@@ -11,6 +11,12 @@
 #ifndef DEBUG_LEVEL
 #define DEBUG_LEVEL 3
 #endif
+#else 
+#ifndef DEBUG_LEVEL
+#define DEBUG_LEVEL 2
+#endif
+#endif
+
 #define _log(level, ...) do { \
         if((level) <= DEBUG_LEVEL) {\
             printf("%s:%d:[%d](%s):" , __FILE__, __LINE__, (level), __func__ );\
@@ -22,11 +28,3 @@
 #define log_warn(...) _log(log_level_warn,__VA_ARGS__)
 #define log_info(...) _log(log_level_info, __VA_ARGS__)
 #define log_debug(...) _log(log_level_debug,__VA_ARGS__)
-#else
-#define _log(level, ...)
-#define log_err(...) 
-#define log_warn(...) 
-#define log_info(...)
-#define log_debug(...) 
-#endif
-#endif

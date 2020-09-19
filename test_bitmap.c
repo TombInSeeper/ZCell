@@ -23,7 +23,7 @@ void perf_test() {
     seq_alloc_perf_test(b);
 
 
-
+    bitmap_destructor(b);
 }
 
 
