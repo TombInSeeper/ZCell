@@ -5,7 +5,7 @@
 #include "util/chrono.h"
 
 void ASSERT_EQ(unsigned int exp1, unsigned int exp2) {
-    log_info("expect value = %u, true value = %u \n", exp1, exp2);
+    log_info("expect value = %u, true value = %u \n", exp2, exp1);
     assert(exp1 == exp2);
 }
 
