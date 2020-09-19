@@ -28,3 +28,5 @@
 #define log_warn(...) _log(log_level_warn,__VA_ARGS__)
 #define log_info(...) _log(log_level_info, __VA_ARGS__)
 #define log_debug(...) _log(log_level_debug,__VA_ARGS__)
+
+#endif
