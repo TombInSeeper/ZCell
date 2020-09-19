@@ -14,14 +14,29 @@ void seq_alloc_perf_test(bitmap_t *b) {
         hint = bitmap_find_next_set_and_clr(b, hint);
     }
     uint64_t end = now();
-    log_info("seq allocavg_lat =  %lf ns \n",  (end - st ) / 128.0 * 1000.0);
+    log_info("avg_lat =  %lf ns \n",  (end - st ) / 128.0 * 1000.0);
 }
+
+void rev_alloc_perf_test(bitmap_t *b) {
+    int i;
+    int hint = 0;
+    for ( i = 0 ; i < 96 ; ++i) {
+        bitmap_clr_bit(b , i);
+    }
+    uint64_t st = now();
+    for ( i = 0 ; i < 32 ; ++i) {
+        bitmap_find_next_set_and_clr(b, 0);
+    }
+    uint64_t end = now();
+    log_info("avg_lat =  %lf ns \n",  (end - st ) / 32.0 * 1000.0);
+}
+
 
 void perf_test() {
     bitmap_t *b = bitmap_constructor(128,1); 
     
     seq_alloc_perf_test(b);
-
+    bitmap_reset(b,1);
 
     bitmap_destructor(b);
 }
