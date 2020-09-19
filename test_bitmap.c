@@ -51,7 +51,7 @@ void perf_test() {
 
 
 void func_test() {
-    bitmap_t *b = bitmap_constructor(256,1); 
+    bitmap_t *b = bitmap_constructor(BITMAP_SIZE,1); 
 
     do { 
         typeof(bitmap_get_bit(b,0)) _v1 = (bitmap_get_bit(b,0));
