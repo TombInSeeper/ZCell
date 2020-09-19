@@ -111,16 +111,16 @@ static inline bool qos_release_tokens(qos_control_t *qos, int num) {
 }
 
 typedef struct session_t {
+    void *priv_ctx;
     sock *_sock;
+    
     //peer information
     struct {
         char ip[46];
         int port;
     };
-    // void *msgr;
 
     TAILQ_HEAD(recv_queue, msg) recv_q;
-
 
     qos_control_t send_qos;
     TAILQ_HEAD(send_queue, msg) send_q;
@@ -397,9 +397,12 @@ static int  _read_event_callback(void * sess , struct sock_group *_group, struct
         } else if (err == SOCK_EAGAIN) {
             break;
         } else if (err == SOCK_NEED_CLOSE) {
+            if(msgr->conf.on_shutdown_session) {
+                //TODO Shutdown function
+                msgr->conf.on_shutdown_session(ss,ss->ip,ss->port);
+            }  
             TAILQ_REMOVE(&(msgr->session_q), ss , _session_list_hook);
-            session_destruct(ss);
-            //Shutdown function
+            session_destruct(ss);          
             break;
         }
     }
@@ -433,7 +436,7 @@ static inline int _push_msg(const message_t *_msg) {
         TAILQ_INSERT_TAIL(&s->send_q, m , _msg_list_hook);
         return 0;
     }
-    return -SOCK_EAGAIN;
+    return SOCK_EAGAIN;
 }
 
 static int  _flush_all(messager_t *msgr) {
@@ -481,7 +484,7 @@ static int _poll_read_events() {
 	struct sock * _results[READ_EVENT_MAX];
     int rc;
 	// rc = spdk_sock_group_poll(msgr->sock_group);
-    rc = msgr->_net_impl->group_poll(msgr->_sock_group, 32 , _results);
+    rc = msgr->_net_impl->group_poll(msgr->_sock_group, READ_EVENT_MAX , _results);
 	if (rc < 0) {
 		msgr_err("Failed to poll sock_group=%p\n", msgr->_sock_group);
         return rc;
@@ -680,12 +683,13 @@ static void _cli_messager_destructor() {
     _messager_destructor(false);
 }
 
-static void*_cli_messager_connect (const char *ip , int port) {
+static void*_cli_messager_connect (const char *ip , int port, void *sess_priv_ctx ) {
     messager_t *msgr = get_local_msgr();
     struct sock *_sock =  msgr->_net_impl->connect(ip, port);
     session_t *s = NULL;
     if(_sock) {
-        s = session_construct(ip,port, _sock);
+        s = session_construct(ip, port, _sock);
+        s -> priv_ctx = sess_priv_ctx; //套娃，消息层迟早需要再重构
         TAILQ_INSERT_TAIL(&msgr->session_q, s , _session_list_hook);
     }
     return s;
@@ -712,7 +716,9 @@ static int _cli_messager_wait_msg() {
     return _poll_read_events();
 }
 
+static int _cli_messager_wait_msg_of(void *session) {
 
+}
 
 //------Extern API---------
 static __thread msgr_server_if_t msgr_server_impl = {
@@ -730,6 +736,9 @@ static __thread msgr_client_if_t msgr_client_impl = {
     .messager_sendmsg = _cli_messager_sendmsg,
     .messager_flush= _cli_messager_flush,
     .messager_wait_msg = _cli_messager_wait_msg,
+    .messager_wait_msg_of = _cli_messager_wait_msg_of,
+    .messager_flush_msg_of = _cli_messager_wait_msg_of,
+    .messager_get_session_ctx = _cli_messager_wait_msg_of,
 };
 
 extern const msgr_server_if_t *msgr_get_server_impl() {

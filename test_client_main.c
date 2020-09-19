@@ -22,6 +22,9 @@ static int g_qd = 64;
 static int g_data_sz = 0x1000;
 static int g_rqsts = 10000;
 
+static __thread int  tls_nr_recv = 0;
+static __thread char tls_data_buffer[ 4 << 20 ];
+
 int _system_init() {
     // struct spdk_env_opts opts;
     // spdk_env_opts_init(&opts);
@@ -33,12 +36,10 @@ int _system_init() {
     // }
     return 0;
 }
-
 void _system_fini() {
     // spdk_env_fini();
 }
 
-static __thread int  n_recv = 0;
 
 void on_send_message(message_t *msg) {
     message_t m;
@@ -49,13 +50,10 @@ void on_send_message(message_t *msg) {
 void on_recv_message(message_t *msg) {
     // message_t m;
     // message_move(&m , msg); // prevent from free msg_buffer
-    // // printf("recv msg OK\n");
-    ++n_recv;
+    ++tls_nr_recv;
 }
 
-
 volatile unsigned int g_task_start = 0;
-
 typedef struct client_task_data {
     const msgr_client_if_t * cif;
     int cpuid;
@@ -63,28 +61,69 @@ typedef struct client_task_data {
     int qd;
     const char *srv_ip;
     int srv_port;
+    void *session;
 
     //........
     uint64_t start;
     uint64_t end;
     double qps; // K OPS
     double bd; // MB/s
+
+
 } client_task_data;
 
-static __thread char data_buffer[ 4 << 20 ];
 
 static void *alloc_data_buffer( uint32_t sz) {
-    // if(sz <= 0x1000)
-    //     return fcache_get(reactor_ctx()->dma_pages); 
-    // else {    
-    //     uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
-    //     return spdk_dma_malloc(sz, align, NULL);
-    // }
-    return data_buffer;
+    return tls_data_buffer;
 }
 
 static void free_data_buffer(void *p) {
 
+}
+
+
+void  _do_state_task(void *arg) {
+    client_task_data *data = arg;
+
+    message_t state_rqst = {
+        .state = {
+            .hdr_rem_len = sizeof(msg_hdr_t),
+            .meta_rem_len = 0,
+            .data_rem_len = 0,
+        },
+        .header = {
+            .seq = cpu_to_le32(0),
+            .type = msg_oss_op_stat,
+            .meta_length = 0,
+            .data_length = 0
+        },
+        .priv_ctx = data->session,
+        .meta_buffer = NULL,
+        .data_buffer = NULL,
+    };
+
+    data->cif->messager_sendmsg(&state_rqst);
+    while(1) {
+        int rc = data->cif->messager_flush();
+        if(rc == 0) {
+            _mm_pause();
+        }
+    }
+
+    while(1) {
+        int rc = data->cif->messager_wait_msg();
+        if(rc == 0) {
+            _mm_pause();
+        }
+    }
+
+
+
+}
+
+
+static void _on_shutdown_session(void *sess) {
+    printf("session shutdown\n");
 }
 
 void*  client_task(void* arg) {
@@ -94,16 +133,18 @@ void*  client_task(void* arg) {
     messager_conf_t conf = {
         .on_send_message= on_send_message,
         .on_recv_message = on_recv_message,
+        .on_shutdown_session = _on_shutdown_session,
         .data_buffer_alloc = alloc_data_buffer,
         .data_buffer_free = free_data_buffer
     };
     int rc = data->cif->messager_init(&conf);
     assert (rc== 0);
 
-    void *session1 = data->cif->messager_connect(data->srv_ip,data->srv_port);
+    void *session1 = data->cif->messager_connect(data->srv_ip,data->srv_port,NULL);
     if(!session1) {
         return NULL;
     }
+    data->session = session1;
     // printf("Task[%d] , Connect OK \n",data->cpuid);
 
     op_read_t read_op_meta = {
@@ -141,7 +182,6 @@ void*  client_task(void* arg) {
     int i;
     
     printf("Task[%d] ,prepare to send request...\n",data->cpuid);
-
     
     for ( i = 0 ; i < data->rqsts ; ) {
         int qd = g_qd;
@@ -165,11 +205,11 @@ void*  client_task(void* arg) {
         }
 
         int n_wait = n_send;
-        int recv = n_recv;
+        int recv = tls_nr_recv;
         do {
             rc = data->cif->messager_wait_msg();
-        } while (n_recv - recv != n_wait);
-        assert (n_recv - recv == n_wait);
+        } while (tls_nr_recv - recv != n_wait);
+        assert (tls_nr_recv - recv == n_wait);
 
         i+= n_wait;
     }

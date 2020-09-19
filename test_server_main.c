@@ -206,8 +206,9 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
     int rc = 0;
     switch (op) {
         case msg_oss_op_stat: {
-            request->header.meta_length = sizeof(op_stat_t);
-            request->meta_buffer = alloc_meta_buffer(sizeof(op_stat_t));
+            request->header.meta_length = 0;             
+            request->header.data_length = sizeof(op_stat_result_t);
+            request->data_buffer = alloc_meta_buffer(sizeof(op_stat_result_t));
         }
             break; 
         case msg_oss_op_create: {
@@ -254,7 +255,7 @@ static void _do_op_oss(message_t * _request) {
     message_t *request = ctx;
     memcpy(request, _request, sizeof(message_t));
 
-    log_debug("Prepare to execute op:[seq=%u,op_code=%u,meta_len=%u,data_len=%u]\n", request->header.seq,
+    log_debug("Prepare to execute op:[seq=%lu,op_code=%u,meta_len=%u,data_len=%u]\n", request->header.seq,
         request->header.type, request->header.meta_length, request->header.data_length);
 
     int rc = INVALID_OP;
@@ -298,7 +299,7 @@ static void op_execute(message_t *request) {
 
 static void _on_recv_message(message_t *m) {
     // log_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
-    log_info("Recv a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
+    log_info("Recv a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
     message_t _m ;
     /**

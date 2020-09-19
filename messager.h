@@ -4,27 +4,6 @@
 #include "message.h"
 
 
-#ifdef  MSGR_DEBUG
-#define msgr_log(level, ...) do { \
-        if((level) <= MSGR_DEBUG_LEVEL) {\
-            printf("%s:%d:[%d](%s):" , __FILE__, __LINE__, (level), __func__ );\
-            printf(__VA_ARGS__);\
-        }\
-    } while (0) 
-
-#define msgr_err(...) msgr_log(0, __VA_ARGS__)
-#define msgr_warn(...) msgr_log(1, __VA_ARGS__)
-#define msgr_info(...) msgr_log(5, __VA_ARGS__)
-#define msgr_debug(...) msgr_log(10,__VA_ARGS__)
-
-#else
-#define msgr_log(level, ...)
-#define msgr_err(...) 
-#define msgr_warn(...) 
-#define msgr_info(...)
-#define msgr_debug(...) 
-#endif
-
 
 
 typedef struct messager_conf_t {
@@ -46,7 +25,6 @@ typedef struct messager_conf_t {
     //如果要避免释放 meta buffer 和 data buffer 请使用如下方法：
     // 1. 手动将 msg->data_buffer msg->meta_buffer 置 NULL 
     // 2. 使用 message_move 函数将源消息的正文（所属session,header+meta+data) 转移到目的 message
-    //建议使用第2个方法
     void (*on_recv_message)(message_t *msg);
     
     //【必须填写】
@@ -54,12 +32,11 @@ typedef struct messager_conf_t {
     //如果要避免释放 meta buffer 和 data buffer 请使用如下方法：
     // 1. 手动将 msg->data_buffer msg->meta_buffer 置 NULL 
     // 2. 使用 message_move 函数将源消息的正文（所属session,header+meta+data) 转移到目的 message
-    //建议使用第2个方法
     void (*on_send_message)(message_t *msg);
 
     // 【此回调只有 client 类型需要填写】
     // 当 messager 在进行消息收发时，seesion 有可能被异常关闭
-    // 此回调在 session 被异常关闭后调用，进入回调前，void* 指向的 session 资源已经被释放
+    // 此回调在 session 被异常关闭前调用
     // 上层使用此回调进行清理工作，比如把透明的 void* 指针从活跃列表里删除 
     // 注意不要在这个回调里再调用 messager_close()，会产生二次释放问题
     void (*on_shutdown_session)(void *session , const char *ip, int port);
@@ -108,16 +85,27 @@ typedef struct msgr_client_if_t {
     void (*messager_fini)();
 
     ///返回一个透明的 session 指针
-    void* (*messager_connect)(const char *ip , int port);
+    void* (*messager_connect)(const char *ip , int port , void *priv_ctx);
+
+    //获得与一个session关联的前一级上下文
+    void* (*messager_get_session_ctx)( void* session);
+
     
     //关闭一个session
     void  (*messager_close)(void *session);
 
-    //把一个消息放到发送队列
+    //把一个消息放到对应 session 的发送队列
     //返回值：0 成功
     //返回值：-1, 内部缓存达到上限，需要调用 flush 
     int   (*messager_sendmsg)(const message_t *_msg);
     
+
+    int   (*messager_wait_msg_of) (void* session); 
+
+
+    int   (*messager_flush_msg_of)(void* session); 
+
+
 
     //把所有发送队列中的消息flush
     //返回值：>=0 成功发送的消息个数

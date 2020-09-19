@@ -58,6 +58,7 @@ static void spdk_bdev_event_cb(enum spdk_bdev_event_type type, struct spdk_bdev 
 
 static void _bdev_open(const char *name) {
     struct chunkstore_context_t *cs = get_local_store_ptr();
+
     int rc =  spdk_bdev_open_ext(name,true, spdk_bdev_event_cb,NULL, &cs->device.bdev_desc);
     if(rc) {
       	SPDK_ERRLOG("Could not open a bdev %s,\n" , name);
@@ -124,7 +125,7 @@ op_handler(stat) {
     struct chunkstore_context_t* cs = get_local_store_ptr();
     message_t *m = ctx;
     // async_op_context_t *actx = ostore_async_ctx(m);
-    op_stat_t *stat =(void*)m->meta_buffer;
+    op_stat_result_t *stat =(void*)m->data_buffer;
     stat->max_obj_size_kib = cpu_to_le32(0x1000);
     stat->capcity_gib = cpu_to_le32((uint32_t)(cs->stat.data_gb));
     stat->max_oid = cpu_to_le32(cs->stat.max_oid);
@@ -156,8 +157,7 @@ void rw_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
 
 
 static void _obj2blk(uint32_t oid , uint32_t o_ofst, uint32_t o_len, 
-    uint64_t *b_ofst, uint64_t *b_len)
-{
+    uint64_t *b_ofst, uint64_t *b_len)  {
     *b_ofst = (oid * (1024)) + (o_ofst >> 12);
     *b_len = (o_len)   >> 12;
 }
