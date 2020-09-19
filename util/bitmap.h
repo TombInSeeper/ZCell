@@ -43,21 +43,23 @@ static inline bool bitmap_get_bit(bitmap_t *b , unsigned int i){
 }
 
 
-static inline int ffsll(unsigned long long u) {
-    return __builtin_ffsll(u);
-}
+// static inline int ffsll(unsigned long long u) {
+//     return __builtin_ffsll(u);
+// }
+
+
 static inline int bitmap_next_set(bitmap_t *b , unsigned int bit_hint) {
     int word_idx = bit_hint >> BITMAP_SHIFT;  
     int _word_hint_idx = word_idx;
     for ( ; word_idx < b->words_length ; ++word_idx) {
         if(b->words[word_idx]){
-            return ffsll(b->words[word_idx]);
+            return __builtin_ffsll(b->words[word_idx]);
         }
     }
     word_idx = 0;
     for ( ; word_idx < _word_hint_idx ; ++word_idx) {
         if(b->words[word_idx]){
-            return ffsll(b->words[word_idx]);
+            return __builtin_ffsll(b->words[word_idx]);
         }
     } 
     return -1;   
