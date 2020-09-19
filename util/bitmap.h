@@ -32,9 +32,20 @@ static inline bitmap_t * bitmap_constructor( unsigned int bit_length , int init_
 static inline void bitmap_destructor(bitmap_t *b) {
     free(b);
 }
+
+static inline void bitmap_reset(bitmap_t *b , int value) {
+    if(value)
+        memset(b->words , 0xff, b->words_length);
+    else 
+        memset(b->words , 0x00, b->words_length); 
+}
+
 static inline void bitmap_set_bit(bitmap_t *b , unsigned int i) {
     b->words[i >> BITMAP_SHIFT] |= (1<< (i & BITMAP_MASK));  
 }
+
+
+
 static inline void bitmap_clr_bit(bitmap_t *b , unsigned int i){
      b->words[i>>BITMAP_SHIFT] &= ~(1<<(i & BITMAP_MASK));
 }
