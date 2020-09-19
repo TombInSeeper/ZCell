@@ -37,7 +37,7 @@ void rev_alloc_perf_test(bitmap_t *b) {
 
 
 void perf_test() {
-    bitmap_t *b = bitmap_constructor(BITMAP_SIZE,1); 
+    bitmap_t *b = bitmap_constructor(512,1); 
     
     seq_alloc_perf_test(b);
     bitmap_reset(b,1);
