@@ -3,11 +3,7 @@
 #include "util/bitmap.h"
 #include "util/log.h"
 #include "util/chrono.h"
-
-void ASSERT_EQ(unsigned int exp1, unsigned int exp2) {
-    log_info("expect value = %u, true value = %u \n", exp2, exp1);
-    assert(exp1 == exp2);
-}
+#include "util/uint_test.h"
 
 
 void seq_alloc_perf_test(bitmap_t *b) {
