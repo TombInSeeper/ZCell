@@ -23,19 +23,28 @@ void seq_alloc_perf_test(bitmap_t *b) {
 
 void func_test( ) {
     bitmap_t *b = bitmap_constructor(256,1); 
-    assert(bitmap_get_bit(b , 1) == 1 );
 
-    bitmap_clr_bit(b , 1);
-    assert(bitmap_get_bit(b , 1) == 0 );
+    ASSERT_EQ(bitmap_get_bit(b,0),1);
+    ASSERT_EQ(bitmap_get_bit(b,1),1);
+    ASSERT_EQ(bitmap_get_bit(b,32),1);
+    ASSERT_EQ(bitmap_get_bit(b,33),1);
+    ASSERT_EQ(bitmap_get_bit(b,63),1);
+    ASSERT_EQ(bitmap_get_bit(b,64),1);
+    ASSERT_EQ(bitmap_get_bit(b,127),1);
+    ASSERT_EQ(bitmap_get_bit(b,128),1);
+    ASSERT_EQ(bitmap_get_bit(b,255),1);
 
-    bitmap_set_bit(b , 1);
-    assert(bitmap_get_bit(b , 1) == 1 );
+    bitmap_set_bit(b,1);
+    ASSERT_EQ(bitmap_get_bit(b,1),1);
 
     ASSERT_EQ(bitmap_find_next_set_and_clr(b,0), 0);
     ASSERT_EQ(bitmap_find_next_set_and_clr(b,0), 1);
     ASSERT_EQ(bitmap_find_next_set_and_clr(b,0), 2);
     ASSERT_EQ(bitmap_find_next_set_and_clr(b,0), 3);
     ASSERT_EQ(bitmap_find_next_set_and_clr(b,0), 4);
+
+    bitmap_set_bit(b,2);
+    ASSERT_EQ(bitmap_find_next_set_and_clr(b,0), 2);
 
     bitmap_destructor(b);
 
