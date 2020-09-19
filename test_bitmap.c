@@ -38,6 +38,10 @@ void perf_test() {
     seq_alloc_perf_test(b);
     bitmap_reset(b,1);
 
+    rev_alloc_perf_test(b);
+    bitmap_reset(b,1);
+
+
     bitmap_destructor(b);
 }
 
