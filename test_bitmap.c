@@ -21,11 +21,11 @@ void func_test( ) {
     bitmap_clr_bit(b , 1);
     assert(bitmap_get_bit(b , 1) == 0 );
 
-    bitmap_clr_bit(b , 32);
-    assert(bitmap_get_bit(b , 32) == 0 );
+    bitmap_set_bit(b , 1);
+    assert(bitmap_get_bit(b , 1) == 1 );
 
-    assert(bitmap_get_bit(b , 9) == 1 );
-
+    assert(bitmap_find_next_set_and_clr(b,0) == 0);
+    assert(bitmap_find_next_set_and_clr(b,0) == 1);
     assert(bitmap_find_next_set_and_clr(b,0) == 2);
     assert(bitmap_find_next_set_and_clr(b,0) == 3);
     assert(bitmap_find_next_set_and_clr(b,0) == 4);
