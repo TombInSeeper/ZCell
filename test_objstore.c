@@ -40,7 +40,7 @@ const message_t fake_stat_request_msg = {
     .header = {
         .seq = 0,
         .type = msg_oss_op_stat,
-        .meta_length = sizeof(op_stat_t),
+        .meta_length = sizeof(op_stat_result_t),
         .data_length = 0,
     },
     .meta_buffer = meta_buffer,
@@ -72,7 +72,7 @@ const message_t fake_delete_request_msg = {
     .header = {
         .seq = 0,
         .type = msg_oss_op_delete,
-        .meta_length = sizeof(op_stat_t),
+        .meta_length = sizeof(op_stat_result_t),
         .data_length = 0,
     },
     .meta_buffer = meta_buffer,
@@ -150,11 +150,8 @@ void _free_write_op(void *p) {
 void _sys_fini()
 {
     os->unmount();
-
-
     spdk_free(rbuf);
     spdk_free(wbuf);
-
     spdk_app_stop(0);
 }
 
@@ -187,6 +184,9 @@ void _write_complete(void *ctx, int sts) {
 
     }
 }
+
+
+
 void _do_write_test( void* ctx , int st) {
     (void)ctx;
     (void)st;
@@ -204,7 +204,7 @@ void _do_write_test( void* ctx , int st) {
 
 void _stat_cb( void* rqst ,int st) {
     message_t *m = rqst;
-    op_stat_t *rst = (void*)(m->meta_buffer);    
+    op_stat_result_t *rst = (void*)(m->meta_buffer);    
     SPDK_NOTICELOG("ostore state:max_oid=%u ,cap_gb=%u G ,obj_sz=%u K ,obj_blksz=%u K\n",
         rst->max_oid ,rst->capcity_gib, rst->max_obj_size_kib, rst->obj_blk_sz_kib);
     g_max_oid = rst->max_oid;
@@ -218,7 +218,7 @@ void _do_uint_test() {
     void *op = malloc(sizeof(message_t) + os->obj_async_op_context_size());
     memcpy(op,&fake_stat_request_msg,sizeof(message_t));
     message_t *m = op;
-    m->meta_buffer = malloc(sizeof(op_stat_t));
+    m->meta_buffer = malloc(sizeof(op_stat_result_t));
     int rc = os->obj_async_op_call(op,_stat_cb);    
     assert(rc == OSTORE_SUBMIT_OK);
     SPDK_NOTICELOG("end\n");
