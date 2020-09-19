@@ -1,16 +1,13 @@
-
 #include "spdk/queue.h"
 #include "spdk/event.h"
-#include "spdk/log.h"
 #include "spdk/env.h"
+
 #include "net.h"
-
 #include "messager.h"
-
+#include "util/log.h"
 
 
 #define READ_EVENT_MAX 64
-
 #define RECV_BUF_SZ (4 << 20)
 #define SEND_BUF_SZ (4 << 20)
 
@@ -18,20 +15,20 @@
 
 
 static inline  void* alloc_meta_buffer(size_t sz){
-    msgr_debug("Messager Internal alloc message meta buffer\n");
+    log_debug("Messager Internal alloc message meta buffer\n");
     return malloc(sz);
 }
 static inline void free_meta_buffer( void *mptr) {
-    msgr_debug("Messager Internal free message meta buffer\n");
+    log_debug("Messager Internal free message meta buffer\n");
     free(mptr);
 }
 
 static void* default_alloc_data_buffer(uint32_t sz) {
-    msgr_debug("Messager Internal alloc message data buffer\n");
+    log_debug("Messager Internal alloc message data buffer\n");
     return malloc(sz);
 }
 static void default_free_data_buffer( void *dptr) {
-    msgr_debug("Messager Internal alloc message data buffer\n");
+    log_debug("Messager Internal alloc message data buffer\n");
     free(dptr);
 }
 
@@ -60,7 +57,7 @@ static inline void msg_destruct(msg* m) {
         if(m->message.state.hdr_rem_len == sizeof(m->message.header))
             ;
         else 
-            msgr_debug("Warning: destructing uncompleted message\n");
+            log_debug("Warning: destructing uncompleted message\n");
     }
     if(m->message.meta_buffer) {
         free_meta_buffer(m->message.meta_buffer);
@@ -170,7 +167,7 @@ static inline session_t * session_construct(const char *ip , int port,
     TAILQ_INIT(&(s->send_q));
     
     if ( _msgr->_net_impl->group_add_sock(_msgr->_sock_group , s->_sock) ) {
-        msgr_err("Error: add sock to group\n");
+        log_err("Error: add sock to group\n");
         _msgr->_net_impl->close(s->_sock);
         free(s);
         return NULL;
@@ -181,11 +178,11 @@ static inline session_t * session_construct(const char *ip , int port,
 static inline void session_destruct(session_t *ss) {
 
     messager_t* msgr = get_local_msgr();
-    msgr_debug("starting..\n");
+    log_debug("starting..\n");
     if(!TAILQ_EMPTY(&ss->recv_q)) {
         msg *h = TAILQ_FIRST(&ss->recv_q);
         if(!msg_new(h)) 
-            msgr_debug("session_with:[%s:%d] has uncompletely recieved/processed messages\n" , ss->ip, ss->port);
+            log_debug("session_with:[%s:%d] has uncompletely recieved/processed messages\n" , ss->ip, ss->port);
         while(!TAILQ_EMPTY(&ss->recv_q)) {
             msg *h = TAILQ_FIRST(&ss->recv_q);
             TAILQ_REMOVE(&ss->recv_q, h , _msg_list_hook);
@@ -193,7 +190,7 @@ static inline void session_destruct(session_t *ss) {
         }
     }
     if(!TAILQ_EMPTY(&ss->send_q)) {
-        msgr_debug("session_with:[%s:%d] has uncompletely sended/processed messages\n" , ss->ip, ss->port);
+        log_debug("session_with:[%s:%d] has uncompletely sended/processed messages\n" , ss->ip, ss->port);
         while(!TAILQ_EMPTY(&ss->send_q)) {
             msg *h = TAILQ_FIRST(&ss->send_q);
             TAILQ_REMOVE(&ss->send_q, h , _msg_list_hook);
@@ -201,14 +198,14 @@ static inline void session_destruct(session_t *ss) {
         }
     }
 
-    msgr_debug("group_remove_sock..\n");
+    log_debug("group_remove_sock..\n");
     if ( msgr->_net_impl->group_remove_sock( msgr->_sock_group , ss->_sock) ) {
-        msgr_debug("Failed to remove [%s:%d] sock from gruop \n" , ss->ip , ss->port);
+        log_debug("Failed to remove [%s:%d] sock from gruop \n" , ss->ip , ss->port);
     }
 
-    msgr_debug("close_sock..\n");
+    log_debug("close_sock..\n");
     if (msgr->_net_impl->close(ss->_sock)) {
-        msgr_debug("Failed to closed [%s:%d] sock\n" , ss->ip , ss->port);
+        log_debug("Failed to closed [%s:%d] sock\n" , ss->ip , ss->port);
     }
 
 
@@ -310,8 +307,8 @@ static int _do_recv_message(msg * m) {
                 return err;
             } else {
                 assert(ms->state.hdr_rem_len == 0);
-                msgr_debug("Messager msg_header recv done\n");    
-                msgr_debug("meta_len=%u,data_len=%u\n",ms->header.meta_length,ms->header.data_length);              
+                log_debug("Messager msg_header recv done\n");    
+                log_debug("meta_len=%u,data_len=%u\n",ms->header.meta_length,ms->header.data_length);              
                 if ((ms->state.meta_rem_len = ms->header.meta_length) > 0 ) {
                     o_meta_len = ms->header.meta_length;
                     ms->meta_buffer = alloc_meta_buffer(ms->header.meta_length);
@@ -332,7 +329,7 @@ static int _do_recv_message(msg * m) {
             if ( ( err =  _sock_rc_handle(sock_rc , &(ms->state.meta_rem_len)) ) != SOCK_RWOK ) {
                 return err;
             } 
-            msgr_debug("Messager msg_meta recv done\n");    
+            log_debug("Messager msg_meta recv done\n");    
         }
         if(ms->state.data_rem_len) {
             char *datastart = ms->data_buffer +( o_data_len - ms->state.data_rem_len) ;
@@ -344,7 +341,7 @@ static int _do_recv_message(msg * m) {
             if ( ( err =  _sock_rc_handle(sock_rc , &(ms->state.data_rem_len)) ) != SOCK_RWOK ) {
                 return err;
             } 
-            msgr_debug("Messager msg_data recv done\n");    
+            log_debug("Messager msg_data recv done\n");    
         }
     } while(0);
     return SOCK_RWOK;
@@ -432,7 +429,7 @@ static inline int _push_msg(const message_t *_msg) {
     if(qos_release_tokens(&s->send_qos, len)){
         msg* m = msg_construct(s); 
         memcpy(&m->message, _msg , sizeof(message_t));
-        msgr_debug("_push_msg m->meta=%u, m->data=%u\n" , m->message.header.meta_length ,m->message.header.data_length);
+        log_debug("_push_msg m->meta=%u, m->data=%u\n" , m->message.header.meta_length ,m->message.header.data_length);
         TAILQ_INSERT_TAIL(&s->send_q, m , _msg_list_hook);
         return 0;
     }
@@ -486,7 +483,7 @@ static int _poll_read_events() {
 	// rc = spdk_sock_group_poll(msgr->sock_group);
     rc = msgr->_net_impl->group_poll(msgr->_sock_group, READ_EVENT_MAX , _results);
 	if (rc < 0) {
-		msgr_err("Failed to poll sock_group=%p\n", msgr->_sock_group);
+		log_err("Failed to poll sock_group=%p\n", msgr->_sock_group);
         return rc;
     }
 
@@ -517,24 +514,24 @@ static int sock_accept_poll(void *arg)  {
 		if (sock != NULL) {
 			rc = msgr->_net_impl->getaddr(sock, saddr, sizeof(saddr), &sport, caddr, sizeof(caddr), &cport);
 			if (rc < 0) {
-				msgr_warn("Cannot get connection addresses\n");
+				log_warn("Cannot get connection addresses\n");
 				msgr->_net_impl->close(sock);
 				return -1;
 			}
-			msgr_debug("Accepting a new connection from (%s, %hu) to (%s, %hu)\n",
+			log_debug("Accepting a new connection from (%s, %hu) to (%s, %hu)\n",
 				       caddr, cport, saddr, sport);
             // struct client_t* c = _get_client_ctx(ctx,sock);
             session_t *new_sess = session_construct(caddr,cport,sock);
             if(new_sess) {
-                msgr_debug("New session to (%s, %hu) established OK\n " , caddr ,cport);
+                log_debug("New session to (%s, %hu) established OK\n " , caddr ,cport);
                 TAILQ_INSERT_TAIL(&msgr->session_q, new_sess , _session_list_hook);
 			    count++;
             } else {
-                msgr_debug("New session to (%s, %hu) established Error!! \n " , caddr ,cport);
+                log_debug("New session to (%s, %hu) established Error!! \n " , caddr ,cport);
             }
 		} else {
 			if (errno != EAGAIN && errno != EWOULDBLOCK) {
-				msgr_err("accept error(%d): %s\n", errno, strerror(errno));
+				log_err("accept error(%d): %s\n", errno, strerror(errno));
 			}
 			break;
 		}
@@ -566,7 +563,7 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
     if(1){
         memcpy(&(msgr->conf) , conf , sizeof (*conf));
         if(msgr->conf.data_buffer_alloc && msgr->conf.data_buffer_free) {
-            msgr_debug("Override defalut data_buffer allocator\n");
+            log_debug("Override defalut data_buffer allocator\n");
             alloc_data_buffer = msgr->conf.data_buffer_alloc;
             free_data_buffer = msgr->conf.data_buffer_free;
         } else {
@@ -576,10 +573,10 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
     if(is_server){
         const char *ip = msgr->conf.ip;
         int port = msgr->conf.port;
-        msgr_debug("Starting listening connection on %s:%d\n", ip , port);
+        log_debug("Starting listening connection on %s:%d\n", ip , port);
         msgr->listen_sock = msgr->_net_impl->listen(ip , port);
         if (msgr->listen_sock  == NULL) {
-            msgr_err("Cannot create server socket\n");
+            log_err("Cannot create server socket\n");
             return -1;
         }
     }
@@ -629,7 +626,7 @@ static void _messager_destructor( bool is_server) {
     if(1) {  
         session_t *sp = TAILQ_FIRST(&msgr->session_q);
         while(sp) {
-            msgr_warn("Living sessions!!\n");
+            log_warn("Living sessions!!\n");
             TAILQ_REMOVE(&msgr->session_q, sp , _session_list_hook);
             session_destruct(sp);
             sp = TAILQ_FIRST(&msgr->session_q);

@@ -19,7 +19,7 @@
     } while (0) 
 #define log_err(...) _log(log_level_error, __VA_ARGS__)
 #define log_critical(...) _log(log_level_critical, __VA_ARGS__)
-#define log_warn(...) _log(log_level_warn,_VA_ARGS__)
+#define log_warn(...) _log(log_level_warn,__VA_ARGS__)
 #define log_info(...) _log(log_level_info, __VA_ARGS__)
 #define log_debug(...) _log(log_level_debug,__VA_ARGS__)
 #else
