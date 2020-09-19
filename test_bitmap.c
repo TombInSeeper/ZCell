@@ -37,7 +37,7 @@ void rev_alloc_perf_test(bitmap_t *b) {
 
 
 void perf_test() {
-    bitmap_t *b = bitmap_constructor(128,1); 
+    bitmap_t *b = bitmap_constructor(BITMAP_SIZE,1); 
     
     seq_alloc_perf_test(b);
     bitmap_reset(b,1);
@@ -54,7 +54,7 @@ void func_test() {
     bitmap_t *b = bitmap_constructor(BITMAP_SIZE,1); 
     ASSERT_EQ(b->bit_length,BITMAP_SIZE);
     ASSERT_EQ(b->words_length,BITMAP_SIZE / 64);
-    
+
     do { 
         typeof(bitmap_get_bit(b,0)) _v1 = (bitmap_get_bit(b,0));
         typeof(1) _v2 = (1); 
