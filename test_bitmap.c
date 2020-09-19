@@ -52,7 +52,9 @@ void perf_test() {
 
 void func_test() {
     bitmap_t *b = bitmap_constructor(BITMAP_SIZE,1); 
-
+    ASSERT_EQ(b->bit_length,BITMAP_SIZE);
+    ASSERT_EQ(b->words_length,BITMAP_SIZE / 64);
+    
     do { 
         typeof(bitmap_get_bit(b,0)) _v1 = (bitmap_get_bit(b,0));
         typeof(1) _v2 = (1); 
