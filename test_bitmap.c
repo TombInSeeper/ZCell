@@ -27,8 +27,13 @@ void func_test( ) {
     assert(bitmap_get_bit(b , 9) == 1 );
 
     assert(bitmap_find_next_set_and_clr(b,0) == 2);
+    assert(bitmap_find_next_set_and_clr(b,0) == 3);
+    assert(bitmap_find_next_set_and_clr(b,0) == 4);
+    assert(bitmap_find_next_set_and_clr(b,0) == 5);
 
     bitmap_destructor(b);
+
+    log_info("Pass!\n");
 }
 
 
