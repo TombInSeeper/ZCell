@@ -67,6 +67,7 @@ typedef struct message_t {
 
 
 
+
 static void inline message_move(message_t *dst ,  message_t *src) {
     memcpy(dst,src,sizeof(*src));
     memset(src,0,sizeof(*src));
@@ -78,7 +79,7 @@ static inline void* message_cliam_meta(message_t *src) {
     return meta;
 } 
 
-static inline void* message_cliam_meta(message_t *src) {
+static inline void* message_cliam_data(message_t *src) {
     void *data = src->data_buffer;
     src->data_buffer = NULL;
     return data;
