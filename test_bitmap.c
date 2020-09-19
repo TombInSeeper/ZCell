@@ -14,7 +14,7 @@ void seq_alloc_perf_test(bitmap_t *b) {
         hint = bitmap_find_next_set_and_clr(b, hint);
     }
     uint64_t end = now();
-    log_info("seq allocavg_lat =  %lf ns",  (end - st ) / 128.0 * 1000.0);
+    log_info("seq allocavg_lat =  %lf ns \n",  (end - st ) / 128.0 * 1000.0);
 }
 
 void perf_test() {
@@ -29,6 +29,12 @@ void perf_test() {
 
 void func_test() {
     bitmap_t *b = bitmap_constructor(256,1); 
+
+    do { 
+        typeof(bitmap_get_bit(b,0)) _v1 = (bitmap_get_bit(b,0));
+        typeof(1) _v2 = (1); 
+        assert(_v1 == _v2); 
+    } while(0);
 
     ASSERT_EQ(bitmap_get_bit(b,0),1);
     ASSERT_EQ(bitmap_get_bit(b,1),1);

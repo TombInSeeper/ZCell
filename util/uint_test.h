@@ -7,5 +7,5 @@
         typeof(exp1) _v1 = (exp1);\
         typeof(exp2) _v2 = (exp2);\
         assert(_v1 == _v2);\
-    }while(0)
+    } while(0)
 #endif

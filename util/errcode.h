@@ -1,5 +1,5 @@
-#ifndef _ERRCODE_H_
-#define _ERRCODE_H_
+#ifndef ERRCODE_H
+#define ERRCODE_H
 
 
 enum Status {
