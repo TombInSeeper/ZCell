@@ -101,10 +101,10 @@ static void msgr_meta_buffer_free(void *ptr) {
     liboss_ctx_t *lc = tls_liboss_ctx();
     fcache_put(lc->small_meta_buffers, ptr);
 }
-static void* msgr_data_buffer_alloc(size_t sz) {
+static void* msgr_data_buffer_alloc(uint32_t sz) {
     return malloc(sz);
 }
-static void* msgr_data_buffer_free(void *ptr) {
+static void msgr_data_buffer_free(void *ptr) {
     free(ptr);
 }
 
@@ -124,9 +124,7 @@ static void msgr_on_recv_msg(message_t *msg) {
 
     uint16_t status = message_get_status(msg);
     op->state = OP_COMPLETED;
-    if(status != SUCCESS) {
-        return -1;
-    }
+
     message_move(&op->reqeust_and_response , msg);
     // ch->nr_inflight_op_this_time_--;
     
@@ -169,7 +167,9 @@ extern int tls_io_ctx_init(int flags) {
     liboss_ctx_t *lc = tls_liboss_ctx();
     (void)flags;
     lc->small_meta_buffers = fcache_constructor(RING_MAX,sizeof(small_buffer_t),MALLOC);
-    _do_msgr_init(); 
+    _do_msgr_init();
+
+    return 0; 
 }
 
 extern int tls_io_ctx_fini() {
@@ -177,6 +177,8 @@ extern int tls_io_ctx_fini() {
 
     lc->msgr->messager_fini();
     lc->msgr = NULL;
+
+    return 0;
 }
 
 extern io_channel *get_io_channel_with(const char *ip, int port) {
