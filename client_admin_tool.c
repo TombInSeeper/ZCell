@@ -48,15 +48,15 @@ void print_usage_and_exit() {
 
 int _sync_with_op(admin_context_t *ac , int opd) {
     int rc = io_submit_to_channel(ac->ioch, &opd, 1);
-    if(rc) {
-        log_err("opd=%d, submit falied\n", opd);
+    if(rc < 0) {
+        log_err("opd=%d, submit falied, error= %s \n", opd , strerror(rc) );
         return -1;
     }
     log_debug("opd=%d, submit OK\n", opd);
     int cpl;
     rc = io_poll_channel(ac->ioch, &cpl, 1, 1);
-    if(rc) {
-        log_err("opd=%d, poll falied\n", opd);
+    if(rc < 0) {
+        log_err("opd=%d, poll falied , error = %s \n", opd , strerror(rc));
         return -1;
     }
     log_debug("opd=%d, complete OK\n", cpl);
@@ -134,7 +134,7 @@ int _do_stat(admin_context_t *ac) {
     void *data_buffer;
     uint32_t data_len;
     op_claim_result(ac->ioch, cpl, &status, &op_type, &data_buffer, &data_len);
-    
+
     log_info("Execute result of op(%d), status_code=(%d)\n", cpl, status);    
 
     if(data_buffer) {

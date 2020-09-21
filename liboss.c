@@ -373,6 +373,9 @@ extern int io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
         while(!rc && ( retry_times-- || min ) ) {
             rc = lc->msgr->messager_wait_msg();
             assert(rc >= 0);
+            if(rc == 0) {
+                _mm_pause();
+            }
         }
         log_debug("msgr get %u response this time\n", ch->cpl_nr_);
     }
