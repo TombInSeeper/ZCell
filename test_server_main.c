@@ -85,8 +85,9 @@ static void free_meta_buffer(void *p) {
 static void *alloc_data_buffer(uint32_t sz) {
     void *ptr;
     if(sz <= 0x1000) {
-        log_debug("[fixed_cahce] \n");
-        ptr =  fcache_get(reactor_ctx()->dma_pages); 
+        // log_debug("[fixed_cahce] \n");
+        // ptr =  fcache_get(reactor_ctx()->dma_pages); 
+        sz = 0x1000;
     }
     else {
         log_debug("[spdk_dma_malloc] \n");
@@ -96,14 +97,14 @@ static void *alloc_data_buffer(uint32_t sz) {
     return ptr;
 }
 static void free_data_buffer(void *p) {
-    fcache_t *fc = reactor_ctx()->dma_pages;
-    if(fcache_in(fc , p)) {
-        log_debug("[fixed_cahce] \n");
-        fcache_put(fc, p);
-    } else {
-        log_debug("[spdk_dma_malloc] \n");
+    // fcache_t *fc = reactor_ctx()->dma_pages;
+    // if(fcache_in(fc , p)) {
+        // log_debug("[fixed_cahce] \n");
+        // fcache_put(fc, p);
+    // } else {
+        log_debug("[spdk_dma_free] \n");
         spdk_dma_free(p);
-    }
+    // }
 }
 
 
