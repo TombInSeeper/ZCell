@@ -347,7 +347,7 @@ extern int  io_submit_to_channel(io_channel *ch , int *ops , uint32_t op_nr) {
     int nr_m = 0; 
     do {
         log_debug("Preapre to flush message to peer\n");
-        int rc = lc->msgr->messager_flush();
+        int rc = lc->msgr->messager_flush_msg_of(ch->session_);
         assert (rc >= 0);
         nr_m += rc;
         if(nr_m < op_nr) {
@@ -371,7 +371,7 @@ extern int io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
     if(!ch->cpl_nr_) {
         int rc = 0;
         while(!rc && ( retry_times-- || min ) ) {
-            rc = lc->msgr->messager_wait_msg();
+            rc = lc->msgr->messager_wait_msg_of(ch->session_);
             assert(rc >= 0);
             if(rc == 0) {
                 _mm_pause();

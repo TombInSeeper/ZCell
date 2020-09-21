@@ -12,8 +12,6 @@
 #define SEND_BUF_SZ (4 << 20)
 
 
-
-
 static inline  void* alloc_meta_buffer(size_t sz){
     log_debug("Messager Internal alloc message meta buffer\n");
     return malloc(sz);
@@ -436,8 +434,45 @@ static inline int _push_msg(const message_t *_msg) {
     return SOCK_EAGAIN;
 }
 
-static int  _flush_all(messager_t *msgr) {
 
+static int  _flush_msg_of(session_t *s) {
+    messager_t *msgr = get_local_msgr();
+    static session_t *died_ss[NR_SESSION_MAX];  
+    session_t *s;
+    int cnt = 0;
+    int died_ss_n = 0;
+    if(1){
+        msg *miter = TAILQ_FIRST(&s->send_q);
+        int  err;
+        while (miter) {
+            err = _do_send_message(miter);
+            if(err == SOCK_EAGAIN) {
+                break;
+            } else if (err == SOCK_RWOK) {
+                TAILQ_REMOVE(&s->send_q,miter,_msg_list_hook);
+                msgr->conf.on_send_message(&miter->message);
+                qos_recycle_tokens(&s->send_qos, message_len(&miter->message));
+                msg_destruct(miter);
+                miter = TAILQ_FIRST(&s->send_q);
+                ++cnt;
+            } else {
+                died_ss[died_ss_n++] = s;
+                break;
+            }
+        }
+    }
+    int i;
+    //destroy all died session
+    for ( i = 0 ; i < died_ss_n ; ++i) {
+        session_t *s = died_ss[i];
+        TAILQ_REMOVE(&msgr->session_q, s, _session_list_hook);
+        session_destruct(s);
+    }
+    return cnt;
+
+}
+
+static int  _flush_all(messager_t *msgr) {
     static session_t *died_ss[NR_SESSION_MAX];  
     session_t *s;
     int cnt = 0;
@@ -714,14 +749,17 @@ static int _cli_messager_wait_msg() {
 }
 
 static int _cli_messager_wait_msg_of(void *session) {
-    log_err("Unsupported API\n");
-    abort();
-    return 0;
+    // log_err("Unsupported API\n");
+    // abort();
+    session_t *s_ = session;
+    return _read_event_callback(s_, NULL, NULL);
+
 }
 static int _cli_messager_flush_msg_of(void *session) {
-    log_err("Unsupported API\n");
-    abort();
-    return 0;
+    // log_err("Unsupported API\n");
+    // abort();
+    session_t *s_ = session;
+    return _flush_msg_of(s_);
 }
 
 static void* _cli_messager_get_session_ctx (void* session) {

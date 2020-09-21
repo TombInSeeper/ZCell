@@ -22,6 +22,9 @@ enum Status {
 #define OSTORE_SUBMIT_OK SUCCESS
 #define OSTORE_EXECUTE_OK SUCCESS
 
+
+
+
 #define errstr(code) #code
 
 
