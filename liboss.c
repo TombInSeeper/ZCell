@@ -394,7 +394,7 @@ extern int io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
         int i;
         for(i = 0 ; i < ch->cpl_nr_ && nr_reap; ++i, --nr_reap, ++cpls) {
             op_cpl[i] =  message_get_rsv(&ch->cpl_ops_[i]->reqeust_and_response,0);
-            log_debug ( "op_id[%u], seq [%lu]\n", op_cpl[i], message_get_seq(&ch->cpl_ops_[i]->reqeust_and_response));
+            log_debug ("op_id[%u], seq [%lu]\n", op_cpl[i], message_get_seq(&ch->cpl_ops_[i]->reqeust_and_response));
         }
         ch->cpl_nr_ -= cpls;
     }

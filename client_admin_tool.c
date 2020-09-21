@@ -76,7 +76,7 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
                 log_err("Unexpected opd:%d\n",opds[j]);    
                 exit(1);
             }
-            log_info("opds[%d]=%d\n", j, opds[j]);
+            log_debug("opds[%d]=%d\n", j, opds[j]);
         }
 
         // exit(1);
@@ -104,7 +104,7 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
     }    
     uint64_t cre_ed = now();
     double cre_dur = cre_ed - cre_st;
-    double cre_lat = n_objs / cre_dur;
+    double cre_lat = cre_dur / n_objs;
     
     const char *pr = "";
     if(create)
