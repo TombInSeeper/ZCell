@@ -125,6 +125,9 @@ int _do_delete(admin_context_t *ac, uint32_t oid) {
 int _do_stat(admin_context_t *ac) {
 
     int opd = io_stat(ac->ioch);
+    log_debug("opd=%d, prepare OK\n", opd);
+
+
     _sync_with_op(ac, opd);
 
     int cpl = opd;
