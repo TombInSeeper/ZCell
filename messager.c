@@ -746,7 +746,7 @@ static __thread msgr_client_if_t msgr_client_impl = {
     .messager_flush= _cli_messager_flush,
     .messager_wait_msg = _cli_messager_wait_msg,
     .messager_wait_msg_of = _cli_messager_wait_msg_of,
-    .messager_flush_msg_of = _cli_messager_wait_msg_of,
+    .messager_flush_msg_of = _cli_messager_flush_msg_of,
     .messager_get_session_ctx = _cli_messager_get_session_ctx,
 };
 
