@@ -154,14 +154,19 @@ int _run(admin_context_t *ac, int argc , char **argv) {
     ac->port = atoi(argv[2]);
 
     tls_io_ctx_init(0);
+    log_debug("liboss env init done\n");
 
     ac->ioch = get_io_channel_with(ac->ip, ac->port);
+
     if(!ac->ioch) {
-        printf("Cannot establish channel with %s:%d\n", ac->ip, ac->port);
+        log_info("Cannot establish channel with %s:%d\n", ac->ip, ac->port);
         return -1;
     }
+    log_debug("IO channel setup done\n");
+ 
     const char *cmd = argv[3];
     if(!strcmp(cmd, "stat")) {
+        log_debug("Process [stat] command\n ");
         _do_stat(ac);
     } else if (!strcmp(cmd, "put")) {
         log_info("Not supported now\n");
