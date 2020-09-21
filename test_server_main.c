@@ -89,11 +89,9 @@ static void *alloc_data_buffer(uint32_t sz) {
         // ptr =  fcache_get(reactor_ctx()->dma_pages); 
         sz = 0x1000;
     }
-    else {
-        log_debug("[spdk_dma_malloc] \n");
-        uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
-        ptr =  spdk_dma_malloc(sz, align, NULL);
-    }
+    log_debug("[spdk_dma_malloc] \n");
+    uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
+    ptr =  spdk_dma_malloc(sz, align, NULL);
     return ptr;
 }
 static void free_data_buffer(void *p) {
@@ -102,8 +100,8 @@ static void free_data_buffer(void *p) {
         // log_debug("[fixed_cahce] \n");
         // fcache_put(fc, p);
     // } else {
-        log_debug("[spdk_dma_free] \n");
-        spdk_dma_free(p);
+    log_debug("[spdk_dma_free] \n");
+    spdk_dma_free(p);
     // }
 }
 
@@ -144,7 +142,6 @@ static void _do_op_unknown(message_t *request) {
 static void oss_op_cb(void *ctx, int status_code) {
     message_t *request = ctx;
     if(status_code != OSTORE_EXECUTE_OK) {
-        //Broken operation
         _response_broken_op(request,status_code);
         free(request);
         return;
@@ -310,7 +307,7 @@ static void _on_recv_message(message_t *m) {
     op_execute(&_m);
 }
 static void _on_send_message(message_t *m) {
-    log_info("Send a message done , m->id=%u, m->meta=%u, m->data=%u\n" , m->header.seq,
+    log_info("Send a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
 }
 
