@@ -118,6 +118,7 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
     return 0;
 }
 
+
 static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int qd ) {
     int i;
     int loop = loop_;
@@ -130,12 +131,13 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
 
     void *wbuff; 
     io_buffer_alloc(&wbuff, 0x1000);    
+
     uint64_t cre_st = now();    
     for (i = 0 ; i < loop ; ++i) {
         int j;
         for (j = 0 ; j < cqd ; ++j) {
             uint32_t oid = rand() % 10000;
-            uint32_t ofst = (rand() % 1024) * 0x1000;
+            uint32_t ofst = (0 % 1024) * 0x1000;
             uint32_t len = 0x1000;
             opds[j] = io_write(ac->ioch , oid , wbuff , ofst , len);
 
@@ -179,8 +181,6 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
     double cre_dur = cre_ed - cre_st;
     double cre_lat = cre_dur / (loop * cqd);        
     log_info("%d 4K write time:%lf us , avg_lat=%lf us \n",  (loop * cqd), cre_dur, cre_lat);
-
-
 
     cre_st = now();    
     for (i = 0 ; i < loop ; ++i) {
@@ -230,27 +230,6 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
     cre_dur = cre_ed - cre_st;
     cre_lat = cre_dur / (loop * cqd);        
     log_info("%d 4K Read time:%lf us , avg_lat=%lf us \n",  (loop * cqd), cre_dur, cre_lat);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     free(ios);
