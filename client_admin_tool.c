@@ -423,7 +423,7 @@ int _run(admin_context_t *ac, int argc , char **argv) {
     } else if (!strcmp(cmd, "perf")){
         int qd = atoi(argv[4]);
         int rw_loop = atoi(argv[5]);
-        if(_do_perf(ac ,qd , rw_loop)) {
+        if(_do_perf(ac ,rw_loop , qd)) {
             log_err("Perf failed\n");
             return -1;
         }
