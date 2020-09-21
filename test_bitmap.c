@@ -22,8 +22,6 @@ void seq_alloc_perf_test(bitmap_t *b) {
 void rev_alloc_perf_test(bitmap_t *b) {
     int i;
     int hint = 0;
-
-
     for ( i = 0 ; i < b->bit_length - 256 ; ++i) {
         bitmap_clr_bit(b , i);
     }
@@ -44,7 +42,6 @@ void perf_test() {
 
     rev_alloc_perf_test(b);
     bitmap_reset(b,1);
-
 
     bitmap_destructor(b);
 }

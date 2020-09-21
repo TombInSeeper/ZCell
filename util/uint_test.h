@@ -1,6 +1,7 @@
 #ifndef UINT_TEST_H
 #define UINT_TEST_H
-#include "assert.h"
+
+#include "log.h"
 
 #define ASSERT_EQ(exp1,exp2) \
     do{\

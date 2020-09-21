@@ -40,7 +40,7 @@ typedef struct msg_hdr_t {
     _le16 meta_length; //MAX 64K
     _le32 data_length;
     _le32 crc_meta; 
-    _le32 rsv[8]; // reserve for some special using 
+    _le32 rsv[2]; // reserve for some special using 
 } _packed msg_hdr_t;
 
 
@@ -63,6 +63,8 @@ typedef struct message_t {
 #define message_get_status(m) (le16_to_cpu((((message_t*)(m))->header.status)))
 #define message_get_prio(m) (le16_to_cpu((((message_t*)(m))->header.prio)))
 #define message_get_meta_crc(m) (le32_to_cpu((((message_t*)(m))->header.crc_meta)))
+#define message_get_meta_len(m) (le16_to_cpu((((message_t*)(m))->header.meta_length)))
+#define message_get_data_len(m) (le32_to_cpu((((message_t*)(m))->header.data_length)))
 #define message_get_rsv(m,i) (le32_to_cpu((((message_t*)(m))->header.rsv[(i)])))
 
 
