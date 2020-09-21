@@ -42,16 +42,16 @@ static inline void bitmap_reset(bitmap_t *b , int value) {
 }
 
 static inline void bitmap_set_bit(bitmap_t *b , unsigned int i) {
-    b->words[i >> BITMAP_SHIFT] |= (1<< (i & BITMAP_MASK));  
+    b->words[i >> BITMAP_SHIFT] |= (1ULL<< (i & BITMAP_MASK));  
 }
 
 
 
 static inline void bitmap_clr_bit(bitmap_t *b , unsigned int i){
-     b->words[i>>BITMAP_SHIFT] &= ~(1<<(i & BITMAP_MASK));
+     b->words[i>>BITMAP_SHIFT] &= ~(1ULL<<(i & BITMAP_MASK));
 }
 static inline bool bitmap_get_bit(bitmap_t *b , unsigned int i){
-    return (b->words[i>>BITMAP_SHIFT] & (1<<(i & BITMAP_MASK)));
+    return (b->words[i>>BITMAP_SHIFT] & (1ULL<<(i & BITMAP_MASK)));
 }
 
 
