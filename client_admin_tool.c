@@ -95,10 +95,11 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
     else
         pr = "Delete";
     
-    log_info("%s %d objects time:%lu us , avg_lat=%lf us \n", pr, n_objs, cre_dur, cre_lat);
+    log_info("%s %d objects time:%lf us , avg_lat=%lf us \n", pr, n_objs, cre_dur, cre_lat);
 
     free(opds);
     free(opds_cpl);
+    return 0;
 }
 
 int _do_perf(admin_context_t *ac, int qd) {
