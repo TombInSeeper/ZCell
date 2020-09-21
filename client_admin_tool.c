@@ -75,7 +75,7 @@ int _do_put(admin_context_t *ac, uint32_t oid, const char *file) {
         return -1;
     }
     uint32_t fsz = _fstat.st_size;
-    char *iobuf;
+    void *iobuf;
     io_buffer_alloc(&iobuf, fsz);    
     do {
         FILE *fp = fopen(file, "r");

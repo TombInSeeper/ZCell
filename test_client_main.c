@@ -122,8 +122,8 @@ void  _do_state_task(void *arg) {
 }
 
 
-static void _on_shutdown_session(void *sess) {
-    printf("session shutdown\n");
+static void _on_shutdown_session(void *sess , const char *ip , int port) {
+    printf("Session with [%s:%d] shutdown\n" , ip , port);
 }
 
 void*  client_task(void* arg) {
