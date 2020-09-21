@@ -399,19 +399,11 @@ extern int  op_claim_result(io_channel *ch, int op_id, int *status, int* op_type
         log_debug("op_id:%d,op_type:%u,status:%d,data_buffer:%p,data_len:%u\n",
             op_id, op_type_, status_, data_buffer_, data_len_);
 
-        if(op_type)
-            *op_type = op_type_;
-        if(status) 
-            *status = status_;
-        if(data_len)
-            *data_len = data_len_;
-        if(data_buffer)
-            *data_buffer = data_buffer_;
         
-        // op_type ? (void)0 : ({(*op_type) = op_type_;});
-        // status ? (void)0 : ({(*status) = status_;});
-        // data_buffer ? (void)0 : ({(*data_buffer) = data_buffer_;});
-        // data_len ? (void)0 : ({(*data_len)= data_len_;});
+        ! op_type ? (void)0 : ({(*op_type) = op_type_;});
+        ! status ? (void)0 : ({(*status) = status_;});
+        ! data_buffer ? (void)0 : ({(*data_buffer) = data_buffer_;});
+        ! data_len ? (void)0 : ({(*data_len)= data_len_;});
 
         ch->op_ctxs_[op_id].state = OP_END;
         return 0;
