@@ -131,7 +131,6 @@ static void msgr_on_recv_msg(message_t *msg) {
     ch->cpl_ops_[ch->cpl_nr_] = op;
     ch->cpl_nr_++;
 
-    return 0;
 }
 
 static void msgr_on_send_msg(message_t *msg) {
@@ -285,7 +284,7 @@ extern int  io_delete(io_channel *ch , uint32_t oid) {
         op_delete_t *op_args = meta_buffer;
         op_args->oid = cpu_to_le32(oid);
     } while(0);
-    return _io_prepare_op_common(ch , msg_oss_op_create, meta_size, meta_buffer , 0, NULL);
+    return _io_prepare_op_common(ch , msg_oss_op_delete, meta_size, meta_buffer , 0, NULL);
 }
 
 extern int  io_buffer_alloc(void** ptr, uint32_t size) {
@@ -307,7 +306,7 @@ extern int  io_read(io_channel  *ch, uint32_t oid, uint64_t ofst, uint32_t len) 
         op_args->len = cpu_to_le32(len);
         op_args->flags = cpu_to_le32(0);
     } while(0);
-    return _io_prepare_op_common(ch , msg_oss_op_create, meta_size, meta_buffer , 0, NULL);
+    return _io_prepare_op_common(ch , msg_oss_op_read, meta_size, meta_buffer , 0, NULL);
 }
 
 extern int  io_write(io_channel *ch, uint32_t oid, const void* buffer, uint64_t ofst, uint32_t len) {
@@ -321,7 +320,7 @@ extern int  io_write(io_channel *ch, uint32_t oid, const void* buffer, uint64_t 
         op_args->len = cpu_to_le32(len);
         op_args->flags = cpu_to_le32(0);
     } while(0);
-    return _io_prepare_op_common(ch , msg_oss_op_create, meta_size, meta_buffer , len, data_buffer);
+    return _io_prepare_op_common(ch , msg_oss_op_write, meta_size, meta_buffer , len, (void*)data_buffer);
 }
 
 extern int  io_submit_to_channel(io_channel *ch , int *ops , uint32_t op_nr) {
@@ -340,8 +339,9 @@ extern int  io_submit_to_channel(io_channel *ch , int *ops , uint32_t op_nr) {
     }
     for (i = 0 ; i < op_nr ; ++i )  {
         op_ctx_t *op = &ch->op_ctxs_[ops[i]];
-        int rc = lc->msgr->messager_sendmsg(&op->reqeust_and_response);
-        assert (rc == 0);
+        // int rc = lc->msgr->messager_sendmsg(&op->reqeust_and_response);
+        lc->msgr->messager_sendmsg(&op->reqeust_and_response);
+        // assert (rc == 0);
     }
 
     //Busy Loop to send and flush
