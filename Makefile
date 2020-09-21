@@ -56,7 +56,7 @@ MSGR_OBJS = messager.o net.o net_posix.o
 OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o
 
 
-TEST_BIN= test_objstore test_bitmap
+TEST_BIN= 
 BIN_TGT=server client client_admin_tool $(TEST_BIN) 
 
 .PHONY: all clean test
@@ -80,12 +80,6 @@ client:test_client_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 	$(LINK_C)
 
 client_admin_tool:client_admin_tool.o liboss.o $(MSGR_OBJS)
-	$(LINK_C)
-
-test_objstore:test_objstore.o  $(OSTORE_OBJS)
-	$(LINK_C)
-
-test_bitmap:test_bitmap.o  
 	$(LINK_C)
 
 %.o: %.c %.d
