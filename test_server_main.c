@@ -305,7 +305,7 @@ static void op_execute(message_t *request) {
 
 static void _on_recv_message(message_t *m) {
     // log_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
-    log_info("Recv a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
+    log_debug("Recv a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
     message_t _m ;
     /**
@@ -317,7 +317,7 @@ static void _on_recv_message(message_t *m) {
     op_execute(&_m);
 }
 static void _on_send_message(message_t *m) {
-    log_info("Send a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
+    log_debug("Send a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
 }
 
