@@ -57,7 +57,7 @@ OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o
 
 
 TEST_BIN= test_objstore test_bitmap
-BIN_TGT=server client $(TEST_BIN) 
+BIN_TGT=server client client_admin_tool $(TEST_BIN) 
 
 .PHONY: all clean test
 	
@@ -79,12 +79,14 @@ server:test_server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 client:test_client_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 	$(LINK_C)
 
-test_objstore:test_objstore.o  $(OSTORE_OBJS)
-	$(LINK_C)
-	
-test_bitmap:test_bitmap.o  
+client_admin_tool:client_admin_tool.o liboss.o $(MSGR_OBJS)
 	$(LINK_C)
 
+test_objstore:test_objstore.o  $(OSTORE_OBJS)
+	$(LINK_C)
+
+test_bitmap:test_bitmap.o  
+	$(LINK_C)
 
 %.o: %.c %.d
 	$(COMPILE_C)
