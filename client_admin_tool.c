@@ -68,12 +68,15 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
                 opds[j] = io_create(ac->ioch,i);
             else 
                 opds[j] = io_delete(ac->ioch,i);
-            log_debug("opd=%d\n",opds[j]);
+            // log_debug("opd=%d\n",opds[j]);
             if(opds[j] < 0) {
                 log_err("Unexpected opd:%d\n",opds[j]);    
                 exit(1);
             }
         }
+
+        exit(1);
+
         io_submit_to_channel(ac->ioch,opds, 200);
         io_poll_channel(ac->ioch,opds_cpl,200,200);
         for ( j = 0; j < 200 ; ++j) {
