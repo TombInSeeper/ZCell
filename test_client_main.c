@@ -68,8 +68,6 @@ typedef struct client_task_data {
     uint64_t end;
     double qps; // K OPS
     double bd; // MB/s
-
-
 } client_task_data;
 
 
@@ -157,20 +155,20 @@ void*  client_task(void* arg) {
     message_t msg = {
         .state = {
             .hdr_rem_len = sizeof(msg_hdr_t),
-            .meta_rem_len = sizeof(op_read_t),
+            .meta_rem_len = 0,
             .data_rem_len = 0
         },
         .header = {
             .seq = 0,
-            .type = msg_oss_op_read,
-            .meta_length = sizeof(op_read_t),
+            .type = msg_ping,
+            .meta_length = 0,
             .data_length = 0,
         },
-        .meta_buffer = (char*)&read_op_meta,
+        .meta_buffer = NULL,
         .data_buffer = NULL,
         .priv_ctx = session1 
     };
-    printf("Task[%d] Wait for starting.., rqsts = %d, connect with[%s:%d]\n",data->cpuid, data->rqsts,
+    printf("Task[%d] Wait for starting.., PING rqsts = %d, connect with[%s:%d]\n",data->cpuid, data->rqsts,
         data->srv_ip , data->srv_port);
 
     while (g_task_start == 0)
