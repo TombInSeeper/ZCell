@@ -332,10 +332,10 @@ extern int  io_submit_to_channel(io_channel *ch , int *ops , int op_nr) {
     int i; 
     for (i = 0 ; i < op_nr ; ++i) {
         int opd = ops[i];
-        log_debug("ops=%p, opd=%d\n",ops, ops[i]);
+        log_debug("ops[%d]=%d\n",ops, i, opd);
         op_ctx_t *op = &ch->op_ctxs_[opd];
         if( 0 <= opd && opd <= ch->queue_depth_ &&  op->state == OP_WAITING_SUBMIT) {
-            log_debug("Prepare to submit ops[%d]: type=%d\n", opd, message_get_op(&op->reqeust_and_response));
+            log_debug("Prepare to submit opd(%d): type=%d\n", opd, message_get_op(&op->reqeust_and_response));
         } else {
             log_warn("Invalid opd = %d\n", opd);
             return -EINVAL;
