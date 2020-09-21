@@ -207,13 +207,13 @@ extern void put_io_channel( io_channel *ioch) {
 
 static op_ctx_t* _alloc_op(io_channel *ch , int *id_) {
     int id = bitmap_find_next_set_and_clr(ch->op_ctxs_bitmap_ , ch->bitmap_hint_);
-    log_debug("op_id = %d \n" , id);
     if(id < 0) {
         *id_ = -1;
         return NULL;
     }
     ch->bitmap_hint_ = id + 1;
     *id_ = id;
+    log_debug("op_id = %d \n" , *id_);
     return &ch->op_ctxs_[id];
 }
 
