@@ -80,7 +80,7 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
         }
 
         // exit(1);
-
+        log_debug("opds addr=%p\n", opds);
         int rc = io_submit_to_channel(ac->ioch, opds , cqd) ;
         if(rc) {
             log_err("Submit error\n");
