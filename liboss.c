@@ -55,7 +55,11 @@ struct io_channel* io_channel_new(uint32_t qd , uint32_t rd ) {
     
     ch->op_ctxs_bitmap_ = bitmap_constructor(ch->queue_depth_, 1);
     assert(ch->op_ctxs_bitmap_);
-    
+    do {
+        log_debug("Bitmap Allocator: %u bit_len, %u word_len \n" , ch->op_ctxs_bitmap_->bit_length,
+            ch->op_ctxs_bitmap_->words_length);
+    } while(0);
+
     ch->op_ctxs_ = calloc(ch->queue_depth_ , sizeof(ch->queue_depth_));
     assert(ch->op_ctxs_);
 
