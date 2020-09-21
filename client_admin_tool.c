@@ -147,7 +147,7 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
 
             // log_debug("opd=%d\n",opds[j]);
             if(opds[j] < 0) {
-                log_err("Unexpected opd:%d\n",opds[j]);    
+                log_err("Unexpected opd:%d , j = %d \n",opds[j] , j);     
                 exit(1);
             }
             log_debug("opds[%d]=%d\n", j, opds[j]);
