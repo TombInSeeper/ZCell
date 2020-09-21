@@ -294,6 +294,7 @@ extern int  io_buffer_alloc(void** ptr, uint32_t size) {
 }
 extern int  io_buffer_free (void* ptr) {
     msgr_data_buffer_free(ptr);
+    return 0;
 }
 
 extern int  io_read(io_channel  *ch, uint32_t oid, uint64_t ofst, uint32_t len) {
@@ -312,7 +313,7 @@ extern int  io_read(io_channel  *ch, uint32_t oid, uint64_t ofst, uint32_t len) 
 extern int  io_write(io_channel *ch, uint32_t oid, const void* buffer, uint64_t ofst, uint32_t len) {
     uint32_t meta_size = sizeof(op_write_t);
     void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_write_t));
-    void *data_buffer = buffer;
+    const void *data_buffer = buffer;
     do {
         op_write_t *op_args = meta_buffer;
         op_args->oid = cpu_to_le32(oid);
@@ -398,7 +399,7 @@ extern int  op_claim_result(io_channel *ch, int op_id, int *status, int* op_type
         log_debug("op_id:%d,op_type:%u,status:%d,data_buffer:%p,data_len:%u\n",
             op_id, op_type_, status_, data_buffer_, data_len_);
 
-        op_type ? (void)0 : ({(*op_type) = op_type;});
+        op_type ? (void)0 : ({(*op_type) = op_type_;});
         status ? (void)0 : ({(*status) = status_;});
         data_buffer ? (void)0 : ({(*data_buffer) = data_buffer_;});
         data_len ? (void)0 : ({(*data_len)= data_len_;});
