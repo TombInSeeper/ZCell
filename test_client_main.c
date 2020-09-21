@@ -156,7 +156,7 @@ void*  client_task(void* arg) {
         .state = {
             .hdr_rem_len = sizeof(msg_hdr_t),
             .meta_rem_len = 0,
-            .data_rem_len = 0
+            .data_rem_len = g_data_sz
         },
         .header = {
             .seq = 0,
@@ -165,7 +165,7 @@ void*  client_task(void* arg) {
             .data_length = 0,
         },
         .meta_buffer = NULL,
-        .data_buffer = NULL,
+        .data_buffer = tls_data_buffer,
         .priv_ctx = session1 
     };
     printf("Task[%d] Wait for starting.., PING rqsts = %d, connect with[%s:%d]\n",data->cpuid, data->rqsts,
