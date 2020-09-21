@@ -162,7 +162,7 @@ void*  client_task(void* arg) {
             .seq = 0,
             .type = msg_ping,
             .meta_length = 0,
-            .data_length = 0,
+            .data_length = g_data_sz,
         },
         .meta_buffer = NULL,
         .data_buffer = tls_data_buffer,
