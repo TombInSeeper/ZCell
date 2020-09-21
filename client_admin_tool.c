@@ -75,7 +75,7 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
             }
         }
 
-        exit(1);
+        // exit(1);
 
         io_submit_to_channel(ac->ioch,opds, 200);
         io_poll_channel(ac->ioch,opds_cpl,200,200);
