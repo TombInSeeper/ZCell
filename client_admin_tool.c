@@ -59,11 +59,11 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
     int n_objs = 10000;
     int *opds = calloc (256, sizeof(int));
     int *opds_cpl = calloc(256,sizeof(int));
-    const int cqd = 100;
-    uint64_t cre_st = now();
+    const int cqd = 10;
     log_info("Creating %d objects..\n" , n_objs);
     
     
+    uint64_t cre_st = now();
     for (i = 0 ; i < n_objs / (cqd) ; ++i) {
         int j;
         for (j = 0 ; j < cqd ; ++j) {
@@ -80,7 +80,6 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
         }
 
         // exit(1);
-        log_debug("opds addr=%p\n", opds);
         int rc = io_submit_to_channel(ac->ioch, opds , cqd) ;
         if(rc) {
             log_err("Submit error\n");
