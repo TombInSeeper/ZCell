@@ -18,11 +18,11 @@
 static const char *g_base_ip = "0.0.0.0";
 static int g_base_port = 18000;
 static const char *g_core_mask = "0x1";
-static const int g_store_type = NULLSTORE;
+static int g_store_type = NULLSTORE;
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "i:p:c:")) != -1) {
+	while ((opt = getopt(argc, argv, "i:p:c:s:")) != -1) {
 		switch (opt) {
 		case 'i':
 			g_base_ip = optarg;
@@ -33,6 +33,16 @@ static void parse_args(int argc , char **argv) {
         case 'c':
 			g_core_mask = (optarg);
 			break;
+        case 's':
+            if(!strcmp(optarg,"null")){
+                g_store_type = NULLSTORE;
+            } else if (!strcmp(optarg,"chunk")) {
+                g_store_type = CHUNKSTORE;
+            } else {
+                log_err("Unknown storage backend:%s \n" , optarg);
+                exit(1);
+            }
+            break;
 		default:
 			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-c core_mask]\n", argv[0]);
 			exit(1);
