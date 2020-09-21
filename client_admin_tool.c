@@ -105,7 +105,8 @@ int _do_write(admin_context_t *ac, uint32_t oid, const char *file) {
         log_err("File size isn't aligned with 4K \n");
         return -1;
     }
-    uint32_t fsz = _fstat.st_size;
+    // uint32_t fsz = _fstat.st_size;
+    uint32_t fsz = 0x1000;
     void *iobuf;
     io_buffer_alloc(&iobuf, fsz);    
     do {
