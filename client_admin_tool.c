@@ -48,14 +48,14 @@ void print_usage_and_exit() {
 
 int _sync_with_op(admin_context_t *ac , int opd) {
     int rc = io_submit_to_channel(ac->ioch, &opd, 1);
-    if(!rc) {
+    if(rc) {
         log_err("opd=%d, submit falied\n", opd);
         return -1;
     }
     log_debug("opd=%d, submit OK\n", opd);
     int cpl;
     rc = io_poll_channel(ac->ioch, &cpl, 1, 1);
-    if(!rc) {
+    if(rc) {
         log_err("opd=%d, poll falied\n", opd);
         return -1;
     }
@@ -126,7 +126,6 @@ int _do_stat(admin_context_t *ac) {
 
     int opd = io_stat(ac->ioch);
     log_debug("opd=%d, prepare OK\n", opd);
-
 
     _sync_with_op(ac, opd);
 

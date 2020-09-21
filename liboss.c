@@ -346,6 +346,7 @@ extern int  io_submit_to_channel(io_channel *ch , int *ops , uint32_t op_nr) {
     //Busy Loop to send and flush
     int nr_m = 0; 
     do {
+        log_debug("Preapre to flush message to peer\n");
         int rc = lc->msgr->messager_flush();
         assert (rc >= 0);
         nr_m += rc;
@@ -354,11 +355,11 @@ extern int  io_submit_to_channel(io_channel *ch , int *ops , uint32_t op_nr) {
         }
     } while ( nr_m < op_nr);
     
+    log_debug("Flush message to peer..done\n");
     for (i = 0 ; i < op_nr ; ++i )  {
         op_ctx_t *op = &ch->op_ctxs_[ops[i]];
         op->state = OP_IN_PROGRESS;
     }
-    
     return 0;
 }
 
