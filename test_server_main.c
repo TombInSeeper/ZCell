@@ -95,7 +95,10 @@ static void free_meta_buffer(void *p) {
 }
 
 static void *alloc_data_buffer(uint32_t sz) {
-    void *ptr;
+    
+    static __thread tls_data_buf[4 << 20];
+    
+    // void *ptr;
     if(sz <= 0x1000) {
         // log_debug("[fixed_cahce] \n");
         // ptr =  fcache_get(reactor_ctx()->dma_pages); 
@@ -103,8 +106,8 @@ static void *alloc_data_buffer(uint32_t sz) {
     }
     log_debug("[spdk_dma_malloc] \n");
     uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
-    ptr =  spdk_dma_malloc(sz, align, NULL);
-    return ptr;
+    // ptr =  spdk_dma_malloc(sz, align, NULL);
+    return tls_data_buf;
 }
 static void free_data_buffer(void *p) {
     // fcache_t *fc = reactor_ctx()->dma_pages;
@@ -113,7 +116,7 @@ static void free_data_buffer(void *p) {
         // fcache_put(fc, p);
     // } else {
     log_debug("[spdk_dma_free] \n");
-    spdk_dma_free(p);
+    // spdk_dma_free(p);
     // }
 }
 
