@@ -19,7 +19,7 @@ struct oss_stat_t {
 extern int tls_io_ctx_init(int flags);
 extern int tls_io_ctx_fini();
 
-extern io_channel *get_io_channel_with(const char *ip, int port);
+extern io_channel *get_io_channel_with(const char *ip, int port ,int max_qd);
 extern void put_io_channel( io_channel *ioch);
 
 
