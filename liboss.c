@@ -153,7 +153,7 @@ static int _do_msgr_init() {
     lc->msgr = msgr_get_client_impl();
     messager_conf_t msgr_conf = {
         .on_recv_message = msgr_on_recv_msg,
-        .on_recv_message = msgr_on_send_msg,
+        .on_send_message = msgr_on_send_msg,
         .data_buffer_alloc = msgr_data_buffer_alloc,
         .data_buffer_free = msgr_data_buffer_free,
     };
