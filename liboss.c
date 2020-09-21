@@ -185,7 +185,7 @@ extern io_channel *get_io_channel_with(const char *ip, int port) {
     liboss_ctx_t *lc = tls_liboss_ctx();
     io_channel *ch = io_channel_new(128 , 32);
     ch->session_ = lc->msgr->messager_connect(ip , port, ch);
-    if (ch->session_) {
+    if (!ch->session_) {
         log_err("Socket Connect Failed with [%s:%d]\n", ip, port);
         io_channel_delete(ch);
         return NULL;
