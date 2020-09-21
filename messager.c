@@ -435,10 +435,10 @@ static inline int _push_msg(const message_t *_msg) {
 }
 
 
-static int  _flush_msg_of(session_t *s) {
+static int  _flush_msg_of(session_t *s_) {
     messager_t *msgr = get_local_msgr();
     static session_t *died_ss[NR_SESSION_MAX];  
-    session_t *s;
+    session_t *s = s_;
     int cnt = 0;
     int died_ss_n = 0;
     if(1){
