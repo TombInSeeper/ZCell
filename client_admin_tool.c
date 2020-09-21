@@ -122,10 +122,10 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
 static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int qd ) {
     int i;
     int loop = loop_;
-    int *opds = malloc (256 * sizeof(int));
-    int *opds_cpl = malloc(256 * sizeof(int));
+    int *opds = malloc (qd * sizeof(int));
+    int *opds_cpl = malloc(qd * sizeof(int));
     const int cqd = qd;
-    log_info("Prepare to issue random %d write requests \n.." , loop * qd); 
+    log_info("Prepare to issue random %d write requests , qd = %d \n.." , loop * qd , qd); 
     
     _perf_io_t *ios = malloc(sizeof(_perf_io_t) * (loop * cqd));
 
@@ -275,6 +275,7 @@ int _do_create(admin_context_t *ac , uint32_t oid) {
     int op_type;
     void *data_buffer;
     uint32_t data_len;
+
     op_claim_result(ac->ioch, cpl, &ac->errcode, &op_type, &data_buffer, &data_len);
     log_debug("Execute result of op(%d), status_code=(%d)\n", cpl, ac->errcode);    
     op_destory(ac->ioch, cpl);
