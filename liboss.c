@@ -330,10 +330,9 @@ extern int  io_write(io_channel *ch, uint32_t oid, const void* buffer, uint64_t 
 extern int  io_submit_to_channel(io_channel *ch , int *ops , int op_nr) {
     liboss_ctx_t *lc = tls_liboss_ctx();
     int i; 
-    for ( i = 0 ; i < op_nr ; ++i) {
+    for (i = 0 ; i < op_nr ; ++i) {
         int opd = ops[i];
-        log_debug("ops=%p, opd=%d\n",ops, opd);
-
+        log_debug("ops=%p, opd=%d\n",ops, ops[i]);
         op_ctx_t *op = &ch->op_ctxs_[opd];
         if( 0 <= opd && opd <= ch->queue_depth_ &&  op->state == OP_WAITING_SUBMIT) {
             log_debug("Prepare to submit ops[%d]: type=%d\n", opd, message_get_op(&op->reqeust_and_response));

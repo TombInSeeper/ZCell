@@ -59,10 +59,10 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
     int n_objs = 10000;
     int *opds = calloc (256, sizeof(int));
     int *opds_cpl = calloc(256,sizeof(int));
+    const int cqd = 100;
     uint64_t cre_st = now();
     log_info("Creating %d objects..\n" , n_objs);
     
-    const int cqd = 100;
     
     for (i = 0 ; i < n_objs / (cqd) ; ++i) {
         int j;
