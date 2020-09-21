@@ -277,13 +277,9 @@ label_broken_op:
     return;
 }
 
-
 static void _do_op_ping(message_t *request) {
     _response_with_reusing_request(request, SUCCESS);
 }
-
-
-
 
 static void op_execute(message_t *request) {
     int op_code = le16_to_cpu(request->header.type);
@@ -329,20 +325,17 @@ void _per_reactor_stop(void * ctx , void *err) {
     (void)err;
     (void)ctx;
     reactor_ctx_t * rctx = reactor_ctx();
-    SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
-    // SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
+    log_info("Stopping server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
     
     _msgr_stop(rctx->msgr_impl);
-    // SPDK_NOTICELOG("Stopping server[%d],[%s:%d] msgr .... done \n", rctx->reactor_id,rctx->ip,rctx->port);
 
     _ostore_stop(rctx->os_impl);
-    // SPDK_NOTICELOG("Stopping server[%d],[%s:%d] ostore .... done \n", rctx->reactor_id,rctx->ip,rctx->port);
     
     //...
     fcache_destructor(rctx->dma_pages);
 
     rctx->running = false;
-    SPDK_NOTICELOG("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
+    log_info("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
     return;
 }
 void _sys_fini() {
@@ -360,7 +353,7 @@ void _sys_fini() {
             spdk_delay_us(1000);
 
         //IF master
-        SPDK_NOTICELOG("Stoping app....\n");
+        log_info("Stoping app....\n");
         spdk_app_stop(0);
     }
 }
@@ -412,14 +405,17 @@ void _per_reactor_boot(void * ctx , void *err) {
     //ObjectStore initialize
     rctx->os_impl = ostore_get_impl(g_store_type);
     _ostore_boot(rctx->os_impl,true);
+    log_info("Booting object store, type =[%d]....done\n", g_store_type);
+
 
     //Msgr initialize
     rctx->msgr_impl = msgr_get_server_impl();
     _msgr_boot(rctx->msgr_impl);
+    log_info("Booting messager ....done\n");
 
     rctx->running = true;
     // spdk_thread_get
-    SPDK_NOTICELOG("Booting server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
+    log_info("Booting server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
 }
 void _sys_init(void *arg) {
     (void)arg;
@@ -449,7 +445,7 @@ void _sys_init(void *arg) {
         while (reactor_reduce_state() != spdk_env_get_core_count())
             spdk_delay_us(1000);
 
-        SPDK_NOTICELOG("All reactors are running\n");
+        log_info("All reactors are running\n");
     }
 }
 
