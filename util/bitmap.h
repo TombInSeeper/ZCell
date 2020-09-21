@@ -61,9 +61,9 @@ static inline bool bitmap_get_bit(bitmap_t *b , unsigned int i){
 
 
 static inline int bitmap_next_set(bitmap_t *b , unsigned int bit_hint) {
-    log_debug("bit_hint=%u\n",bit_hint);
     uint64_t word_idx = bit_hint >> BITMAP_SHIFT;  
     uint64_t _word_hint_idx = word_idx;
+    log_debug("bit_hint=%u, word_idx_init=%lu\n",bit_hint, word_idx);
     for ( ; word_idx < b->words_length ; ++word_idx) {
         if(b->words[word_idx]){
             return (word_idx << BITMAP_SHIFT) + __builtin_ffsll(b->words[word_idx]) - 1;
