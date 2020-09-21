@@ -61,10 +61,12 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
     int *opds_cpl = calloc(256,sizeof(int));
     uint64_t cre_st = now();
     log_info("Creating %d objects..\n" , n_objs);
-    for (i = 0 ; i < n_objs / (200) ; ++i) {
+    
+    const int cqd = 100;
+    
+    for (i = 0 ; i < n_objs / (cqd) ; ++i) {
         int j;
-
-        for (j = 0 ; j < 200; ++j) {
+        for (j = 0 ; j < cqd ; ++j) {
             if(create)
                 opds[j] = io_create(ac->ioch,i);
             else 
@@ -79,14 +81,14 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
 
         // exit(1);
 
-        int rc = io_submit_to_channel(ac->ioch, opds , 200);
+        int rc = io_submit_to_channel(ac->ioch, opds , cqd) ;
         if(rc) {
             log_err("Submit error\n");
             exit(1);
         }        
         
-        io_poll_channel(ac->ioch,opds_cpl,200,200);
-        for ( j = 0; j < 200 ; ++j) {
+        io_poll_channel(ac->ioch,opds_cpl,cqd,cqd);
+        for ( j = 0; j < cqd ; ++j) {
             int status;
             op_claim_result(ac->ioch, opds_cpl[j], &status, NULL, NULL, NULL);
             if(status) {
