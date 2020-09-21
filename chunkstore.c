@@ -174,14 +174,15 @@ op_handler(read) {
         &bdev_ofst,&bdev_len);
 
 
-    // log_info("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
-    //     op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
+    log_info("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
+        op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
 
     int rc = spdk_bdev_read_blocks(cs->device.bdev_desc,
         cs->device.ioch, m->data_buffer,bdev_ofst,bdev_len,
         rw_cb, ctx);
 
     if(rc) {
+        log_err("Bdev IO Submit error\n");
         return OSTORE_IO_ERROR;
     }
     return OSTORE_SUBMIT_OK;
@@ -203,11 +204,12 @@ op_handler(write) {
         rw_cb, ctx);
     
     if(rc) {
+        log_err("Bdev IO submit error.\n");
         return OSTORE_IO_ERROR;
     }
-    // log_info("seq=%u,oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu submit OK\n",
-    //     m->header.seq,
-    //     op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
+    log_info("seq=%u,oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu submit OK\n",
+        m->header.seq,
+        op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
     return OSTORE_SUBMIT_OK;
 }
 
