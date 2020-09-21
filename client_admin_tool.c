@@ -134,6 +134,7 @@ int _do_stat(admin_context_t *ac) {
     void *data_buffer;
     uint32_t data_len;
     op_claim_result(ac->ioch, cpl, &status, &op_type, &data_buffer, &data_len);
+    
     log_info("Execute result of op(%d), status_code=(%d)\n", cpl, status);    
 
     if(data_buffer) {
