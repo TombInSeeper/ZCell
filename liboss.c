@@ -327,10 +327,9 @@ extern int  io_write(io_channel *ch, uint32_t oid, const void* buffer, uint64_t 
     return _io_prepare_op_common(ch , msg_oss_op_write, meta_size, meta_buffer , len, (void*)data_buffer);
 }
 
-extern int  io_submit_to_channel(io_channel *ch , int *ops , uint32_t op_nr) {
-    int i = 0 ;
+extern int  io_submit_to_channel(io_channel *ch , int *ops , int op_nr) {
     liboss_ctx_t *lc = tls_liboss_ctx();
-    
+    int i; 
     for ( i = 0 ; i < op_nr ; ++i) {
         int opd = ops[i];
         op_ctx_t *op = &ch->op_ctxs_[opd];

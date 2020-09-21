@@ -38,7 +38,7 @@ extern int  op_destory(io_channel *ch, int op_id);
 
 extern int  stat_result_parse_to(void *data_buffer, struct oss_stat_t *stat_, char *str);
 
-extern int  io_submit_to_channel(io_channel *ch , int *ops , uint32_t op_nr);
+extern int  io_submit_to_channel(io_channel *ch , int *ops , int nr);
 extern int  io_poll_channel(io_channel *ch, int *op_cpl, int min,  int max);
 
 #endif
