@@ -35,8 +35,10 @@ static void parse_args(int argc , char **argv) {
 			break;
         case 's':
             if(!strcmp(optarg,"null")){
+                log_info("Ostore type is nullstore \n");
                 g_store_type = NULLSTORE;
             } else if (!strcmp(optarg,"chunk")) {
+                log_info("Ostore type is chunkstore\n");
                 g_store_type = CHUNKSTORE;
             } else {
                 log_err("Unknown storage backend:%s \n" , optarg);

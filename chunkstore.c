@@ -1,7 +1,8 @@
 #include "chunkstore.h"
 #include "objectstore.h"
+#include "util/log.h"
+
 #include "spdk/bdev.h"
-#include "spdk/log.h"
 
 #define op_handler(name) static int _do_ ## name ( void* ctx, cb_func_t cb) 
 
@@ -61,21 +62,21 @@ static void _bdev_open(const char *name) {
 
     int rc =  spdk_bdev_open_ext(name,true, spdk_bdev_event_cb,NULL, &cs->device.bdev_desc);
     if(rc) {
-      	SPDK_ERRLOG("Could not open a bdev %s,\n" , name);
+      	log_err("Could not open a bdev %s,\n" , name);
 		spdk_app_stop(-1);
 		return;  
     }
 
-    SPDK_NOTICELOG("Open bdev %s OK\n" , name);
+    log_info("Open bdev %s OK\n" , name);
 
     cs->device.ioch = spdk_bdev_get_io_channel(cs->device.bdev_desc);
     if(!cs->device.ioch) {
-       	SPDK_ERRLOG("Could not spdk_bdev_get_io_channel %s,\n" , name);
+       	log_err("Could not spdk_bdev_get_io_channel %s,\n" , name);
 		spdk_app_stop(-1);
 		return;         
     }
 
-    SPDK_NOTICELOG("Get io channel %s OK\n" , name);
+    log_info("Get io channel %s OK\n" , name);
 }
 static void _hardcode_stat() {
     struct chunkstore_context_t *cs = get_local_store_ptr();
@@ -173,7 +174,7 @@ op_handler(read) {
         &bdev_ofst,&bdev_len);
 
 
-    // SPDK_NOTICELOG("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
+    // log_info("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
     //     op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
 
     int rc = spdk_bdev_read_blocks(cs->device.bdev_desc,
@@ -204,7 +205,7 @@ op_handler(write) {
     if(rc) {
         return OSTORE_IO_ERROR;
     }
-    // SPDK_NOTICELOG("seq=%u,oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu submit OK\n",
+    // log_info("seq=%u,oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu submit OK\n",
     //     m->header.seq,
     //     op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
     return OSTORE_SUBMIT_OK;
