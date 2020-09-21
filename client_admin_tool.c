@@ -221,7 +221,7 @@ int _run(admin_context_t *ac, int argc , char **argv) {
     } else if (!strcmp(cmd, "get")){
         uint32_t oid = atoi(argv[4]);
         const char *file = argv[5];
-        if(_do_read(ac, oid , file)) {
+        if(_do_get(ac, oid , file)) {
             log_err("Read object %u failed\n" ,oid);
             return -1;
         }
