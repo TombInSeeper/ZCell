@@ -51,7 +51,7 @@ struct io_channel* io_channel_new(uint32_t qd , uint32_t rd ) {
     
     ch->session_ = NULL;
     ch->queue_depth_ = (qd) ? qd : RING_MAX;
-    ch->reap_depth_ = (rd) ? rd :POLL_MAX;
+    ch->reap_depth_ = (rd) ? rd :RING_MAX;
     
     ch->op_ctxs_bitmap_ = bitmap_constructor(ch->queue_depth_, 1);
     assert(ch->op_ctxs_bitmap_);
@@ -60,7 +60,7 @@ struct io_channel* io_channel_new(uint32_t qd , uint32_t rd ) {
             ch->op_ctxs_bitmap_->words_length);
     } while(0);
 
-    ch->op_ctxs_ = calloc(ch->queue_depth_ , sizeof(ch->queue_depth_));
+    ch->op_ctxs_ = calloc(ch->queue_depth_ , sizeof(op_ctx_t));
     assert(ch->op_ctxs_);
 
     ch->cpl_ops_ = calloc(ch->reap_depth_, sizeof(op_ctx_t*));
