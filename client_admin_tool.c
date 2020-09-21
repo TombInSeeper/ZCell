@@ -63,6 +63,7 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
     log_info("Creating %d objects..\n" , n_objs);
     for (i = 0 ; i < n_objs / (200) ; ++i) {
         int j;
+
         for (j = 0 ; j < 200; ++j) {
             if(create)
                 opds[j] = io_create(ac->ioch,i);
