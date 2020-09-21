@@ -57,9 +57,9 @@ typedef struct _perf_io_t {
 static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
     int i;
     int n_objs = 10000;
-    int *opds = calloc (256, sizeof(int));
-    int *opds_cpl = calloc(256,sizeof(int));
-    const int cqd = 10;
+    int *opds = malloc (256 * sizeof(int));
+    int *opds_cpl = malloc(256 * sizeof(int));
+    const int cqd = 100;
     log_info("Creating %d objects..\n" , n_objs);
     
     
@@ -86,7 +86,12 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
             exit(1);
         }        
         
-        io_poll_channel(ac->ioch,opds_cpl,cqd,cqd);
+        rc = io_poll_channel(ac->ioch,opds_cpl,cqd,cqd);
+        if(rc) {
+            log_err("Poll error\n");
+            exit(1);
+        }
+        
         for ( j = 0; j < cqd ; ++j) {
             int status;
             op_claim_result(ac->ioch, opds_cpl[j], &status, NULL, NULL, NULL);
@@ -94,6 +99,7 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
                 log_err("Unexpected status:%d, op_id=%d\n",status,opds_cpl[j]);    
                 exit(1);
             }
+            op_destory(ac->ioch, opds_cpl[j]);
         }
     }    
     uint64_t cre_ed = now();
