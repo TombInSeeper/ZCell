@@ -64,13 +64,13 @@ static inline int bitmap_next_set(bitmap_t *b , unsigned int bit_hint) {
     uint64_t _word_hint_idx = word_idx;
     for ( ; word_idx < b->words_length ; ++word_idx) {
         if(b->words[word_idx]){
-            return (word_idx << BITMAP_SHIFT) + __builtin_ffsll(b->words[word_idx]);
+            return (word_idx << BITMAP_SHIFT) + __builtin_ffsll(b->words[word_idx]) - 1;
         }
     }
     word_idx = 0;
     for ( ; word_idx < _word_hint_idx ; ++word_idx) {
         if(b->words[word_idx]){
-            return (word_idx << BITMAP_SHIFT) + __builtin_ffsll(b->words[word_idx]);
+            return (word_idx << BITMAP_SHIFT) + __builtin_ffsll(b->words[word_idx]) - 1;
         }
     } 
     return -1;   
