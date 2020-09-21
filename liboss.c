@@ -69,7 +69,7 @@ struct io_channel* io_channel_new(uint32_t qd , uint32_t rd ) {
     return ch;
 }
 
-void io_channel_delete( struct io_channel *ch) {
+void io_channel_delete(struct io_channel *ch) {
     free(ch->cpl_ops_);
     free(ch->op_ctxs_);
     bitmap_destructor(ch->op_ctxs_bitmap_);

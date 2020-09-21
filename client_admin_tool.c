@@ -52,6 +52,11 @@ typedef struct _perf_io_t {
     uint32_t oid;
     uint32_t ofst;
     uint32_t len;
+
+    double io_prep_lat_us;
+    double io_submit_lat_us;
+    double io_complete_lat_us;
+
 } _perf_io_t;
 
 
