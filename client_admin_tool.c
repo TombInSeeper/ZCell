@@ -81,13 +81,13 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
 
         // exit(1);
         int rc = io_submit_to_channel(ac->ioch, opds , cqd) ;
-        if(rc) {
+        if(rc < 0) {
             log_err("Submit error\n");
             exit(1);
         }        
         
         rc = io_poll_channel(ac->ioch,opds_cpl,cqd,cqd);
-        if(rc) {
+        if(rc < 0) {
             log_err("Poll error\n");
             exit(1);
         }

@@ -373,14 +373,20 @@ extern int io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
     liboss_ctx_t *lc = tls_liboss_ctx();
     int cpls = 0;
     int retry_times = 10;
+    if(min > max) {
+        return -EINVAL;
+    }
+    
     if(!ch->cpl_nr_) {
         int rc = 0;
-        while(!rc && ( retry_times-- || min ) ) {
+        int n = 0;
+        while( ( min && n < min ) || (!rc && ( retry_times--)) ) {
             rc = lc->msgr->messager_wait_msg_of(ch->session_);
             assert(rc >= 0);
             if(rc == 0) {
                 _mm_pause();
             }
+            n += rc;
         }
         log_debug("msgr get %u response this time\n", ch->cpl_nr_);
     }
