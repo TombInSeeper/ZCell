@@ -46,6 +46,11 @@ void print_usage_and_exit() {
 } 
 
 
+
+
+
+
+
 int _sync_with_op(admin_context_t *ac , int opd) {
     int rc = io_submit_to_channel(ac->ioch, &opd, 1);
     if(rc < 0) {
@@ -63,8 +68,34 @@ int _sync_with_op(admin_context_t *ac , int opd) {
     return 0;
 }
 
+int _do_create(admin_context_t *ac , uint32_t oid) {
+    int opd = io_create(ac->ioch , oid);
+    log_debug("opd=%d, prepare OK\n", opd);
+    _sync_with_op(ac, opd);
+    int cpl = opd;
+    int op_type;
+    void *data_buffer;
+    uint32_t data_len;
+    op_claim_result(ac->ioch, cpl, &ac->errcode, &op_type, &data_buffer, &data_len);
+    log_debug("Execute result of op(%d), status_code=(%d)\n", cpl, ac->errcode);    
+    op_destory(ac->ioch, cpl);
+    return ac->errcode;
+}
+int _do_delete(admin_context_t *ac , uint32_t oid) {
+    int opd = io_delete(ac->ioch , oid);
+    log_debug("opd=%d, prepare OK\n", opd);
+    _sync_with_op(ac, opd);
+    int cpl = opd;
+    int op_type;
+    void *data_buffer;
+    uint32_t data_len;
+    op_claim_result(ac->ioch, cpl, &ac->errcode, &op_type, &data_buffer, &data_len);
+    log_debug("Execute result of op(%d), status_code=(%d)\n", cpl, ac->errcode);    
+    op_destory(ac->ioch, cpl);
+    return ac->errcode;
+}
 
-int _do_put(admin_context_t *ac, uint32_t oid, const char *file) {
+int _do_write(admin_context_t *ac, uint32_t oid, const char *file) {
     struct stat _fstat;
     if (stat(file, &_fstat)) {
         log_err("Get attr of %s falied, errstr:%s \n", file, strerror(errno));
@@ -99,31 +130,36 @@ int _do_put(admin_context_t *ac, uint32_t oid, const char *file) {
     uint32_t data_len;
     op_claim_result(ac->ioch, cpl, &status, &op_type, &data_buffer, &data_len);
     log_info("Execute result of op(%d), status_code=(%d)\n", cpl, status);    
-    data_buffer == NULL ? ({(void)1;}) :({log_warn("Write op response data_buffer is not NULL\n"); 0 ;});
-
+    data_buffer == NULL ? ({(void)0;}) :({log_warn("Write op response data_buffer is not NULL\n"); 0 ;});
     op_destory(ac->ioch, cpl);
-
     io_buffer_free(iobuf);
-    return 0;
+    return status;
 }
 
 int _do_get(admin_context_t *ac, uint32_t oid, const char *file) {
-
-    return 0;
-}
-
-int _do_delete(admin_context_t *ac, uint32_t oid) {
-
-    int opd = io_delete(ac->ioch, oid);
-    _sync_with_op(ac, opd);
-
+    int opd = io_read(ac->ioch, oid , 0 , 0x1000);
+    _sync_with_op(ac , opd);
+    //
     int cpl = opd;
+    int status, op_type;
+    void *data_buffer;
+    uint32_t data_len;
+    op_claim_result(ac->ioch, cpl, &status, &op_type, &data_buffer, &data_len);
+    log_info("Execute result of op(%d), status_code=(%d)\n", cpl, status);    
+    data_buffer != NULL ? ({(void)0;}):({log_warn("Read op response data_buffer is NULL\n");});
+    op_destory(ac->ioch, cpl);
 
-    return 0;
+    FILE *fp = fopen(file, "w");
+    do {
+        fwrite(data_buffer, 0x1000, 1, fp);
+    } while(0);
+    fclose(fp);
+
+    io_buffer_free(data_buffer);
+    return status;
 }
 
 int _do_stat(admin_context_t *ac) {
-
     int opd = io_stat(ac->ioch);
     log_debug("opd=%d, prepare OK\n", opd);
 
@@ -135,10 +171,10 @@ int _do_stat(admin_context_t *ac) {
     uint32_t data_len;
     op_claim_result(ac->ioch, cpl, &status, &op_type, &data_buffer, &data_len);
 
-    log_info("Execute result of op(%d), status_code=(%d)\n", cpl, status);    
+    log_debug("Execute result of op(%d), status_code=(%d)\n", cpl, status);    
 
     if(data_buffer) {
-        log_info("Result cannot be parsed now, TODO\n");
+        log_info("***Result cannot be parsed now, TODO***\n");
         io_buffer_free(data_buffer);
     } else {
         log_err("Some errors ocurred\n");
@@ -146,7 +182,6 @@ int _do_stat(admin_context_t *ac) {
     op_destory(ac->ioch, cpl);
     return 0;
 }
-
 
 
 int _run(admin_context_t *ac, int argc , char **argv) {
@@ -172,9 +207,33 @@ int _run(admin_context_t *ac, int argc , char **argv) {
         log_debug("Process [stat] command\n ");
         _do_stat(ac);
     } else if (!strcmp(cmd, "put")) {
-        log_info("Not supported now\n");
-        return -1;
-    } else {
+        uint32_t oid = atoi(argv[4]);
+        const char *file = argv[5];
+        if(_do_create(ac, oid)) {
+            log_err("Create object %u failed\n" , oid);
+            return -1;
+        }
+        if (_do_write(ac, oid, file)) {
+            log_err("Write to object %u failed\n" , oid);
+            return -1;
+        }
+        return 0;
+    } else if (!strcmp(cmd, "get")){
+        uint32_t oid = atoi(argv[4]);
+        const char *file = argv[5];
+        if(_do_read(ac, oid , file)) {
+            log_err("Read object %u failed\n" ,oid);
+            return -1;
+        }
+        return 0;
+    } else if (!strcmp(cmd, "delete")){
+        uint32_t oid = atoi(argv[4]);
+        if(_do_delete(ac, oid)) {
+            log_err("Delete object %u failed\n" ,oid);
+            return -1;
+        }
+        return 0;
+    }  else {
         log_info("Invalid cmd [%s]\n" , cmd);
         return -1;
     }
