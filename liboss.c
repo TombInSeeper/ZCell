@@ -183,22 +183,22 @@ extern int tls_io_ctx_fini() {
 
 extern io_channel *get_io_channel_with(const char *ip, int port) {
     liboss_ctx_t *lc = tls_liboss_ctx();
-    io_channel *ch = calloc(1, sizeof(io_channel));
     
-    ch->session_ = lc->msgr->messager_connect(ip , port, ch);
-    
-    if(!ch->session_) {
+    void *session_ = lc->msgr->messager_connect(ip , port, ch);
+    if (session_) {
         log_err("Socket Connect Failed with [%s:%d]\n", ip, port);
-        free(ch);
+        // free(ch);
         return NULL;
     }
+    io_channel *ch = io_channel_new(session_ , 128 , 32 );
     return ch;
 }
 
 extern void put_io_channel( io_channel *ioch) {
     liboss_ctx_t *lc = tls_liboss_ctx();
     lc->msgr->messager_close(ioch->session_);
-    free(ioch);
+
+    io_channel_delete(ioch);
     return;
 }
 
