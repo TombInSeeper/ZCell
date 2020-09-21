@@ -436,7 +436,8 @@ extern struct sock *posix_accept(struct sock *_sock)
 
 	flag = fcntl(fd, F_GETFL);
 	if ((!(flag & O_NONBLOCK)) && (fcntl(fd, F_SETFL, flag | O_NONBLOCK) < 0)) {
-		// SPDK_ERRLOG("fcntl can't set nonblocking mode for socket, fd: %d (%d)\n", fd, errno);
+		// SPDK_ERR
+		("fcntl can't set nonblocking mode for socket, fd: %d (%d)\n", fd, errno);
 		close(fd);
 		return NULL;
 	}

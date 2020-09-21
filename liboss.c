@@ -122,7 +122,8 @@ static void msgr_on_recv_msg(message_t *msg) {
     assert(op->reqeust_and_response.header.seq == msg->header.seq);
     assert(op->reqeust_and_response.header.type == msg->header.type);
 
-    // uint16_t status = message_get_status(msg);
+    uint16_t status = message_get_status(msg);
+    log_debug("response of msg[%lu], status=%u\n", message_get_seq(msg), status);
 
     op->state = OP_COMPLETED;
 
@@ -146,7 +147,6 @@ static void msgr_on_send_msg(message_t *msg) {
 
     return;
 }
-
 
 static int _do_msgr_init() {
     liboss_ctx_t *lc = tls_liboss_ctx();
