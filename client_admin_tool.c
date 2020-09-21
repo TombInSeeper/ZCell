@@ -180,7 +180,9 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
     io_buffer_free(wbuff);
     double cre_dur = cre_ed - cre_st;
     double cre_lat = cre_dur / (loop * cqd);        
-    log_info("%d 4K write time:%lf us , avg_lat=%lf us \n",  (loop * cqd), cre_dur, cre_lat);
+    double wiops = 1000.0 / cre_lat;        
+    log_info("%d 4K write time:%lf us , avg_lat=%lf us , wiops = %lf K \n", 
+     (loop * cqd), cre_dur, cre_lat , wiops);
 
     cre_st = now();    
     for (i = 0 ; i < loop ; ++i) {
@@ -228,8 +230,9 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
     }    
     cre_ed = now();
     cre_dur = cre_ed - cre_st;
-    cre_lat = cre_dur / (loop * cqd);        
-    log_info("%d 4K Read time:%lf us , avg_lat=%lf us \n",  (loop * cqd), cre_dur, cre_lat);
+    cre_lat = cre_dur / (loop * cqd);
+    double riops = 1000.0 / cre_lat;        
+    log_info("%d 4K Read time:%lf us , avg_lat=%lf us , iops=%lf K \n",  (loop * cqd), cre_dur, cre_lat, riops);
 
 
     free(ios);
