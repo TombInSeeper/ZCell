@@ -211,7 +211,7 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
         case msg_oss_op_stat: {
             request->header.meta_length = 0;             
             request->header.data_length = sizeof(op_stat_result_t);
-            request->data_buffer = alloc_meta_buffer(sizeof(op_stat_result_t));
+            request->data_buffer = alloc_data_buffer(sizeof(op_stat_result_t));
         }
             break; 
         case msg_oss_op_create: {
