@@ -1,6 +1,7 @@
 #ifndef BITMAP_H
 #define BITMAP_H
 
+#include "log.h"
 #include "malloc.h"
 #include "string.h"
 #include "stdbool.h"
@@ -60,6 +61,7 @@ static inline bool bitmap_get_bit(bitmap_t *b , unsigned int i){
 
 
 static inline int bitmap_next_set(bitmap_t *b , unsigned int bit_hint) {
+    log_debug("bit_hint=%u\n",bit_hint);
     uint64_t word_idx = bit_hint >> BITMAP_SHIFT;  
     uint64_t _word_hint_idx = word_idx;
     for ( ; word_idx < b->words_length ; ++word_idx) {
