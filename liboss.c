@@ -45,11 +45,11 @@ struct io_channel {
     op_ctx_t** cpl_ops_;
 };
 
-struct io_channel* io_channel_new(void* session ,uint32_t qd , uint32_t rd ) {
+struct io_channel* io_channel_new(uint32_t qd , uint32_t rd ) {
     struct io_channel *ch = calloc(1, sizeof(struct io_channel));
     assert(ch);
     
-    ch->session_ = session;
+    ch->session_ = NULL;
     ch->queue_depth_ = (qd) ? qd : RING_MAX;
     ch->reap_depth_ = (rd) ? rd :POLL_MAX;
     
@@ -183,21 +183,19 @@ extern int tls_io_ctx_fini() {
 
 extern io_channel *get_io_channel_with(const char *ip, int port) {
     liboss_ctx_t *lc = tls_liboss_ctx();
-    
-    void *session_ = lc->msgr->messager_connect(ip , port, ch);
-    if (session_) {
+    io_channel *ch = io_channel_new(128 , 32);
+    ch->session_ = lc->msgr->messager_connect(ip , port, ch);
+    if (ch->session_) {
         log_err("Socket Connect Failed with [%s:%d]\n", ip, port);
-        // free(ch);
+        io_channel_delete(ch);
         return NULL;
     }
-    io_channel *ch = io_channel_new(session_ , 128 , 32 );
     return ch;
 }
 
 extern void put_io_channel( io_channel *ioch) {
     liboss_ctx_t *lc = tls_liboss_ctx();
     lc->msgr->messager_close(ioch->session_);
-
     io_channel_delete(ioch);
     return;
 }
