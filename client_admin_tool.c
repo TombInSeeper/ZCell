@@ -123,7 +123,6 @@ static int _do_create_or_delete_test_objects(admin_context_t *ac , int create) {
     return 0;
 }
 
-
 static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int qd ) {
     int i;
     int loop = loop_;
@@ -131,24 +130,25 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
     int *opds_cpl = malloc(qd * sizeof(int));
     const int cqd = qd;
     log_info("Prepare to issue random %d write requests , qd = %d \n.." , loop * qd , qd); 
-    
     _perf_io_t *ios = malloc(sizeof(_perf_io_t) * (loop * cqd));
-
     void *wbuff; 
     io_buffer_alloc(&wbuff, 0x1000);    
-
     uint64_t cre_st = now();    
+    double reduce_avg_lat = 0.0;
     for (i = 0 ; i < loop ; ++i) {
         int j;
         for (j = 0 ; j < cqd ; ++j) {
             uint32_t oid = rand() % 10000;
             uint32_t ofst = (0 % 1024) * 0x1000;
             uint32_t len = 0x1000;
-            opds[j] = io_write(ac->ioch , oid , wbuff , ofst , len);
 
-            ios[ i * cqd + j ].oid  = oid;
-            ios[ i * cqd + j ].ofst = ofst ;
-            ios[ i * cqd + j ].len = len;
+            ios[i * cqd + j].oid  = oid;
+            ios[i * cqd + j].ofst = ofst ;
+            ios[i * cqd + j].len = len;
+
+            // j == opd
+            ios[i * cqd + j].io_complete_lat_us = (double)now();
+            opds[j] = io_write(ac->ioch , oid , wbuff , ofst , len);
 
             // log_debug("opd=%d\n",opds[j]);
             if(opds[j] < 0) {
@@ -157,7 +157,6 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
             }
             log_debug("opds[%d]=%d\n", j, opds[j]);
         }
-
         // exit(1);
         int rc = io_submit_to_channel(ac->ioch, opds , cqd) ;
         if(rc < 0) {
@@ -170,9 +169,13 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
             log_err("Poll error\n");
             exit(1);
         }
-        
+
+        double _lat_reduce = 0.0;        
         for ( j = 0; j < cqd ; ++j) {
             int status;
+            double _cpl = (double)now() - ios [ i * cqd + j] .io_complete_lat_us;
+            _lat_reduce += _cpl;
+            ios[i * cqd + j].io_complete_lat_us = _cpl;
             op_claim_result(ac->ioch, opds_cpl[j], &status, NULL, NULL, NULL);
             if(status) {
                 log_err("Unexpected status:%d, op_id=%d\n",status,opds_cpl[j]);    
@@ -180,14 +183,17 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
             }
             op_destory(ac->ioch, opds_cpl[j]);
         }
+        _lat_reduce /= cqd;
+        reduce_avg_lat += _lat_reduce;
     }    
     uint64_t cre_ed = now();
+    reduce_avg_lat /= loop;
     io_buffer_free(wbuff);
     double cre_dur = cre_ed - cre_st;
     double cre_lat = cre_dur / (loop * cqd);        
     double wiops = 1000.0 / cre_lat;        
     log_info("%d 4K write time:%lf us , avg_lat=%lf us , wiops = %lf K \n", 
-     (loop * cqd), cre_dur, cre_lat , wiops);
+     (loop * cqd), cre_dur, reduce_avg_lat , wiops);
 
     cre_st = now();    
     for (i = 0 ; i < loop ; ++i) {
