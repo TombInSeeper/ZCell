@@ -41,6 +41,15 @@ void _read_cb(struct spdk_bdev_io *bio, bool success, void *cb_arg ) {
     if(strncmp(h->mbuf,h->rmbuf,32)) {
         printf("MetaData inconsitent\n");
     }
+
+    spdk_free(h->mbuf);
+    spdk_free(h->dbuf);
+    spdk_free(h->rdbuf);
+    spdk_free(h->rmbuf);
+
+    spdk_put_io_channel(h->ioch);
+    spdk_bdev_close(h->desc);
+
     _sys_stop();
 }
 void _write_cb(struct spdk_bdev_io *bio, bool success, void *cb_arg ) {
