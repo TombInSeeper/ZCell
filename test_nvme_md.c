@@ -21,7 +21,7 @@ void spdk_bdev_event_cb(enum spdk_bdev_event_type type, struct spdk_bdev *bdev,
     return;
 }
 
-void _stop ( ) {
+void _sys_stop ( ) {
     spdk_app_stop(0);
 }
 void _read_cb(struct spdk_bdev_io *bio, bool success, void *cb_arg ) {
@@ -31,8 +31,8 @@ void _read_cb(struct spdk_bdev_io *bio, bool success, void *cb_arg ) {
         return;
     }
     hello_ctx_t *h = cb_arg;
-    printf("Write:%s,Read:%s\n",h->dbuf,h->rdbuf);
-    printf("Write(md):%s,Read(md):%s\n",h->mbuf,h->rmbuf);
+    printf("Write:%s,Read:%s\n",(char*)h->dbuf,(char*)h->rdbuf);
+    printf("Write(md):%s,Read(md):%s\n",(char*)h->mbuf,(char*)h->rmbuf);
     if(strncmp(h->dbuf,h->rdbuf,32)) {
         printf("Data inconsitent\n");
     }
@@ -52,7 +52,7 @@ void _write_cb(struct spdk_bdev_io *bio, bool success, void *cb_arg ) {
     spdk_bdev_read_blocks_with_md(h->desc,h->ioch,h->dbuf,h->mbuf,0,1,_read_cb, h);
 }
 
-void _start(void * arg) {
+void _sys_start(void * arg) {
     hello_ctx_t * h = arg;
     h->dbuf = spdk_dma_zmalloc(0x1000,0,NULL);
     h->mbuf = spdk_dma_zmalloc(0x1000,0,NULL);
@@ -72,9 +72,9 @@ int main() {
 
     struct spdk_app_opts opts;
     spdk_app_opts_init(&opts);
-    opts.shutdown_cb = _stop;
+    opts.shutdown_cb = _sys_stop;
     opts.config_file = "spdk.conf";
-    int rc = spdk_app_start(&opts , _start , NULL);
+    int rc = spdk_app_start(&opts , _sys_start , NULL);
     if(rc) {
         return -1;
     }
