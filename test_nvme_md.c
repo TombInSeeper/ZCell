@@ -74,10 +74,12 @@ int main() {
     spdk_app_opts_init(&opts);
     opts.shutdown_cb = _sys_stop;
     opts.config_file = "spdk.conf";
-    int rc = spdk_app_start(&opts , _sys_start , NULL);
+    hello_ctx_t *h = calloc(1, sizeof(hello_ctx_t));
+    int rc = spdk_app_start(&opts , _sys_start , h);
     if(rc) {
         return -1;
     }
+    free(h);
     spdk_app_fini();
     return 0;
 
