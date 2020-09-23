@@ -33,7 +33,7 @@ void _read_cb(struct spdk_bdev_io *bio, bool success, void *cb_arg ) {
         return;
     }
     hello_ctx_t *h = cb_arg;
-    printf("Write:%s,Read:%s\n",(char*)h->dbuf,(char*)h->rdbuf);
+    printf("Write:%s Read:%s\n",(char*)h->dbuf,(char*)h->rdbuf);
     printf("Write(md):%s,Read(md):%s\n",(char*)h->mbuf,(char*)h->rmbuf);
     if(strncmp(h->dbuf,h->rdbuf,32)) {
         printf("Data inconsitent\n");
@@ -76,8 +76,15 @@ void _sys_start(void * arg) {
     spdk_bdev_open_ext("Nvme0n1", true, spdk_bdev_event_cb , NULL, &h->desc);
     assert(h->desc);
     h->ioch = spdk_bdev_get_io_channel(h->desc);
+
+    printf("meta_sz=%u\n", spdk_bdev_get_md_size(spdk_bdev_desc_get_bdev(h->desc)));
+    printf("data_sz=%u\n", spdk_bdev_get_data_block_size(spdk_bdev_desc_get_bdev(h->desc)));
+    printf("sector_sz=%u\n", spdk_bdev_get_block_size(spdk_bdev_desc_get_bdev(h->desc)));
+
+
     assert (h->ioch);
     printf("Writing blocks\n");
+
     // spdk_bdev_write_blocks_with_md(h->desc,h->ioch,h->dbuf,h->mbuf,0,1,_write_cb, h);
     spdk_bdev_write_blocks(h->desc,h->ioch,h->dbuf ,0,1,_write_cb, h);
 }
