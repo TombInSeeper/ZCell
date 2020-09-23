@@ -61,7 +61,8 @@ void _write_cb(struct spdk_bdev_io *bio, bool success, void *cb_arg ) {
     }
     printf("Reading blocks\n");
     hello_ctx_t *h = cb_arg;
-    spdk_bdev_read_blocks_with_md(h->desc,h->ioch,h->rdbuf,h->rmbuf,0,1,_read_cb, h);
+    // spdk_bdev_read_blocks_with_md(h->desc,h->ioch,h->rdbuf,h->rmbuf,0,1,_read_cb, h);
+    spdk_bdev_read_blocks(h->desc,h->ioch,h->rdbuf,0,1,_read_cb, h);
 }
 
 void _sys_start(void * arg) {
@@ -77,7 +78,8 @@ void _sys_start(void * arg) {
     h->ioch = spdk_bdev_get_io_channel(h->desc);
     assert (h->ioch);
     printf("Writing blocks\n");
-    spdk_bdev_write_blocks_with_md(h->desc,h->ioch,h->dbuf,h->mbuf,0,1,_write_cb, h);
+    // spdk_bdev_write_blocks_with_md(h->desc,h->ioch,h->dbuf,h->mbuf,0,1,_write_cb, h);
+    spdk_bdev_write_blocks(h->desc,h->ioch,h->dbuf ,0,1,_write_cb, h);
 }
 
 
