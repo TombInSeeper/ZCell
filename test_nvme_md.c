@@ -18,6 +18,8 @@ typedef struct hello_ctx_t {
 void spdk_bdev_event_cb(enum spdk_bdev_event_type type, struct spdk_bdev *bdev,
 				     void *event_ctx)
 {
+    printf("Bdev error\n");
+    spdk_app_stop(-1);
     return;
 }
 
