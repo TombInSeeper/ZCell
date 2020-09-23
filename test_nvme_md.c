@@ -39,13 +39,13 @@ void _read_cb(struct spdk_bdev_io *bio, bool success, void *cb_arg ) {
     if(strncmp(h->mbuf,h->rmbuf,32)) {
         printf("MetaData inconsitent\n");
     }
-    _stop();
+    _sys_stop();
 }
 void _write_cb(struct spdk_bdev_io *bio, bool success, void *cb_arg ) {
     spdk_bdev_free_io(bio);
     if(!success) {
         printf("Write IO error\n");
-        _stop();
+        _sys_stop();
         return;
     }
     hello_ctx_t *h = cb_arg;
