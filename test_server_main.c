@@ -396,11 +396,15 @@ static int _do_idle(void *rctx_) {
         return 0;
     } else if ( dx > 0  || dx_iops > 0 ) {
         usleep( (1000/dx_iops) / 2);     
+        return 0;
     } else {
         rctx->running_level++;
         if(rctx->running_level == IDLE) {
-            usleep(1000);
             --rctx->running_level;
+            usleep(1000);
+            return 0;
+        } else {
+            usleep(100);
             return 0;
         }
     }
