@@ -512,7 +512,7 @@ void _per_reactor_boot(void * ctx , void *err) {
 
     rctx->idle_enable = g_idle;
     if(rctx->idle_enable) {
-        rctx->idle_poller = spdk_poller_register(idle_poll,rctx, 100);
+        rctx->idle_poller = spdk_poller_register(idle_poll,rctx, 500);
         rctx->idle_poll_start_us = now();
         rctx->idle_poll_exe_us = 1000;
     }
