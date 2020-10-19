@@ -23,7 +23,7 @@ static int g_idle = 0;
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "i:p:c:s:d:")) != -1) {
+	while ((opt = getopt(argc, argv, "i:p:c:s:d")) != -1) {
 		switch (opt) {
 		case 'i':
 			g_base_ip = optarg;
