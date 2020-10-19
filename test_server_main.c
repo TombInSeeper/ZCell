@@ -59,19 +59,17 @@ struct small_object_t {
 };
 
 
+
 typedef struct reactor_ctx_t {
     int reactor_id;
     const char *ip;
     int port;
 
-
     const msgr_server_if_t *msgr_impl;
     const objstore_impl_t  *os_impl;
 
-    struct fcache_t *dma_pages;
-
+    struct spdk_poller *idle_poller;
     volatile bool running;
-
 } reactor_ctx_t;
 static reactor_ctx_t g_reactor_ctxs[NR_REACTOR_MAX];
 static inline reactor_ctx_t* reactor_ctx() {
@@ -326,6 +324,17 @@ static void _on_send_message(message_t *m) {
      m->header.meta_length ,m->header.data_length);
 }
 
+
+
+static int idle_poll(void *rctx_) {
+    reactor_ctx_t *rctx = rctx_;
+    uint64_t _now = rdtsc();
+    uint64_t _last = rctx->msgr_impl->messager_last_busy_ticks();
+    if(_last - _now > 3000 * 100) {
+        usleep(1000);
+    }
+}
+
 //Stop routine
 int _ostore_stop(const objstore_impl_t *oimpl){
     int rc = oimpl->unmount();
@@ -347,7 +356,7 @@ void _per_reactor_stop(void * ctx , void *err) {
     _ostore_stop(rctx->os_impl);
     
     //...
-    fcache_destructor(rctx->dma_pages);
+    spdk_poller_unregister(&rctx->idle_poller);
 
     rctx->running = false;
     log_info("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
@@ -412,10 +421,7 @@ void _per_reactor_boot(void * ctx , void *err) {
     (void)ctx;
     reactor_ctx_t *rctx = reactor_ctx();
 
-    //Load dma page pool
-    rctx->dma_pages = fcache_constructor(128 * 1024, 0x1000, SPDK_MALLOC);
-    assert(rctx->dma_pages);
-    
+    rctx->idle_poller = spdk_poller_register(idle_poll,rctx,0);
 
     //ObjectStore initialize
     rctx->os_impl = ostore_get_impl(g_store_type);

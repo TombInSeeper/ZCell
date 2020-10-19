@@ -11,7 +11,6 @@ struct oss_stat_t {
     uint32_t object_max_num;
     uint32_t object_max_size;
     uint32_t oid_block_size;
-    
     uint64_t total_space;
     uint64_t free_space;
 };
@@ -24,7 +23,6 @@ extern void put_io_channel( io_channel *ioch);
 
 
 extern int  io_stat(io_channel *ch);
-
 extern int  io_create(io_channel *ch , uint32_t oid);
 extern int  io_delete(io_channel *ch , uint32_t oid);
 extern int  io_read(io_channel  *ch, uint32_t oid, uint64_t ofst, uint32_t len);

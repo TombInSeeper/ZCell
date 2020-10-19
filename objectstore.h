@@ -13,6 +13,7 @@ typedef int (*op_handle_func_ptr_t) (void* rqst_ctx , cb_func_t cb);
 
 
 enum OBJECTSTORE_TYPE{
+ 
     NULLSTORE,
     CHUNKSTORE,
     ZSTORE,
@@ -33,6 +34,7 @@ typedef struct objstore_interface_t {
     //see op_***_t in "operation.h"
     int (*obj_async_op_call)(void *request_msg_with_op_context, cb_func_t _cb);
 
+    //Private API
 } objstore_interface_t ;
 
 typedef objstore_interface_t objstore_impl_t;       

@@ -140,6 +140,7 @@ typedef struct messager_t {
             struct spdk_poller *sender_poller;
         };
     }; 
+    uint64_t _last_busy_ticks;
 } messager_t;
 
 static __thread messager_t g_msgr;
@@ -434,7 +435,6 @@ static inline int _push_msg(const message_t *_msg) {
     return SOCK_EAGAIN;
 }
 
-
 static int  _flush_msg_of(session_t *s_) {
     messager_t *msgr = get_local_msgr();
     static session_t *died_ss[NR_SESSION_MAX];  
@@ -469,7 +469,6 @@ static int  _flush_msg_of(session_t *s_) {
         session_destruct(s);
     }
     return cnt;
-
 }
 
 static int  _flush_all(messager_t *msgr) {
@@ -497,6 +496,7 @@ static int  _flush_all(messager_t *msgr) {
                 died_ss[died_ss_n++] = s;
                 break;
             }
+            msgr->_last_busy_ticks = rdtsc();
         }
     }
 
@@ -508,7 +508,15 @@ static int  _flush_all(messager_t *msgr) {
         session_destruct(s);
     }
 
+    if(died_ss_n) {
+        msgr->_last_busy_ticks = rdstc();
+    }
     return cnt;
+}
+
+
+static uint64_t _last_busy_ticks() {
+    return (get_local_msgr())->_last_busy_ticks;
 }
 
 static int _poll_read_events() {
@@ -522,17 +530,16 @@ static int _poll_read_events() {
         return rc;
     }
 
-    if (rc == 0) {
-        int i = 10;
-        while (--i)
-            _mm_pause();
-    }
-
     int i;
     int total_cnt = 0;
     for (i = 0 ; i < rc ; ++i ) {
         total_cnt += _read_event_callback( _results[i]->ctx , msgr->_sock_group,  _results[i]);
     }
+
+    if(rc) {
+        msgr->_last_busy_ticks = rdtsc();
+    }
+
 	return total_cnt;
 }
 
@@ -570,6 +577,7 @@ static int sock_accept_poll(void *arg)  {
 			}
 			break;
 		}
+        msgr->_last_busy_ticks = rdtsc();
 	}
 	return count;
 }
@@ -774,7 +782,10 @@ static __thread msgr_server_if_t msgr_server_impl = {
     .messager_stop = _srv_messager_stop,
     .messager_fini = _srv_messager_destructor,
     .messager_sendmsg = _srv_messager_sendmsg,
+    .messager_last_busy_ticks = _last_busy_ticks,
 };
+
+
 static __thread msgr_client_if_t msgr_client_impl = {
     .messager_init = _cli_messager_constructor,
     .messager_fini = _cli_messager_destructor,

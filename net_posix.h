@@ -2,8 +2,6 @@
 #define NET_POSIX_H
 
 #include "net.h"
-
-
 extern int posix_getaddr( struct sock *sock, char *saddr, int slen, uint16_t *sport, char *caddr,
             int clen, uint16_t *cport);
 extern struct sock *posix_connect(const char *ip, int port);

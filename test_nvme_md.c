@@ -33,8 +33,8 @@ void _read_cb(struct spdk_bdev_io *bio, bool success, void *cb_arg ) {
         return;
     }
     hello_ctx_t *h = cb_arg;
-    printf("Write:%s Read:%s\n",(char*)h->dbuf,(char*)h->rdbuf);
-    printf("Write(md):%s,Read(md):%s\n",(char*)h->dbuf + 0x1000,(char*)h->rdbuf + 0x1000);
+    printf("Write:%s Read:%s",(char*)h->dbuf,(char*)h->rdbuf);
+    printf("Write(md):%s,Read(md):%s",(char*)h->dbuf + 0x1000,(char*)h->rdbuf + 0x1000);
     if(strncmp(h->dbuf,h->rdbuf,32)) {
         printf("Data inconsitent\n");
     }
@@ -71,8 +71,8 @@ void _sys_start(void * arg) {
     h->mbuf = spdk_dma_zmalloc(0x1000,0,NULL);
     h->rdbuf = spdk_dma_zmalloc(0x1000 + 128 ,0,NULL);
     h->rmbuf = spdk_dma_zmalloc(0x1000,0,NULL);
-    strcpy(h->dbuf, "data\n");
-    strcpy((char*)h->dbuf + 0x1000,"metadata\n");
+    strcpy(h->dbuf, "This is data region \n");
+    strcpy((char*)h->dbuf + 0x1000,"This is meta data region\n");
     spdk_bdev_open_ext("Nvme0n1", true, spdk_bdev_event_cb , NULL, &h->desc);
     assert(h->desc);
     h->ioch = spdk_bdev_get_io_channel(h->desc);
@@ -103,9 +103,5 @@ int main() {
     }
     free(h);
     spdk_app_fini();
-    return 0;
-
-
-
     return 0;
 }

@@ -2,7 +2,7 @@
 #define MESSAGER_H
 
 #include "message.h"
-
+#include "util/chrono.h"
 
 
 
@@ -65,10 +65,14 @@ typedef struct msgr_server_if_t {
     //销毁 messager内部的数据结构
     void (*messager_fini)();
     
+
+    uint64_t (*messager_last_busy_ticks)();
+
     //把一个消息放到发送队列
     //返回值：0 成功
     //返回值：-1，内部缓存已满，需要等待 reply_poller 将 inflight message 刷回
     int  (*messager_sendmsg)(const message_t *_msg);
+
 } msgr_server_if_t;
 
 
@@ -114,7 +118,7 @@ typedef struct msgr_client_if_t {
 
 
     //轮询所有session，试图接收消息
-    //返回值：>=0 ，收到的消息个数
+    //返回值：>=0，收到的消息个数
     //返回值：-1 内部错误
     int   (*messager_wait_msg)(); 
     // Poll once for income messages, return income messages number 

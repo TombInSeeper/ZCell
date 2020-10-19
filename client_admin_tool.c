@@ -199,9 +199,9 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
     for (i = 0 ; i < loop ; ++i) {
         int j;
         for (j = 0 ; j < cqd ; ++j) {
-            uint32_t oid = ios[ i * cqd + j ].oid;
-            uint32_t ofst = ios[ i * cqd + j ].ofst;
-            uint32_t len = ios[ i * cqd + j ].len;
+            uint32_t oid = ios[i * cqd + j].oid;
+            uint32_t ofst = ios[i * cqd + j].ofst;
+            uint32_t len = ios[i * cqd + j].len;
             opds[j] = io_read(ac->ioch , oid , ofst , len);
 
             // log_debug("opd=%d\n",opds[j]);
