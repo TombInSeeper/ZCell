@@ -509,7 +509,7 @@ static int  _flush_all(messager_t *msgr) {
     }
 
     if(died_ss_n) {
-        msgr->_last_busy_ticks = rdstc();
+        msgr->_last_busy_ticks = rdtsc();
     }
     return cnt;
 }
