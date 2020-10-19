@@ -19,14 +19,18 @@ static const char *g_base_ip = "0.0.0.0";
 static int g_base_port = 18000;
 static const char *g_core_mask = "0x1";
 static int g_store_type = NULLSTORE;
+static int g_idle = 0;
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "i:p:c:s:")) != -1) {
+	while ((opt = getopt(argc, argv, "i:p:c:s:d:")) != -1) {
 		switch (opt) {
 		case 'i':
 			g_base_ip = optarg;
 			break;
+        case 'd':
+            g_idle = 1;
+            break;
 		case 'p':
 			g_base_port = atoi(optarg);
 			break;
@@ -59,6 +63,14 @@ struct small_object_t {
 };
 
 
+enum RunningLevel {
+    BUSY_MAX,
+    BUSY1,
+    BUSY2,
+    BUSY3,
+    IDLE = 64
+};
+
 
 typedef struct reactor_ctx_t {
     int reactor_id;
@@ -68,7 +80,17 @@ typedef struct reactor_ctx_t {
     const msgr_server_if_t *msgr_impl;
     const objstore_impl_t  *os_impl;
 
+
+    bool idle_enable;
+    uint64_t idle_poll_start_us;
+    uint64_t idle_poll_exe_us;
+    uint64_t rx_last_window;
+    uint64_t tx_last_window;
+    uint64_t rx_io_last_window;
+    uint64_t tx_io_last_window;
     struct spdk_poller *idle_poller;
+
+    int running_level;
     volatile bool running;
 } reactor_ctx_t;
 static reactor_ctx_t g_reactor_ctxs[NR_REACTOR_MAX];
@@ -305,7 +327,6 @@ static void op_execute(message_t *request) {
     }
 }
 
-
 static void _on_recv_message(message_t *m) {
     // log_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
     log_debug("Recv a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
@@ -317,21 +338,83 @@ static void _on_recv_message(message_t *m) {
      * 尽管这个操作看起来有些奇怪
      */
     message_move(&_m, m);
+    
+    reactor_ctx()->rx_last_window += message_get_data_len(&_m) +
+        message_get_meta_len(&_m) + sizeof(message_t);
+    reactor_ctx()->rx_io_last_window++;
+
     op_execute(&_m);
 }
+
 static void _on_send_message(message_t *m) {
     log_debug("Send a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
+    reactor_ctx()->tx_last_window += message_get_data_len(m) +
+        message_get_meta_len(m) + sizeof(message_t);
+    reactor_ctx()->tx_io_last_window++;
 }
 
 
 
+static void _idle_reset(void *rctx_) {
+    reactor_ctx_t *rctx = rctx_;
+    rctx->idle_poll_start_us = now();
+    rctx->rx_last_window = 0;
+    rctx->tx_last_window = 0;
+    rctx->rx_io_last_window = 0;
+    rctx->tx_io_last_window = 0;
+}
+
+static int _do_idle(void *rctx_) {
+    reactor_ctx_t *rctx = rctx_;
+
+    //1ms
+    static const uint64_t window_10Gbps = 
+        (1250 * 1000 * 1000ULL) / (1000); 
+    //1ms
+    static const uint64_t window_iops = 16; 
+    
+    uint64_t dx = spdk_max(rctx->tx_last_window , rctx->rx_last_window);
+    uint64_t dx_iops = spdk_max(rctx->tx_io_last_window , rctx->rx_io_last_window);
+    
+    log_debug("dx=%lu,dx_iops=%lu\n",dx , dx_iops);
+    
+    if(dx >= window_10Gbps / 2  || dx_iops >= window_iops / 2) {
+        rctx->running_level = BUSY_MAX;
+        return 0;
+    }else if (dx >= window_10Gbps / 4 || dx_iops >= window_iops / 4 ) {
+        rctx->running_level = BUSY1;
+        int i = 1000;
+        while(--i)
+            spdk_pause();
+        return 0;
+    }else if (dx >= window_10Gbps / 8 || dx_iops >= window_iops / 8) {
+        rctx->running_level = BUSY2;
+        int i = 10000;
+        while(--i)
+            spdk_pause();       
+        return 0;
+    } else if ( dx > 0  || dx_iops > 0 ) {
+        usleep( (1000/dx_iops) / 5);     
+    } else {
+        rctx->running_level++;
+        if(rctx->running_level == IDLE) {
+            usleep(100);
+            --rctx->running_level;
+            return 0;
+        }
+    }
+    return  0;
+}
+
 static int idle_poll(void *rctx_) {
     reactor_ctx_t *rctx = rctx_;
-    uint64_t _now = rdtsc();
-    uint64_t _last = rctx->msgr_impl->messager_last_busy_ticks();
-    if(_last - _now > 3000 * 100) {
-        usleep(100);
+    uint64_t now_ = now();
+    uint64_t dur = now_ - rctx->idle_poll_start_us;
+    if(dur >= rctx->idle_poll_exe_us) {
+        _do_idle(rctx_);
+        _idle_reset(rctx_);
+        return 1;
     }
     return 0;
 }
@@ -357,7 +440,8 @@ void _per_reactor_stop(void * ctx , void *err) {
     _ostore_stop(rctx->os_impl);
     
     //...
-    spdk_poller_unregister(&rctx->idle_poller);
+    if(rctx->idle_enable)
+        spdk_poller_unregister(&rctx->idle_poller);
 
     rctx->running = false;
     log_info("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
@@ -422,7 +506,12 @@ void _per_reactor_boot(void * ctx , void *err) {
     (void)ctx;
     reactor_ctx_t *rctx = reactor_ctx();
 
-    rctx->idle_poller = spdk_poller_register(idle_poll,rctx,0);
+    rctx->idle_enable = g_idle;
+    if(rctx->idle_enable) {
+        rctx->idle_poller = spdk_poller_register(idle_poll,rctx, 100);
+        rctx->idle_poll_start_us = now();
+        rctx->idle_poll_exe_us = 1000;
+    }
 
     //ObjectStore initialize
     rctx->os_impl = ostore_get_impl(g_store_type);
