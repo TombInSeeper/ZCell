@@ -384,18 +384,18 @@ static int _do_idle(void *rctx_) {
         return 0;
     }else if (dx >= window_10Gbps / 4 || dx_iops >= window_iops / 4 ) {
         rctx->running_level = BUSY1;
-        int i = 1000;
+        int i = 10;
         while(--i)
             spdk_pause();
         return 0;
     }else if (dx >= window_10Gbps / 8 || dx_iops >= window_iops / 8) {
         rctx->running_level = BUSY2;
-        int i = 10000;
+        int i = 10;
         while(--i)
             spdk_pause();       
         return 0;
     } else if ( dx > 0  || dx_iops > 0 ) {
-        usleep( (1000/dx_iops) / 2);     
+        usleep(1);     
         return 0;
     } else {
         rctx->running_level++;
