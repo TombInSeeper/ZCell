@@ -331,8 +331,9 @@ static int idle_poll(void *rctx_) {
     uint64_t _now = rdtsc();
     uint64_t _last = rctx->msgr_impl->messager_last_busy_ticks();
     if(_last - _now > 3000 * 100) {
-        usleep(1000);
+        usleep(100);
     }
+    return 0;
 }
 
 //Stop routine
