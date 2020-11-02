@@ -34,7 +34,7 @@ int main( int argc , char **argv) {
     uint64_t st = now();
     int loop = 1000;
     while(loop--) {
-        pmem_atomic_multi_update(pm,0, 6 ,pes);
+        pmem_atomic_multi_update(pm,0, nr_entrys ,pes);
     }
     uint64_t end = now();
     log_info("%lu us in 1000 times us\n" , end- st);
