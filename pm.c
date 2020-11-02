@@ -1,4 +1,3 @@
-
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -7,6 +6,7 @@
 #include "pmem.h"
 #include "util/log.h"
 #include "util/common.h"
+#include "util/assert.h"
 
 union pm_undolog_header_t {
     struct {
@@ -38,15 +38,10 @@ extern struct pmem_t *pmem_open(const char *path, uint64_t pmem_size) {
     return p;
 }
 
-
-
-
 extern void pmem_read(struct pmem_t *pmem, void *dest, uint64_t offset , size_t length){
     void *src = (char*)(pmem->map_base) + offset;
     memcpy(dest, src, length);
 }
-
-
 
 static void pmem_write_async(struct pmem_t *pmem, const void* src, uint64_t offset, size_t length){
     void *dst = pmem->map_base + offset;
@@ -108,12 +103,12 @@ extern void pmem_atomic_multi_update(struct pmem_t *pmem, int cpu, size_t n, str
     struct pm_undolog_entry_t *ue = (void*)(char *)(uh + 1);
     
     char *ue_start = (void*)ue;
-        
+
     for ( i = 0 ; i < n ; ++i) {
         alen += sizeof(struct pm_undolog_entry_t) + upe[i].len_;
         if(alen > 4096 - 64) {
             log_err("Transaction is too big:alen=%lu\n", alen);
-            return -1;
+            return;
         }
         ue->length = upe[i].len_;
         ue->ofst = upe[i].offset_;
@@ -125,7 +120,7 @@ extern void pmem_atomic_multi_update(struct pmem_t *pmem, int cpu, size_t n, str
     alen = (alen + 256 - 1) & (~( 256 - 1));
     if (alen > 4096 - 64) {
         log_err("Transaction is too big:alen=%lu\n", alen);
-        return -1;      
+        return;      
     }
     uh->align_length = alen;
     
