@@ -5,8 +5,8 @@
 
 #include "pm.h"
 #include "pmem.h"
-#include "../util/log.h"
-#include "../util/common.h"
+#include "util/log.h"
+#include "util/common.h"
 
 union pm_undolog_header_t {
     struct {

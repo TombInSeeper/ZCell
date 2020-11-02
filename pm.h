@@ -1,7 +1,7 @@
 #ifndef PM_H
 #define PM_H
 
-#include "../util/common.h"
+#include "util/common.h"
 
 struct pmem_t {
     int fd;
@@ -16,7 +16,6 @@ struct pmem_update_entry_t {
 };
 
 extern struct pmem_t *pmem_open(const char *path, uint64_t mem_size);
-
 // void pmem_memcpy_64B_aligned(const void *src , void *dest , size_t len);
 // void pmem_flush_64B_aligned(const void *src , void *dest , size_t len);
 // //Use ntstore
