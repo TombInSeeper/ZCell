@@ -61,8 +61,6 @@ static void pmem_write(struct pmem_t *pmem, int sync, const void* src, uint64_t 
     nvmem_memcpy(sync,dst,src,length);
 }
 
-
-
 extern void pmem_rollback(struct pmem_t *pmem , int cpu) {
     uint64_t offset_ulog = 4096 + cpu * 4096;
     union pm_undolog_header_t uh;
