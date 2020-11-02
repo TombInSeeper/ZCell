@@ -7,8 +7,8 @@ struct Value {
 };
 
 int main( int argc , char **argv) {
-    if(argc < 2) {
-        log_info("Usage ./test_pm [pm_path]\n");
+    if(argc < 3) {
+        log_info("Usage ./test_pm [pm_path] [nr_log_entry(1~60)]\n");
         return 1;
     }
     struct pmem_t * pm =  pmem_open(argv[1], 1 << 20);
@@ -37,7 +37,7 @@ int main( int argc , char **argv) {
         pmem_atomic_multi_update(pm,0,8,pes);
     }
     uint64_t end = now();
-    log_info("%lu in 1000 times us\n" , end- st);
+    log_info("%lu us in 1000 times us\n" , end- st);
 
     pmem_close(pm);
     return 0;

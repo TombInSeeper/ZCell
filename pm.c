@@ -56,8 +56,9 @@ static void pmem_flush(struct pmem_t *pmem, int sync, uint64_t offset, size_t le
 
 static void pmem_write(struct pmem_t *pmem, int sync, const void* src, uint64_t offset, size_t length){
     void *dst = pmem->map_base + offset;
-    memcpy(dst,src,length);
-    persist_data(sync,CLFLUSH_USED,dst,length);
+    // memcpy(dst,src,length);
+    // persist_data(sync,CLFLUSH_USED,dst,length);
+    nvmem_memcpy(sync,dst,src,length);
 }
 
 
