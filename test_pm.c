@@ -12,7 +12,7 @@ int main( int argc , char **argv) {
         return 1;
     }
     struct pmem_t * pm =  pmem_open(argv[1], 1 << 20);
-
+    int nr_entrys = atoi(argv[2]);
     char oldv[4096] __attribute__((aligned(64)));
     char newv[4096] __attribute__((aligned(64)));
 
@@ -26,7 +26,7 @@ int main( int argc , char **argv) {
     int i;
     for ( i = 0 ; i < 64 ; ++i) {
         pes[i].len_ = 64;
-        pes[i].offset_ = 512 * i;
+        pes[i].offset_ = 4096 * i;
         pes[i].old_value_ = &pov[i];
         pes[i].new_value_ = &pnv[i];
     }
