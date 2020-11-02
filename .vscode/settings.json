@@ -15,6 +15,7 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "typeindex": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "cstring": "c"
     }
 }

@@ -68,7 +68,7 @@ enum RunningLevel {
     BUSY1,
     BUSY2,
     BUSY3,
-    IDLE = 64
+    IDLE = 10
 };
 
 
@@ -382,25 +382,25 @@ static int _do_idle(void *rctx_) {
     if(dx >= window_10Gbps / 2  || dx_iops >= window_iops / 2) {
         rctx->running_level = BUSY_MAX;
         return 0;
-    }else if (dx >= window_10Gbps / 4 || dx_iops >= window_iops / 4 ) {
+    } else if (dx >= window_10Gbps / 4 || dx_iops >= window_iops / 4 ) {
         rctx->running_level = BUSY1;
         int i = 10;
         while(--i)
             spdk_pause();
         return 0;
-    }else if (dx >= window_10Gbps / 8 || dx_iops >= window_iops / 8) {
+    } else if (dx >= window_10Gbps / 8 || dx_iops >= window_iops / 8) {
         rctx->running_level = BUSY2;
         int i = 10;
         while(--i)
             spdk_pause();       
         return 0;
     } else if ( dx > 0  || dx_iops > 0 ) {
-        usleep(1);     
+        sched_yield();     
         return 0;
     } else {
         rctx->running_level++;
         if(rctx->running_level == IDLE) {
-            --rctx->running_level;
+            rctx->running_level = 0;
             usleep(1000);
             return 0;
         } else {
@@ -408,7 +408,7 @@ static int _do_idle(void *rctx_) {
             return 0;
         }
     }
-    return  0;
+    return 0;
 }
 
 static int idle_poll(void *rctx_) {

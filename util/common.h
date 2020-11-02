@@ -58,4 +58,7 @@ typedef uint64_t _le64;
 #define mb()    asm volatile("mfence":::"memory")
 #define rmb()   asm volatile("lfence":::"memory")
 #define wmb()   asm volatile("sfence" ::: "memory")
+
+
+
 #endif

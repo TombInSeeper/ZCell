@@ -12,8 +12,7 @@
 typedef int (*op_handle_func_ptr_t) (void* rqst_ctx , cb_func_t cb);
 
 
-enum OBJECTSTORE_TYPE{
- 
+enum OBJECTSTORE_TYPE{ 
     NULLSTORE,
     CHUNKSTORE,
     ZSTORE,
@@ -38,7 +37,6 @@ typedef struct objstore_interface_t {
 } objstore_interface_t ;
 
 typedef objstore_interface_t objstore_impl_t;       
-      
 extern const objstore_impl_t* ostore_get_impl( int store_type );
 
 #endif

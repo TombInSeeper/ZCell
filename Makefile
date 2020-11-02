@@ -65,8 +65,6 @@ all: $(BIN_TGT)
 
 test: $(TEST_BIN)
 
-
-
 # test_messager_server:test_messager_server.o $(MSGR_OBJS)
 # 	$(LINK_C)
 
@@ -83,6 +81,9 @@ client_admin_tool:client_admin_tool.o liboss.o $(MSGR_OBJS)
 	$(LINK_C)
 
 test_nvme_md:test_nvme_md.o
+	$(LINK_C)
+
+test_pm:test_pm.o pm.o
 	$(LINK_C)
 
 %.o: %.c %.d
