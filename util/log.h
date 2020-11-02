@@ -1,6 +1,9 @@
 #ifndef LOG_H
 #define LOG_H
 
+#include <stdio.h>
+
+
 #define log_level_error 0
 #define log_level_critical 0
 #define log_level_warn  1

@@ -101,15 +101,14 @@ extern void pmem_atomic_multi_update(struct pmem_t *pmem, int cpu, size_t n, str
     uint64_t alen = 0;
     
     char tmp [4096]__attribute__((aligned (64)));
-    
 
-    union pm_undolog_header_t *uh = tmp;
+    union pm_undolog_header_t *uh = (void*)tmp;
     uh->nr_logs = n;
     uh->valid = 1;
-
     struct pm_undolog_entry_t *ue = (void*)(char *)(uh + 1);
-    char *ue_start = ue;
     
+    char *ue_start = (void*)ue;
+        
     for ( i = 0 ; i < n ; ++i) {
         alen += sizeof(struct pm_undolog_entry_t) + upe[i].len_;
         if(alen > 4096 - 64) {
