@@ -1,7 +1,11 @@
 #ifndef ZSTORE_H
 #define ZSTORE_H
 
-#include "../util/common.h"
+#include "util/common.h"
+
+
+//For meta data storage
+#include "libpmem.h"
 
 #define PAGE_ALIGN 4096
 #define PAGE_ALIGN_SHIFT 12
@@ -36,27 +40,11 @@ union zstore_superblock_t {
     uint8_t align[PAGE_ALIGN];
 };
 
-
-union zstore_undolog_header_t {
-    struct {
-        uint64_t valid : 1;
-        uint64_t rsv : 15;
-        uint64_t nr_logs: 16;
-        uint64_t rsv2 : 32;
-    };
-    uint8_t align[64];
-};
-
-union zstore_undolog_region_t{
-    union zstore_undolog_header_t log_header;
-    uint8_t align[PAGE_ALIGN];
-};
-
 struct zstore_bitmap_entry_t {
     uint64_t bits[8];
 };
 
-union otbale_entry_t {
+union otable_entry_t {
     struct {
         uint64_t oid;
         uint64_t mtime;
@@ -67,11 +55,14 @@ union otbale_entry_t {
     };
     uint8_t align[64];
 };
-extern int zstore_mkfs(const char* dev_list[], int flags);
-extern int zstore_mount(const char* dev_list[], /* size = 3*/  int flags /**/);
+extern int zstore_mkfs(const char *dev_list[], int flags);
+
+extern int zstore_mount(const char *dev_list[], /* size = 3*/  int flags /**/);
+
 extern int zstore_unmount();
 
 extern const int zstore_obj_async_op_context_size();
+
 extern int zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb);
 
 

@@ -2,28 +2,26 @@
 #define PM_H
 
 #include "util/common.h"
+#include "util/fixed_cache.h"
 
-struct pmem_t {
-    int fd;
-    void *map_base;
-};
+#define FLOOR_ALIGN(v , align) (((v) + (align) - 1) & (~((align)-1)) ) 
 
-struct pmem_update_entry_t {
-    uint64_t offset_;       // (void*)dst-(void*)base
-    uint32_t len_;          //Must be 64B aligned
-    void     *old_value_;   
-    void     *new_value_;
-};
+union  pmem_transaction_t;
+struct pmem_t;
+
 
 extern struct pmem_t *pmem_open(const char *path, uint64_t mem_size);
-// void pmem_memcpy_64B_aligned(const void *src , void *dest , size_t len);
-// void pmem_flush_64B_aligned(const void *src , void *dest , size_t len);
-// //Use ntstore
-// void pmem_nt_memcpy_64B_aligned(const void *src , void *dest , size_t len);
 extern void pmem_read(struct pmem_t *pmem, void *dest, uint64_t offset , size_t length);
-
 //Multithread Unsafe 
-extern void pmem_atomic_multi_update(struct pmem_t *pmem, int cpu, size_t n, struct pmem_update_entry_t *upe);
+
+extern union pmem_transaction_t* pmem_transaction_alloc(struct pmem_t *pmem);
+
+//pmem_addr % 64 == 0
+//len % 64 == 0
+extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *tx,
+    const void* pmem_addr, size_t len, void *new_value);
+extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t *tx);
+extern void pmem_transaction_free(struct pmem_t *pmem, union pmem_transaction_t *tx);
 
 extern void pmem_close(struct pmem_t *pmem);
 
