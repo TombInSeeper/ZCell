@@ -22,8 +22,8 @@ int main( int argc , char **argv) {
     struct Value *pnv = (void*)newv;
     uint64_t st = now();
     int loop = 10000;
+    union pmem_transaction_t  *tx = pmem_transaction_alloc(pm);
     while(loop--) {
-        union pmem_transaction_t  *tx = pmem_transaction_alloc(pm);
         pmem_transaction_add(pm,tx, 1 << 10 , 64, newv[1]);
         pmem_transaction_add(pm,tx, 2 << 10 , 64, newv[2]);
         pmem_transaction_add(pm,tx, 3 << 10 , 64, newv[3]);
@@ -33,9 +33,10 @@ int main( int argc , char **argv) {
             log_err("Transaction execute error\n");
             return 1;
         }
-        pmem_transaction_free(pm,tx);
     }
     uint64_t end = now();
+    pmem_transaction_free(pm,tx);
+
     log_info("%lu us in 10000 times us\n" , end- st);
 
     pmem_close(pm);

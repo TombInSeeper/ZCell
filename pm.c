@@ -145,7 +145,8 @@ extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t
     }
     _mm_sfence();
 
-    pmem_write(pmem,1, zero_64B, pmem->log_region_ofst, sizeof(tx->lh));
+    memset(&tx->lh , 0 , sizeof(tx->lh));
+    pmem_write(pmem,1, &tx->lh, pmem->log_region_ofst, sizeof(tx->lh));
 
     return true;
 }
