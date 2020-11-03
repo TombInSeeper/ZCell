@@ -105,8 +105,9 @@ extern union pmem_transaction_t* pmem_transaction_alloc(struct pmem_t *pmem) {
 //pmem_addr % 64 == 0
 //len % 64 == 0
 extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *tx,
-    const void* pmem_addr, size_t len, void *new_value)  
+    const uint64_t pmem_ofst, size_t len, void *new_value)  
 {
+    const void *pmem_addr = (char*)pmem->map_base + pmem_ofst;
     uint32_t alen = tx->lh.align_length;
     uint32_t tlen = (alen + sizeof(struct pm_log_entry_t) + len) + sizeof(union pm_log_header_t);
     tlen = FLOOR_ALIGN(tlen , 256);
@@ -118,7 +119,7 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
 
     uint32_t i = tx->lh.nr_logs++;    
     tx->le[i].length = len;
-    tx->le[i].ofst   = pmem_addr - pmem->map_base; 
+    tx->le[i].ofst   = pmem_ofst; 
     memcpy(tx->le[i].value , new_value, len);
     
     return true;
