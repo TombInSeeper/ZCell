@@ -7,7 +7,7 @@
 
 int main( int argc , char **argv) {
     if(argc < 2) {
-        log_info("Usage ./test_pm [pm_path] [nr_log_entry(1~60)]\n");
+        log_info("Usage ./test_pm [pm_path] \n");
         return 1;
     }
     struct pmem_t * pm =  pmem_open(argv[1], 1 << 20);
@@ -24,10 +24,10 @@ int main( int argc , char **argv) {
     int loop = 10000;
     while(loop--) {
         union pmem_transaction_t  *tx = pmem_transaction_alloc(pm);
-        pmem_transaction_add(pm,tx, 1 << 10 , 64, &newv[1]);
-        pmem_transaction_add(pm,tx, 2 << 10 , 64, &newv[2]);
-        pmem_transaction_add(pm,tx, 3 << 10 , 64, &newv[3]);
-        pmem_transaction_add(pm,tx, 4 << 10 , 64, &newv[4]);
+        pmem_transaction_add(pm,tx, 1 << 16 , 64, &newv[1]);
+        pmem_transaction_add(pm,tx, 2 << 16 , 64, &newv[2]);
+        pmem_transaction_add(pm,tx, 3 << 16 , 64, &newv[3]);
+        pmem_transaction_add(pm,tx, 4 << 16 , 64, &newv[4]);
         bool success = pmem_transaction_apply(pm,tx);
         if(!success) {
             log_err("Transaction execute error\n");
