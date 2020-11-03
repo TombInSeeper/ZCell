@@ -24,10 +24,10 @@ int main( int argc , char **argv) {
     int loop = 10000;
     union pmem_transaction_t  *tx = pmem_transaction_alloc(pm);
     while(loop--) {
-        pmem_transaction_add(pm,tx, 1 << 10 , 64, newv[1]);
-        pmem_transaction_add(pm,tx, 2 << 10 , 64, newv[2]);
-        pmem_transaction_add(pm,tx, 3 << 10 , 64, newv[3]);
-        pmem_transaction_add(pm,tx, 4 << 10 , 64, newv[4]);
+        pmem_transaction_add(pm,tx, 1 << 10 , 64, &newv[1]);
+        pmem_transaction_add(pm,tx, 2 << 10 , 64, &newv[2]);
+        pmem_transaction_add(pm,tx, 3 << 10 , 64, &newv[3]);
+        pmem_transaction_add(pm,tx, 4 << 10 , 64, &newv[4]);
         bool success = pmem_transaction_apply(pm,tx);
         if(!success) {
             log_err("Transaction execute error\n");
