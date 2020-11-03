@@ -126,7 +126,7 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
 
 extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t *tx) {
 
-    const uint64_t zero_64B[8] __attribute__((aligned(64))) = { 0 };
+    // const uint64_t zero_64B[8] __attribute__((aligned(64))) = { 0 };
 
     //Step1. 
     //.....

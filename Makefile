@@ -28,7 +28,7 @@ SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspd
 	-lspdk_vmd\
 	-Wl,--no-whole-archive  -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
 
-PMDK_LINK_CFLAGS=-lpmem2
+# PMDK_LINK_CFLAGS=-lpmem2
 
 
 ###########################
