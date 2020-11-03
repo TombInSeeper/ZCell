@@ -101,7 +101,7 @@ static inline void* fcache_get(fcache_t *fc)
         return NULL;
     }
     uint32_t pr_id  = fc->ptr_arr[fc->tail++];
-    return (char*)fc->elems + (pr_id * fc->elem_size);
+    return (void*)((char*)fc->elems + (pr_id * fc->elem_size));
 }
 
 static inline void fcache_put(fcache_t *fc , void* elem)
