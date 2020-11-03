@@ -99,7 +99,7 @@ union pmem_transaction_t {
 };
 
 extern union pmem_transaction_t* pmem_transaction_alloc(struct pmem_t *pmem) {
-    return fcache_get(pmem->tx_caches);
+    return malloc(sizeof(union pmem_transaction_t));
 }
 
 //pmem_addr % 64 == 0
@@ -153,8 +153,7 @@ extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t
 }
 
 extern void pmem_transaction_free(struct pmem_t *pmem, union pmem_transaction_t *tx) {
-    memset(&tx->lh, 0 , sizeof(tx->lh));
-    fcache_put(pmem->tx_caches , tx);
+    free(tx);
 }
 
 
