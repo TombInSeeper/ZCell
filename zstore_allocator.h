@@ -69,7 +69,7 @@ static int inline stupid_alloc_space
     *ex_nr = 0;
     for ( ; it < allocator->nr_total_ + allocator->hint_; ++it) {
         uint64_t i = it % allocator->nr_total_;
-        uint64_t *v = &(allocator->bs_[i>>9].bits_[i&(2<<3)]);
+        uint64_t *v = &(allocator->bs_[i>>9].bits_[i&(1<<3)]);
         uint64_t mask = (1ULL <<(i & 64));
 
         //这是目标位
@@ -115,7 +115,7 @@ stupid_free_space(struct stupid_allocator_t *allocator, const struct zstore_exte
         uint64_t j;
         for (j = 0 ; j < ex[i].len_ ; ++j) {
             uint64_t in = ex[i].lba_ + j ;
-            uint64_t *v = &(allocator->bs_[ in >>9].bits_[ in & (2<<3)]);
+            uint64_t *v = &(allocator->bs_[ in >>9].bits_[ in & (1<<3)]);
             uint64_t mask = (1ULL <<(in & 64));
 
             //Clear bit
