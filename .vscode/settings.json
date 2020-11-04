@@ -16,6 +16,8 @@
         "utility": "cpp",
         "typeindex": "c",
         "typeinfo": "c",
-        "cstring": "c"
+        "cstring": "c",
+        "random": "c",
+        "limits": "c"
     }
 }

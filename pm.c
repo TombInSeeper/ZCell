@@ -12,10 +12,8 @@
 #define PM_LOG_REGION_SIZE 4096
 
 struct pmem_t {    
-    // int fd;
     void *map_base;
     uint64_t log_region_ofst;
-    fcache_t *tx_caches;
 };
 
 union pm_log_header_t {
@@ -45,8 +43,7 @@ extern struct pmem_t *pmem_open(const char *path, uint64_t pmem_size) {
     void* dest = mmap(NULL, pmem_size, PROT_READ | PROT_WRITE, MAP_SHARED /*| MAP_POPULATE*/, fd, 0);
     close(fd);
     p->map_base = dest;
- 
-    p->tx_caches = fcache_constructor(256,4096,MALLOC);
+    p->log_region_ofst = 4096 + 0 * PM_LOG_REGION_SIZE;
     return p;
 }
 
@@ -214,6 +211,5 @@ extern void pmem_transaction_free(struct pmem_t *pmem, union pmem_transaction_t 
 
 
 extern void pmem_close(struct pmem_t *pmem) {
-    fcache_destructor(pmem->tx_caches);
     free(pmem);
 }

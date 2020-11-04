@@ -2,10 +2,10 @@
 #define COMMON_H
 
 #include <emmintrin.h>
-#include "stdint.h"
-#include "memory.h"
-#include "string.h"
-#include "stdbool.h"
+#include <stdint.h>
+#include <malloc.h>
+#include <string.h>
+#include <stdbool.h>
 
 #include "./errcode.h"
 
