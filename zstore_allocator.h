@@ -27,14 +27,17 @@ static inline int stupid_allocator_constructor(struct stupid_allocator_t *alloca
     allocator->nr_total_ = nr_total;
     allocator->nr_free_ = nr_total;
     allocator->hint_ = 0;
+    return 0;
 }
 
 static inline int stupid_allocator_set_bitmap_entry(struct stupid_allocator_t *allocator, size_t i, const void *src) {
     memcpy(&allocator->bs_[i], src, sizeof(allocator->bs_[i]));
+    return 0;
 }   
 
 static inline int stupid_allocator_destructor(struct stupid_allocator_t *allocator) {
     free(allocator->bs_);
+    return 0;
 }
 
 static int inline stupid_alloc_space
