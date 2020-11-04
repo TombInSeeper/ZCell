@@ -45,6 +45,19 @@
 // }
 
 #include "zstore_allocator.h"
+
+void alloc_result_str(struct zstore_extent_t *ze, uint64_t nr) {
+    
+    char str[4096];
+    size_t n = sprintf (str ,"Allocate %lu extent:", nr);
+    size_t i;
+    for ( i = 0 ; i < nr ; ++i) {
+        n += sprintf(str + n, "{%lu,%lu}" , ze[i].lba_, ze[i].len_);
+    }
+    n+= sprintf(str + n ,"\n");
+    log_info("%s" , str);
+}
+
 int main(int argc , char **argv) {
 
     struct stupid_allocator_t *al = malloc(sizeof(struct stupid_allocator_t));
@@ -56,6 +69,8 @@ int main(int argc , char **argv) {
     assert(en == 1);
     assert(ze[0].lba_ == 0 && ze[0].len_ == 16);
 
+    alloc_result_str(ze,en);
+    
     stupid_allocator_destructor(al);
 
 }
