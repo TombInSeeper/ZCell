@@ -40,6 +40,19 @@ static inline int stupid_allocator_destructor(struct stupid_allocator_t *allocat
     return 0;
 }
 
+static inline void dump_bitmap(uint64_t v) {
+    uint64_t i;
+    printf("[63:0]{");
+    for ( i = 0 ; i < 64 ; ++i) {
+        if ( v & ( 1ULL << i)) {
+            printf(" 1");
+        } else {
+            printf(" 0");
+        }
+    }
+    printf("}\n");
+}
+
 static int inline stupid_alloc_space
 (struct stupid_allocator_t *allocator, uint64_t sz , struct zstore_extent_t *ex , uint64_t *ex_nr) {
     
@@ -57,7 +70,7 @@ static int inline stupid_alloc_space
     for ( ; it < allocator->nr_total_ + allocator->hint_; ++it) {
         uint64_t i = it % allocator->nr_total_;
         uint64_t *v = &(allocator->bs_[i>>9].bits_[i&(2<<3)]);
-        uint64_t mask = (1 <<(i & 64));
+        uint64_t mask = (1ULL <<(i & 64));
 
         //这是目标位
         uint64_t bit = (*v) & mask;
@@ -103,7 +116,7 @@ stupid_free_space(struct stupid_allocator_t *allocator, const struct zstore_exte
         for (j = 0 ; j < ex[i].len_ ; ++j) {
             uint64_t in = ex[i].lba_ + j ;
             uint64_t *v = &(allocator->bs_[ in >>9].bits_[ in & (2<<3)]);
-            uint64_t mask = (1 <<(in & 64));
+            uint64_t mask = (1ULL <<(in & 64));
 
             //Clear bit
             *v &= (~mask);
