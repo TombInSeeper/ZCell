@@ -51,8 +51,9 @@ static int inline stupid_alloc_space
     uint64_t rsv_len = 0;
     struct zstore_extent_t *p_ex = ex;
     bool end_flag = 0;
-    uint64_t last_i;
+    // uint64_t last_i;
     //遍历整个位图
+    *ex_nr = 0;
     for ( ; it < allocator->nr_total_ + allocator->hint_; ++it) {
         uint64_t i = it % allocator->nr_total_;
         uint64_t *v = &(allocator->bs_[i>>9].bits_[i&(2<<3)]);
