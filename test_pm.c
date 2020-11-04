@@ -67,6 +67,7 @@ int main(int argc , char **argv) {
 
     assert(en == 1);
     assert(ze[0].lba_ == 0 && ze[0].len_ == 16);
+    printf("en=%lu\n",en);
     dump_bitmap(al->bs_[0].bits_[0]);
     alloc_result_str(ze,en);
 
