@@ -71,7 +71,6 @@ static int inline stupid_alloc_space
         uint64_t i = it % allocator->nr_total_;
         uint64_t *v = &(allocator->bs_[i>>9].bits_[i&(1<<3)]);
         uint64_t mask = (1ULL <<(i & 64));
-        dump_bitmap(*v);
         //这是目标位
         uint64_t bit = (*v) & mask;
         bool in_found_ctx = false;
@@ -87,6 +86,8 @@ static int inline stupid_alloc_space
                 rsv_len++;
                 //Set bit
                 *v |= (mask); 
+                dump_bitmap(*v);
+
             } else {
                 if(in_found_ctx) {
                     p_ex ++;
