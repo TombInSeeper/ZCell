@@ -234,7 +234,7 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
         log_err("PM space is not enough, \ 
         pm_dy_sofst = %lu , pm_sz = %lu \n", 
         zsb->pm_dy_space_ofst,
-        zsb->pm_nr_pages << 12);
+        (uint64_t)zsb->pm_nr_pages << 12);
         return -1;
     }
     
