@@ -117,7 +117,7 @@ struct zstore_context_t {
 static __thread struct zstore_context_t *zstore; //TLS 
 
 
- void spdk_bdev_event_cb_common(enum spdk_bdev_event_type type, struct spdk_bdev *bdev,
+static void spdk_bdev_event_cb_common(enum spdk_bdev_event_type type, struct spdk_bdev *bdev,
 				     void *event_ctx) 
 {
     log_warn("Bdev event\n");
@@ -175,7 +175,7 @@ zstore_pm_file_open(struct zstore_context_t *zs, const char *path, uint64_t *pm_
 }
 
 static void
-zstore_pm_file_open(struct zstore_context_t *zs) {
+zstore_pm_file_close(struct zstore_context_t *zs) {
     pmem_close(zs->pmem_);
 }
 
@@ -229,6 +229,8 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
 
     pmem_write(zstore->pmem_, 1, zsb ,0 , 4096);    
 
+    zstore_bdev_close(zstore);
+    zstore_pm_file_close(zstore);
     zstore_ctx_fini(zstore);
     return 0;
 }
