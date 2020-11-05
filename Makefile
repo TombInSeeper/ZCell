@@ -7,7 +7,7 @@ ver=release
 ifeq ($(ver), debug)
 CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -fno-strict-aliasing  -g -O0 
 else
-CFLAGS=-D_GNU_SOURCE -DNDEBUG -Wall -std=gnu99 -O3 -march=native -fno-strict-aliasing 
+CFLAGS=-D_GNU_SOURCE -DWY_NDEBUG -Wall -std=gnu99 -O3 -march=native -fno-strict-aliasing 
 endif
 
 SPDK_PATH_PREFIX=/home/wuyue

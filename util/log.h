@@ -10,7 +10,7 @@
 #define log_level_info  2
 #define log_level_debug 3
 
-#ifndef NDEBUG
+#ifndef WY_NDEBUG
 #ifndef DEBUG_LEVEL
 #define DEBUG_LEVEL 3
 #endif
