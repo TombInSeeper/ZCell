@@ -236,8 +236,8 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
         ssd_bitmap_sz: %lu, dy_bitmap_sz: %lu, otable_sz : %lu\n" ,
         1UL , 255UL , ssd_bitmap_sz >> 12 , pm_bitmap_sz >> 12, (64*onode_rsv)>>12 );
         //128M * 8 * 
-    log_info("ZStore manage ssd GB max :%lu , real: %lu \n" , (ssd_bitmap_sz << 5) , nblks << 12 >> 30 );
-    log_info("ZStore manage pm GB max :%lu , real: %lu \n" , (pm_bitmap_sz << 5) , npm_blks_ << 12 >> 30 );
+    log_info("ZStore manage ssd GB max :%lu , real: %lu \n" , (ssd_bitmap_sz << 3 << 12 >> 30) , nblks << 12 >> 30 );
+    log_info("ZStore manage pm GB max :%lu , real: %lu \n" , (pm_bitmap_sz << 3 << 12 >> 30) , npm_blks_ << 12 >> 30 );
 
     
     log_info("dynamic space sz:%lu \n" , (npm_blks_-(zsb->pm_dy_space_ofst>>12)));
