@@ -65,9 +65,8 @@ int main(int argc , char **argv) {
     uint64_t en;
     stupid_alloc_space(al, 2 ,ze, &en);
 
-    if(!(en == 1)) {
-        abort();
-    }
+    ASSERT(en==1);
+
 
     alloc_result_str(ze,en);
 
