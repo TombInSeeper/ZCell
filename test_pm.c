@@ -64,7 +64,7 @@ int main(int argc , char **argv) {
     struct zstore_extent_t ze[64];
     uint64_t en;
     stupid_alloc_space(al, 2 ,ze, &en);
-
+    assert(en == 1);
     alloc_result_str(ze,en);
 
     stupid_allocator_destructor(al);

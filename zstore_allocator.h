@@ -94,7 +94,7 @@ struct zstore_extent_t *ex , uint64_t *ex_nr) {
                     *ex_nr = *ex_nr + 1;
                     in_found_ctx = true;
                 }
-                p_ex->len_ ++;
+                p_ex->len_++;
                 rsv_len++;
                 //Set bit
                 *v |= (mask); 
