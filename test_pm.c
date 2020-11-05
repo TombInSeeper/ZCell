@@ -63,12 +63,19 @@ int main(int argc , char **argv) {
     stupid_allocator_constructor(al ,1024 * 1024);
     struct zstore_extent_t ze[64];
     uint64_t en;
+    //ALloc
     stupid_alloc_space(al, 2 ,ze, &en);
-
-    ASSERT(en==1);
-
-
+    ASSERT(en ==1);
     alloc_result_str(ze,en);
+    
+    //Free
+    stupid_free_space(al, ze, en);
+
+    stupid_alloc_space(al, 128 ,ze, &en);
+    ASSERT(en ==1);
+    alloc_result_str(ze,en);
+
+
 
     stupid_allocator_destructor(al);
 
