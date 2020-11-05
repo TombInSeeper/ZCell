@@ -229,6 +229,12 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
     log_info("superblock_sz : %lu, log_region_sz :%lu,\ 
         ssd_bitmap_sz: %lu, dy_bitmap_sz: %lu, otable_sz : %lu\n" ,
         1UL , 255UL , (nblks_>>3)>>12 , (npm_blks_>>3)>>12, (64*onode_rsv)>>12 );
+    
+    if(zsb->pm_dy_space_ofst >= npm_blks_) {
+        log_err("PM space is not enough , pm_dy_sofst = %lu\n", zsb->pm_dy_space_ofst);
+        return -1;
+    }
+    
     log_info("dynamic space sz:%lu \n" , (npm_blks_-zsb->pm_dy_space_ofst) >> 12);
 
 
