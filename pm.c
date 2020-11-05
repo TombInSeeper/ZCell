@@ -45,12 +45,12 @@ extern struct pmem_t *pmem_open(const char *path, uint64_t cpu,  uint64_t *pmem_
     int rc = stat(path,&st_);
     if(rc) {
         free(p);
-        log_err("Cannot get stat of %s, errs: %s" , p , strerror(errno));
+        log_err("Cannot get stat of %s, errs: %s" , path , strerror(errno));
         return NULL;
     }
     uint64_t fsize = st_.st_size;
     
-    if(fsize & ( 1 << 20 - 1 )) {
+    if(fsize & ((1 << 20) - 1 )) {
         log_err("Pmem file must be aligned to 2MiB\n");
         free(p);
         return NULL;
