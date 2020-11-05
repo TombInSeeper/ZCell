@@ -40,9 +40,9 @@ static inline int stupid_allocator_destructor(struct stupid_allocator_t *allocat
     return 0;
 }
 
-static inline void dump_bitmap(uint64_t v) {
+static inline void dump_bitmap(const char* prefix, uint64_t v) {
     uint64_t i;
-    printf("[0:63]{");
+    printf("%s[0:63]{" , prefix);
     for ( i = 0 ; i < 64 ; ++i) {
         if ( v & ( 1ULL << i)) {
             printf("1");
@@ -53,8 +53,9 @@ static inline void dump_bitmap(uint64_t v) {
     printf("}\n");
 }
 
-static int inline stupid_alloc_space
-(struct stupid_allocator_t *allocator, uint64_t sz , struct zstore_extent_t *ex , uint64_t *ex_nr) {
+static inline int stupid_alloc_space
+(struct stupid_allocator_t *allocator, uint64_t sz , 
+struct zstore_extent_t *ex , uint64_t *ex_nr) {
     
     if((allocator->nr_free_ < sz)) {
         return -1;
@@ -86,8 +87,9 @@ static int inline stupid_alloc_space
                 p_ex->len_ ++;
                 rsv_len++;
                 //Set bit
+                dump_bitmap("v",*v);
+                dump_bitmap("mask",mask);
                 *v = (*v) | (mask); 
-                dump_bitmap(*v);
 
             } else {
                 if(in_found_ctx) {
