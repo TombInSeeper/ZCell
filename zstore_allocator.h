@@ -86,7 +86,7 @@ static int inline stupid_alloc_space
                 p_ex->len_ ++;
                 rsv_len++;
                 //Set bit
-                *v |= (mask); 
+                *v = (*v) | (mask); 
                 dump_bitmap(*v);
 
             } else {
