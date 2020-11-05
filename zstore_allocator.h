@@ -87,8 +87,6 @@ static int inline stupid_alloc_space
                 rsv_len++;
                 //Set bit
                 *v |= (mask); 
-                dump_bitmap(*v);
-
             } else {
                 if(in_found_ctx) {
                     p_ex ++;
@@ -103,6 +101,7 @@ static int inline stupid_alloc_space
             if(!bit) {
                 allocator->hint_ = i;
                 allocator->nr_free_ -= sz;
+                dump_bitmap(*v);
                 return 0 ;
             }
         }
