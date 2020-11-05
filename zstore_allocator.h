@@ -53,6 +53,14 @@ static inline void dump_bitmap(const char* prefix, uint64_t v) {
     printf("}\n");
 }
 
+static inline void dump_extent(struct zstore_extent_t *ze , uint64_t nr) {
+    size_t i;
+    for ( i = 0 ; i < nr ; ++i) {
+        printf("{%lu,%lu}" , ze[i].lba_, ze[i].len_);
+    }
+    printf("\n");
+}
+
 static inline int stupid_alloc_space
 (struct stupid_allocator_t *allocator, uint64_t sz , 
 struct zstore_extent_t *ex , uint64_t *ex_nr) {
@@ -71,7 +79,7 @@ struct zstore_extent_t *ex , uint64_t *ex_nr) {
     for ( ; it < allocator->nr_total_ + allocator->hint_; ++it) {
         uint64_t i = it % allocator->nr_total_;
         uint64_t mod_mask = (1ULL<<9) - 1;
-        printf("Tgt v: bs[%lu], bits_[%lu] , bit[%lu]\n", i >> 9, (i & 511) >> 6, i & 63);
+        // printf("Tgt v: bs[%lu], bits_[%lu] , bit[%lu]\n", i >> 9, (i & 511) >> 6, i & 63);
         uint64_t *v = &(allocator->bs_[i>>9].bits_[(i & 511) >> 6]);
         uint64_t mask = (1ULL <<(i & 63));
         //这是目标位
@@ -91,10 +99,10 @@ struct zstore_extent_t *ex , uint64_t *ex_nr) {
                 //Set bit
                 *v |= (mask); 
                 dump_bitmap("v",*v);
-
+                dump_extent(ex , *ex_nr);
             } else {
                 if(in_found_ctx) {
-                    p_ex ++;
+                    p_ex++;
                     in_found_ctx = false;
                 }
             }
