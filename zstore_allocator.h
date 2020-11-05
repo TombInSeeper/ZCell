@@ -89,6 +89,7 @@ struct zstore_extent_t *ex , uint64_t *ex_nr) {
         if(!end_flag) {
             if(!bit) {
                 if(!in_found_ctx) {
+                    p_ex++;
                     p_ex->lba_ = i;
                     p_ex->len_ = 0;
                     *ex_nr = *ex_nr + 1;
@@ -102,7 +103,6 @@ struct zstore_extent_t *ex , uint64_t *ex_nr) {
                 dump_extent(ex , *ex_nr);
             } else {
                 if(in_found_ctx) {
-                    p_ex++;
                     in_found_ctx = false;
                 }
             }
