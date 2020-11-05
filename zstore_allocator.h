@@ -42,7 +42,7 @@ static inline int stupid_allocator_destructor(struct stupid_allocator_t *allocat
 
 static inline void dump_bitmap(uint64_t v) {
     uint64_t i;
-    printf("[63:0]{");
+    printf("[0:63]{");
     for ( i = 0 ; i < 64 ; ++i) {
         if ( v & ( 1ULL << i)) {
             printf(" 1");

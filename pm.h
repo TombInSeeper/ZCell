@@ -2,7 +2,7 @@
 #define PM_H
 
 #include "util/common.h"
-#include "util/fixed_cache.h"
+// #include "util/fixed_cache.h"
 
 #define FLOOR_ALIGN(v , align) (((v) + (align) - 1) & (~((align)-1)) ) 
 
