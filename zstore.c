@@ -230,8 +230,11 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
         ssd_bitmap_sz: %lu, dy_bitmap_sz: %lu, otable_sz : %lu\n" ,
         1UL , 255UL , (nblks_>>3)>>12 , (npm_blks_>>3)>>12, (64*onode_rsv)>>12 );
     
-    if(zsb->pm_dy_space_ofst >= npm_blks_) {
-        log_err("PM space is not enough , pm_dy_sofst = %lu\n", zsb->pm_dy_space_ofst);
+    if(zsb->pm_dy_space_ofst >= (zsb->pm_nr_pages << 12) ) {
+        log_err("PM space is not enough, \ 
+        pm_dy_sofst = %lu , pm_sz = %lu \n", 
+        zsb->pm_dy_space_ofst,
+        zsb->pm_nr_pages << 12);
         return -1;
     }
     
