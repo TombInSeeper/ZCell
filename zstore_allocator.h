@@ -70,9 +70,10 @@ struct zstore_extent_t *ex , uint64_t *ex_nr) {
     *ex_nr = 0;
     for ( ; it < allocator->nr_total_ + allocator->hint_; ++it) {
         uint64_t i = it % allocator->nr_total_;
-        printf("Tgt v: bs[%lu], bits_[%lu] , bit[%lu]\n", i>>9, ( i & (1ULL << 9 ) )>> 6, i & 64);
-        uint64_t *v = &(allocator->bs_[i>>9].bits_[ ( i & ( 1ULL << 9 ))>> 6]);
-        uint64_t mask = (1ULL <<(i & 64));
+        uint64_t mod_mask = (1ULL<<9) - 1;
+        printf("Tgt v: bs[%lu], bits_[%lu] , bit[%lu]\n", i >> 9, i & 7, i & 63);
+        uint64_t *v = &(allocator->bs_[i>>9].bits_[i & 7]);
+        uint64_t mask = (1ULL <<(i & 63));
         //这是目标位
         uint64_t bit = (*v) & mask;
         bool in_found_ctx = false;
@@ -120,8 +121,8 @@ stupid_free_space(struct stupid_allocator_t *allocator, const struct zstore_exte
         uint64_t j;
         for (j = 0 ; j < ex[i].len_ ; ++j) {
             uint64_t in = ex[i].lba_ + j ;
-            uint64_t *v = &(allocator->bs_[ in >>9].bits_[ in & (1<<3)]);
-            uint64_t mask = (1ULL <<(in & 64));
+            uint64_t *v = &(allocator->bs_[in >> 9].bits_[ in & 7]);
+            uint64_t mask = (1ULL <<(in & 63));
 
             //Clear bit
             *v &= (~mask);
