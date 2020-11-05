@@ -378,6 +378,17 @@ memmove_movnt_sse_bw(char* dest, const char* src, size_t len)
     dest += len;
     src += len;
     size_t cnt = (uint64_t)dest & 63;
+	
+    if (cnt > 0) {
+		cnt = 64 - cnt;
+		if (cnt > len) {
+			cnt = len;
+		}
+		memmove_small_sse2(dest, src, cnt);
+		dest -= cnt;
+		src -= cnt;
+		len -= cnt;
+	}
 
     while (len >= 4 * 64) {
         dest -= 4 * 64;
@@ -530,4 +541,6 @@ static inline void nvmem_memcpy(int sync, char* dest, const char* src, size_t le
         asm_sfence();
     }
 }
+
+
 #endif
