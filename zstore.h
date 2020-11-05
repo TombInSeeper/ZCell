@@ -1,6 +1,8 @@
 #ifndef ZSTORE_H
 #define ZSTORE_H
 
+#include "util/common.h"
+
 extern int zstore_mkfs(const char *dev_list[], int flags);
 
 extern int zstore_mount(const char *dev_list[], /* size = 3*/  int flags /**/);
