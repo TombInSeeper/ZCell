@@ -45,9 +45,9 @@ static inline void dump_bitmap(uint64_t v) {
     printf("[0:63]{");
     for ( i = 0 ; i < 64 ; ++i) {
         if ( v & ( 1ULL << i)) {
-            printf(" 1");
+            printf("1");
         } else {
-            printf(" 0");
+            printf("0");
         }
     }
     printf("}\n");
