@@ -99,7 +99,7 @@ struct zstore_extent_t *ex , uint64_t *ex_nr) {
                 //Set bit
                 *v |= (mask); 
                 dump_bitmap("v",*v);
-                dump_extent(ex , *ex_nr);
+                dump_extent(p_ex , 1);
             } else {
                 if(in_found_ctx) {
                     printf("??\n");
