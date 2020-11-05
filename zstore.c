@@ -200,8 +200,8 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
     assert(blk_sz == 4096);
 
     uint64_t nblks = spdk_bdev_get_num_blocks(zstore->nvme_bdev_);
-    uint64_t nblks_ = FLOOR_ALIGN(nblks, 4096 * 8);
-    log_info("SSD Block number = %lu , floor_align 32768 to %lu\n", nblks , nblks_);
+    // uint64_t nblks_ = FLOOR_ALIGN(nblks, 4096 * 8);
+    // log_info("SSD Block number = %lu , floor_align 32768 to %lu\n", nblks , nblks_);
     // assert (nblks == nblks_);
     zsb->ssd_nr_pages = nblks;
 
@@ -210,15 +210,19 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
     assert(rc == 0);
 
     npm_blks_ = npm_blks_ >> 12;
-    log_info("PM Block number = %lu , floor_align 32768 to %lu\n", npm_blks_ , FLOOR_ALIGN(npm_blks_, 32768) );
     zsb->pm_nr_pages = npm_blks_;
 
-    npm_blks_ = FLOOR_ALIGN(npm_blks_ , 32768);
+    // log_info("PM Block number = %lu , floor_align 32768 to %lu\n", npm_blks_ , FLOOR_ALIGN(npm_blks_, 32768) );
+
+    // npm_blks_ = FLOOR_ALIGN(npm_blks_ , 32768);
 
     uint64_t onode_rsv = 1ULL << 20;
+    uint64_t ssd_bitmap_sz = 32UL << 20;  
+    uint64_t pm_bitmap_sz = 1UL << 20;
+
     zsb->pm_ssd_bitmap_ofst = 1ULL << 20;
-    zsb->pm_dy_bitmap_ofst = (1ULL << 20) + (nblks_ >> 3);    
-    zsb->pm_otable_ofst = (1ULL << 20) + (nblks_>>3) + (npm_blks_ >> 3) ;    
+    zsb->pm_dy_bitmap_ofst = (1ULL << 20) + ssd_bitmap_sz;    
+    zsb->pm_otable_ofst = (1ULL << 20) + ssd_bitmap_sz + pm_bitmap_sz ;    
     zsb->pm_dy_space_ofst = zsb->pm_otable_ofst + (sizeof(union otable_entry_t)) * onode_rsv;
     
     assert(zsb->pm_ssd_bitmap_ofst % 4096 == 0);
@@ -226,13 +230,17 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
     assert(zsb->pm_otable_ofst % 4096 == 0);
     assert(zsb->pm_dy_space_ofst % 4096 == 0);
 
+
+    log_info("ZStore:\n");
     log_info("superblock_sz : %lu, log_region_sz :%lu,\ 
         ssd_bitmap_sz: %lu, dy_bitmap_sz: %lu, otable_sz : %lu\n" ,
-        1UL , 255UL , (nblks_>>3)>>12 , (npm_blks_>>3)>>12, (64*onode_rsv)>>12 );
-    
+        1UL , 255UL , ssd_bitmap_sz >> 12 , pm_bitmap_sz >> 12, (64*onode_rsv)>>12 );
+        //128M * 8 * 
+    log_info("ZStore manage ssd GB max :%lu , real: %lu \n" , (ssd_bitmap_sz << 5) , nblks << 12 >> 30 );
+    log_info("ZStore manage pm GB max :%lu , real: %lu \n" , (pm_bitmap_sz << 5) , npm_blks_ << 12 >> 30 );
 
     
-    log_info("dynamic space sz:%lu \n" , (npm_blks_-(zsb->pm_dy_space_ofst>>12)) >> 12);
+    log_info("dynamic space sz:%lu \n" , (npm_blks_-(zsb->pm_dy_space_ofst>>12)));
 
 
     pmem_write(zstore->pmem_, 1, zsb ,0 , 4096);    
