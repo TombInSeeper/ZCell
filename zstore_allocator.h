@@ -73,6 +73,8 @@ struct zstore_extent_t *ex , uint64_t *ex_nr) {
     uint64_t rsv_len = 0;
     struct zstore_extent_t *p_ex = ex;
     bool end_flag = 0;
+    bool in_found_ctx = false;
+
     // uint64_t last_i;
     //遍历整个位图
     *ex_nr = 0;
@@ -83,9 +85,7 @@ struct zstore_extent_t *ex , uint64_t *ex_nr) {
         uint64_t *v = &(allocator->bs_[i>>9].bits_[(i & 511) >> 6]);
         uint64_t mask = (1ULL <<(i & 63));
         //这是目标位
-        uint64_t bit = (*v) & mask;
-        bool in_found_ctx = false;
-        
+        uint64_t bit = (*v) & mask;        
         if(!end_flag) {
             if(!bit) {
                 if(!in_found_ctx) {
