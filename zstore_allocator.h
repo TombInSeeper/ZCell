@@ -70,7 +70,8 @@ struct zstore_extent_t *ex , uint64_t *ex_nr) {
     *ex_nr = 0;
     for ( ; it < allocator->nr_total_ + allocator->hint_; ++it) {
         uint64_t i = it % allocator->nr_total_;
-        uint64_t *v = &(allocator->bs_[i>>9].bits_[ ( i & ( 1 << 9 ))>>6]);
+        printf("Tgt v: bs[%lu], bits_[%lu] , bit[%lu]\n", i>>9, ( i & (1ULL << 9 ) )>> 6, i & 64);
+        uint64_t *v = &(allocator->bs_[i>>9].bits_[ ( i & ( 1ULL << 9 ))>> 6]);
         uint64_t mask = (1ULL <<(i & 64));
         //这是目标位
         uint64_t bit = (*v) & mask;
