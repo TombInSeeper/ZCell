@@ -104,7 +104,7 @@ extern union pmem_transaction_t* pmem_transaction_alloc(struct pmem_t *pmem) {
 extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *tx,
     const uint64_t pmem_ofst, size_t len, void *new_value)  
 {
-    const void *pmem_addr = (char*)pmem->map_base + pmem_ofst;
+    // const void *pmem_addr = (char*)pmem->map_base + pmem_ofst;
     uint32_t alen = tx->lh.align_length;
     uint32_t tlen = (alen + sizeof(struct pm_log_entry_t) + len) + sizeof(union pm_log_header_t);
     tlen = FLOOR_ALIGN(tlen , 256);

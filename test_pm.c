@@ -67,7 +67,8 @@ int main(int argc , char **argv) {
 
     assert(en == 1);
     assert(ze[0].lba_ == 0 && ze[0].len_ == 16);
-    printf("en=%lu\n",en);
+
+    
     alloc_result_str(ze,en);
 
     stupid_allocator_destructor(al);

@@ -79,7 +79,8 @@ static int inline stupid_alloc_space
             if(!bit) {
                 if(!in_found_ctx) {
                     p_ex->lba_ = i;
-                    (*ex_nr)++;
+                    p_ex->len_ = 0;
+                    *ex_nr = *ex_nr + 1;
                     in_found_ctx = true;
                 }
                 p_ex->len_ ++;
