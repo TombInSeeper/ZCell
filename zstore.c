@@ -1,16 +1,21 @@
-#include "util/common.h"
-
-#include "util/bitmap.h"
 
 //For meta data storage
 //
-#include "pm.h"
+
 
 //For data storage
-#include "spdk/bdev.h"
-#include "spdk/util.h"
+#include <spdk/bdev.h>
+#include <spdk/util.h>
+#include <spdk/env.h>
+#include <spdk/event.h>
+#include <spdk/thread.h>
 
+
+#include "zstore_allocator.h"
 #include "zstore.h"
+#include "pm.h"
+
+#include "util/log.h"
 
 #define PAGE_ALIGN 4096
 #define PAGE_ALIGN_SHIFT 12
@@ -31,28 +36,31 @@
 #define tailq_first(head) TAILQ_FIRST(head)
 
 
-struct zstore_extent_t {
-    uint32_t lba_;
-    uint32_t len_; 
-};
 
 union zstore_superblock_t {
     struct {
-        uint32_t magic;
+        uint64_t magic;
+        
         uint32_t ssd_nr_pages;
         uint32_t pm_nr_pages;
-        uint32_t pm_ulog_ofst; //4K~(4K*256)
-        uint32_t pm_dy_bitmap_ofst;
-        uint32_t pm_ssd_bitmap_ofst;
-        uint32_t pm_otable_ofst;
-        uint32_t pm_dy_space_ofst;
+        //64B aligned paddr ofst
+        uint64_t pm_ulog_ofst; //4K~(4K*256)
+        uint64_t pm_ssd_bitmap_ofst; // 1 << 20
+        //Size: 512_aligned(pm_nr_pages) >> 3
+        // 
+        uint64_t pm_dy_bitmap_ofst; // 1 << 20 
+        //Size: 512_aligned(pm_nr_pages) >> 3
+
+        uint64_t onodes_rsv;        // 1M
+        uint64_t pm_otable_ofst;    //
+        //Size: 64B * 1024 * 1024
+        
+        uint64_t pm_dy_space_ofst;
     };
     uint8_t align[PAGE_ALIGN];
 };
 
-struct stupid_bitmap_entry_t {
-    uint64_t bits_[8];
-};
+
 
 
 
@@ -70,7 +78,6 @@ union otable_entry_t {
 
 
 struct zstore_data_bio {
-    // struct spdk_bdev_io *bio_;
     struct iovec iov[4];
     tailq_entry(zstore_data_bio) bio_lhook_;
 };
@@ -92,117 +99,142 @@ struct zstore_transacion_t {
 
 
 
-struct stupid_allocator_t {
-    struct stupid_bitmap_entry_t *bs_; // 1:allocated ; 0 :unallocated
-    
-    uint64_t nr_free_; // how many 4K we have
-    uint64_t nr_total_; // 
-    uint64_t hint_;
-};
-
-static int stupid_allocator_constructor(struct stupid_allocator_t *allocator , uint64_t nr_total) {
-    allocator->bs_ = malloc(sizeof(struct stupid_bitmap_entry_t) * nr_total >> 9);
-    allocator->nr_total_ = nr_total;
-    allocator->nr_free_ = nr_total;
-    allocator->hint_ = 0;
-}
-
-static int stupid_allocator_set_bitmap_entry(struct stupid_allocator_t *allocator, size_t i, const void *src) {
-    memcpy(&allocator->bs_[i], src, sizeof(allocator->bs_[i]));
-}   
-
-static int stupid_allocator_destructor(struct stupid_allocator_t *allocator) {
-    free(allocator->bs_);
-}
-
-static int 
-stupid_alloc_space
-(struct stupid_allocator_t *allocator, uint64_t sz , struct zstore_extent_t *ex , uint64_t *ex_nr) {
-    
-    if((allocator->nr_free_ < sz)) {
-        return -1;
-    }
-    
-    uint64_t it = allocator->hint_;
-    uint64_t rsv_len = 0;
-    struct zstore_extent_t *p_ex = ex;
-    bool end_flag = 0;
-    uint64_t last_i;
-    //遍历整个位图
-    for ( ; it < allocator->nr_total_ + allocator->hint_; ++it) {
-        uint64_t i = it % allocator->nr_total_;
-        uint64_t *v = &(allocator->bs_[i>>9].bits_[i&(2<<3)]);
-        uint64_t mask = (1 <<(i & 64));
-
-        //这是目标位
-        uint64_t bit = (*v) & mask;
-        bool in_found_ctx = false;
-        
-        if(!end_flag) {
-            if(!bit) {
-                if(!in_found_ctx) {
-                    p_ex->lba_ = i;
-                    *ex_nr++;
-                    in_found_ctx = true;
-                }
-                p_ex->len_ ++;
-                rsv_len++;
-                //Set bit
-                *v |= (mask); 
-            } else {
-                if(in_found_ctx) {
-                    p_ex ++;
-                    in_found_ctx = false;
-                }
-            }
-            if(rsv_len == sz) {
-                end_flag = 1;
-            }
-        } else {
-            //找到下一个空闲位再退出
-            if(!bit) {
-                allocator->hint_ = i;
-                allocator->nr_free_ -= sz;
-                return 0 ;
-            }
-        }
-    }
-    return -1;
-}
-
-static int 
-stupid_free_space(struct stupid_allocator_t *allocator, const struct zstore_extent_t *ex , uint64_t ex_nr) {
-
-    uint64_t i;
-    for( i = 0 ; i < ex_nr ; ++i) {
-        uint64_t j;
-        for (j = 0 ; j < ex[i].len_ ; ++j) {
-            uint64_t in = ex[i].lba_ + j ;
-            uint64_t *v = &(allocator->bs_[ in >>9].bits_[ in & (2<<3)]);
-            uint64_t mask = (1 <<(in & 64));
-
-            //Clear bit
-            *v &= (~mask);
-        }
-    }
-    return 0;
-}
 
 struct zstore_context_t {
+    
+    //Data Space
     struct spdk_bdev *nvme_bdev_;
     struct spdk_bdev_desc *nvme_bdev_desc_;
     struct spdk_io_channel *nvme_io_channel_;
 
+    //MetaData Space
     struct pmem_t *pmem_;
 
     //Transaction 
     uint32_t tx_outstanding_;
     tailq_head(zstore_tx_list_t , zstore_transacion_t) tx_list_;
+
 };
 
-static __thread struct zstore_context_t *zstore; 
+static __thread struct zstore_context_t *zstore; //TLS 
 
-extern int zstore_mkfs(const char *dev_list[], int flags);
+
+ void spdk_bdev_event_cb_common(enum spdk_bdev_event_type type, struct spdk_bdev *bdev,
+				     void *event_ctx) 
+{
+    log_warn("Bdev event\n");
+    return;
+}
+
+static int zstore_ctx_init(struct zstore_context_t **zs) {
+    *zs = calloc(1, sizeof(**zs));
+    if(!(*zs)) {
+        return -1;
+    }
+    struct zstore_context_t *zs_ = *zs;
+    tailq_init(&zs_->tx_list_);
+    
+    //Others
+    return 0;
+}
+
+static void zstore_ctx_fini(struct zstore_context_t *zs) {
+    free(zs);
+}
+
+
+static int zstore_bdev_open(struct zstore_context_t *zs, const char *dev) {
+    int rc = spdk_bdev_open_ext(dev, 1, spdk_bdev_event_cb_common ,NULL, &zstore->nvme_bdev_desc_);
+    if(rc) {
+        log_err("bdev %s open failed\n", dev);
+        return rc;
+    }
+    zs->nvme_io_channel_ = spdk_bdev_get_io_channel(zs->nvme_bdev_desc_);
+    if(!zs->nvme_io_channel_) {
+        log_err("bdev %s get io-channel failed\n", dev);
+        return rc;
+    }
+    zs->nvme_bdev_ = spdk_bdev_desc_get_bdev(zs->nvme_bdev_desc_);
+    if(!zs->nvme_bdev_) {
+        log_err("bdev %s get bdev failed\n", dev);
+        return rc;
+    }
+    return 0;
+}
+
+static void zstore_bdev_close(struct zstore_context_t *zs) {
+    spdk_put_io_channel(zs->nvme_io_channel_);
+    spdk_bdev_close(zs->nvme_bdev_desc_);
+}
+
+static int 
+zstore_pm_file_open(struct zstore_context_t *zs, const char *path, uint64_t *pm_size) {
+    zs->pmem_ = pmem_open(path, spdk_env_get_current_core(), pm_size);
+    if(!zs->pmem_) {
+        return -1;
+    }
+    return 0;
+}
+
+static void
+zstore_pm_file_open(struct zstore_context_t *zs) {
+    pmem_close(zs->pmem_);
+}
+
+
+extern int zstore_mkfs(const char *dev_list[], int flags) {
+
+    int rc = zstore_ctx_init(&zstore);
+    assert(rc == 0);
+
+    union zstore_superblock_t zsb_;
+    union zstore_superblock_t *zsb = &zsb_;
+    zsb->magic = 0x1997070519980218;
+    zsb->ssd_nr_pages = 0;
+    zsb->pm_nr_pages = 0;
+    zsb->pm_ulog_ofst = 4096;
+    //ulog_region for 255 * 4K
+    //Load block device 
+    rc = zstore_bdev_open(zstore, dev_list[0]);
+    assert(rc == 0);
+
+    uint32_t blk_sz = spdk_bdev_get_block_size(zstore->nvme_bdev_);
+    assert(blk_sz == 4096);
+
+    uint64_t nblks = spdk_bdev_get_num_blocks(zstore->nvme_bdev_);
+    uint64_t nblks_ = FLOOR_ALIGN(nblks, 512);
+    assert (nblks == nblks_);
+    log_info("Block number = %lu , floor_align 512 to %lu", nblks , nblks_);
+    
+
+    uint64_t npm_blks_; 
+    rc = zstore_pm_file_open(zstore, dev_list[1], &npm_blks_);
+    npm_blks_ = npm_blks_ >> 12;
+    assert(rc == 0);
+
+    uint64_t onode_rsv = 1ULL << 20;
+    zsb->pm_ssd_bitmap_ofst = 1ULL << 20;
+    zsb->pm_dy_bitmap_ofst = 1ULL << 20 + nblks_ >> 3;    
+    zsb->pm_otable_ofst = 1ULL << 20 + nblks_ >> 3 + npm_blks_ >> 3 ;    
+    zsb->pm_dy_space_ofst = zsb->pm_otable_ofst + (sizeof(union otable_entry_t)) * onode_rsv;
+    
+    assert(zsb->pm_ssd_bitmap_ofst % 4096 == 0);
+    assert(zsb->pm_dy_bitmap_ofst % 4096 == 0);
+    assert(zsb->pm_otable_ofst % 4096 == 0);
+    assert(zsb->pm_dy_space_ofst % 4096 == 0);
+
+    log_info("superblock_sz : %lu, log_region_sz :%lu,\ 
+        ssd_bitmap_sz: %lu, dy_bitmap_sz: %lu, otable_sz : %lu\n" ,
+        1 , 255 , (nblks_>>3)>>12 , (npm_blks_>>3)>>12, (64*onode_rsv)>>12 );
+    log_info("dynamic space sz:%lu \n" , (npm_blks_-zsb->pm_dy_space_ofst) >> 12);
+
+
+    pmem_write(zstore->pmem_, 1, zsb ,0 , 4096);    
+
+    zstore_ctx_fini(zstore);
+    return 0;
+}
+
 
 extern int zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/)
 {

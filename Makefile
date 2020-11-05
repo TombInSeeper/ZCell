@@ -57,7 +57,7 @@ MSGR_OBJS = messager.o net.o net_posix.o
 OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o
 
 
-TEST_BIN= test_nvme_md
+TEST_BIN= test_pm test_zstore
 BIN_TGT=server client_msgr_tool client_admin_tool $(TEST_BIN) 
 
 .PHONY: all clean test
@@ -81,10 +81,13 @@ client_msgr_tool:test_client_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 client_admin_tool:client_admin_tool.o liboss.o $(MSGR_OBJS)
 	$(LINK_C)
 
+
 test_nvme_md:test_nvme_md.o
 	$(LINK_C)
 
 test_pm:test_pm.o pm.o
+	$(LINK_C)
+test_zstore: test_zstore.o pm.o zstore.o
 	$(LINK_C)
 
 %.o: %.c %.d

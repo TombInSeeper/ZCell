@@ -9,7 +9,6 @@ struct zstore_extent_t {
     uint64_t len_; 
 };
 
-
 struct stupid_bitmap_entry_t {
     uint64_t bits_[8];
 };
@@ -62,13 +61,11 @@ static inline void dump_extent(struct zstore_extent_t *ze , uint64_t nr) {
 }
 
 static inline int stupid_alloc_space
-(struct stupid_allocator_t *allocator, uint64_t sz , 
-struct zstore_extent_t *ex , uint64_t *ex_nr) {
+(struct stupid_allocator_t *allocator, uint64_t sz , struct zstore_extent_t *ex , uint64_t *ex_nr) {
     
     if((allocator->nr_free_ < sz)) {
         return -1;
-    }
-    
+    }    
     uint64_t it = allocator->hint_;
     uint64_t rsv_len = 0;
     struct zstore_extent_t *p_ex = ex;

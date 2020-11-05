@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 
 #include "pm.h"
 #include "pm_impl.h"
@@ -34,16 +35,40 @@ struct pm_log_entry_t {
 
 
 
-extern struct pmem_t *pmem_open(const char *path, uint64_t pmem_size) {
+extern struct pmem_t *pmem_open(const char *path, uint64_t cpu,  uint64_t *pmem_size) {
     struct pmem_t *p = calloc(1, sizeof(struct pmem_t));
     if(!p) {        
         return NULL;
     }
+
+    struct stat st_;
+    int rc = stat(path,&st_);
+    if(rc) {
+        free(p);
+        log_err("Cannot get stat of %s, errs: %s" , p , strerror(errno));
+        return NULL;
+    }
+    uint64_t fsize = st_.st_size;
+    
+    if(fsize & ( 1 << 20 - 1 )) {
+        log_err("Pmem file must be aligned to 2MiB\n");
+        free(p);
+        return NULL;
+    }
+
+    if(pmem_size) {
+        *pmem_size = fsize;
+    }
+
+
     int fd = open(path, O_RDWR);
-    void* dest = mmap(NULL, pmem_size, PROT_READ | PROT_WRITE, MAP_SHARED /*| MAP_POPULATE*/, fd, 0);
+    void* dest = mmap(NULL, fsize, PROT_READ | PROT_WRITE, MAP_SHARED /*| MAP_POPULATE*/, fd, 0);
     close(fd);
     p->map_base = dest;
-    p->log_region_ofst = 4096 + 0 * PM_LOG_REGION_SIZE;
+    
+    //Per cpu
+    p->log_region_ofst = 4096 + cpu * PM_LOG_REGION_SIZE;
+    
     return p;
 }
 
@@ -52,13 +77,13 @@ extern void pmem_read(struct pmem_t *pmem, void *dest, uint64_t offset , size_t 
     memcpy(dest, src, length);
 }
 
-static void pmem_write(struct pmem_t *pmem, int sync, const void* src, uint64_t offset, size_t length){
+extern void pmem_write(struct pmem_t *pmem, int sync, const void* src, uint64_t offset, size_t length){
     void *dst = pmem->map_base + offset;
     nvmem_memcpy(sync,dst,src,length);
 }
 
-extern void pmem_recovery(struct pmem_t *pmem , int cpu) {
-    uint64_t offset_log_reg = 4096 + cpu * 4096;
+extern void pmem_recovery(struct pmem_t *pmem) {
+    uint64_t offset_log_reg = pmem->log_region_ofst;
     union pm_log_header_t lh;
     char  pm_log_pload [4096];
     uint64_t offset_ulog_pload = offset_log_reg + sizeof(lh);

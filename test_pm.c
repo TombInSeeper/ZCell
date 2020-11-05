@@ -76,7 +76,6 @@ int main(int argc , char **argv) {
     alloc_result_str(ze,en);
 
 
-
     stupid_allocator_destructor(al);
-
+    
 }
