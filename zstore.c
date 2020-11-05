@@ -200,8 +200,8 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
     assert(blk_sz == 4096);
 
     uint64_t nblks = spdk_bdev_get_num_blocks(zstore->nvme_bdev_);
-    uint64_t nblks_ = FLOOR_ALIGN(nblks, 512);
-    log_info("SSD Block number = %lu , floor_align 512 to %lu\n", nblks , nblks_);
+    uint64_t nblks_ = FLOOR_ALIGN(nblks, 4096 * 8);
+    log_info("SSD Block number = %lu , floor_align 32768 to %lu\n", nblks , nblks_);
     // assert (nblks == nblks_);
     zsb->ssd_nr_pages = nblks;
 
@@ -210,9 +210,10 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
     assert(rc == 0);
 
     npm_blks_ = npm_blks_ >> 12;
-    log_info("PM Block number = %lu , floor_align 512 to %lu\n", npm_blks_ , FLOOR_ALIGN(npm_blks_, 512) );
-
+    log_info("PM Block number = %lu , floor_align 32768 to %lu\n", npm_blks_ , FLOOR_ALIGN(npm_blks_, 32768) );
     zsb->pm_nr_pages = npm_blks_;
+
+    npm_blks_ = FLOOR_ALIGN(npm_blks_ , 32768);
 
     uint64_t onode_rsv = 1ULL << 20;
     zsb->pm_ssd_bitmap_ofst = 1ULL << 20;
