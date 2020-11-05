@@ -1,4 +1,5 @@
 #include "pm.h"
+
 #include "util/log.h"
 #include "util/chrono.h"
 #include "util/assert.h"
@@ -77,5 +78,5 @@ int main(int argc , char **argv) {
 
 
     stupid_allocator_destructor(al);
-    
+
 }
