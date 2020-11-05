@@ -212,8 +212,8 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
 
     uint64_t onode_rsv = 1ULL << 20;
     zsb->pm_ssd_bitmap_ofst = 1ULL << 20;
-    zsb->pm_dy_bitmap_ofst = 1ULL << 20 + nblks_ >> 3;    
-    zsb->pm_otable_ofst = 1ULL << 20 + nblks_ >> 3 + npm_blks_ >> 3 ;    
+    zsb->pm_dy_bitmap_ofst = (1ULL << 20) + (nblks_ >> 3);    
+    zsb->pm_otable_ofst = (1ULL << 20) + (nblks_>>3) + (npm_blks_ >> 3) ;    
     zsb->pm_dy_space_ofst = zsb->pm_otable_ofst + (sizeof(union otable_entry_t)) * onode_rsv;
     
     assert(zsb->pm_ssd_bitmap_ofst % 4096 == 0);
