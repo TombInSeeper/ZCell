@@ -201,8 +201,8 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
 
     uint64_t nblks = spdk_bdev_get_num_blocks(zstore->nvme_bdev_);
     uint64_t nblks_ = FLOOR_ALIGN(nblks, 512);
-    assert (nblks == nblks_);
     log_info("Block number = %lu , floor_align 512 to %lu", nblks , nblks_);
+    assert (nblks == nblks_);
     
 
     uint64_t npm_blks_; 
