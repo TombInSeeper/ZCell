@@ -216,7 +216,7 @@ zstore_mkfs(const char *dev_list[], int flags) {
     assert(blk_sz == 4096);
 
     uint64_t nblks = spdk_bdev_get_num_blocks(zstore->nvme_bdev_);
-    // uint64_t nblks_ = FLOOR_ALIGN(nblks, 4096 * 8);
+    uint64_t nblks_ = FLOOR_ALIGN(nblks, 4096 * 8);
     // log_info("SSD Block number = %lu , floor_align 32768 to %lu\n", nblks , nblks_);
     // assert (nblks == nblks_);
     zsb->ssd_nr_pages = nblks;
@@ -295,9 +295,30 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
     stupid_allocator_constructor(zstore->ssd_allocator_, zstore->zsb_->ssd_nr_pages );
     log_info("SSD allocator bitmap entry number:%lu\n",zstore->ssd_allocator_->nr_entrys_);
 
+    //Read from ssd bitmap region
+    struct stupid_bitmap_entry_t se;
+    size_t i;
+    for ( i = 0 ; i < zstore->ssd_allocator_->nr_entrys_ ; ++i) {
+        uint64_t ofst = zstore->zsb_->pm_ssd_bitmap_ofst + (sizeof(se) * i);
+        pmem_read(zstore, &se, ofst, sizeof(se));
+        stupid_allocator_init_bitmap_entry(zstore->ssd_allocator_, i ,&se);
+    }
+
+    log_info("SSD allocator detect %lu blocks , %lu free blocks" 
+        ,zstore->ssd_allocator_->nr_total_
+        ,zstore->ssd_allocator_->nr_free_);
+
     stupid_allocator_constructor(zstore->pm_allocator_, zstore->zsb_->pm_nr_pages );
     log_info("PM allocator bitmap entry number:%lu\n",zstore->pm_allocator_->nr_entrys_);
+    for ( i = 0 ; i < zstore->pm_allocator_->nr_entrys_ ; ++i) {
+        uint64_t ofst = zstore->zsb_->pm_dy_bitmap_ofst + (sizeof(se) * i);
+        pmem_read(zstore, &se, ofst, sizeof(se));
+        stupid_allocator_init_bitmap_entry(zstore->pm_allocator_, i ,&se);
+    }
 
+    log_info("PM allocator detect %lu blocks , %lu free blocks" 
+        ,zstore->pm_allocator_->nr_total_
+        ,zstore->pm_allocator_->nr_free_);
 
     return 0;
 }

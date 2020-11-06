@@ -1,7 +1,6 @@
 #include <spdk/env.h>
 #include <spdk/event.h>
 
-
 #include "zstore.h"
 #include "util/log.h"
 
@@ -27,7 +26,6 @@ void _sys_init(void *arg) {
 
 int main( int argc , char **argv) {
     
-
     struct spdk_app_opts opts;
     spdk_app_opts_init(&opts);
     opts.name = argv[0];
@@ -35,11 +33,8 @@ int main( int argc , char **argv) {
     opts.reactor_mask = "0x1";
     opts.shutdown_cb = _sys_fini;
     
-
-
     spdk_app_start(&opts, _sys_init , NULL);
-    
-    
+        
     spdk_app_fini();
     return 0;
 }
