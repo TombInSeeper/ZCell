@@ -34,7 +34,6 @@ struct pm_log_entry_t {
 };
 
 
-
 extern struct pmem_t *pmem_open(const char *path, uint64_t cpu,  uint64_t *pmem_size) {
     struct pmem_t *p = calloc(1, sizeof(struct pmem_t));
     if(!p) {        

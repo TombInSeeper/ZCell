@@ -3,8 +3,11 @@
 
 
 #include "zstore.h"
+#include "util/log.h"
 
 void _sys_fini() {
+    log_info("Shutdown...\n");
+    zstore_unmount();
     spdk_app_stop(0);
 }
 
