@@ -89,9 +89,9 @@ extern void pmem_recovery(struct pmem_t *pmem) {
     uint64_t offset_ulog_pload = offset_log_reg + sizeof(lh);
     pmem_read(pmem, &lh,offset_log_reg,sizeof(lh));
     
-    uint64_t cpu = offset_log_reg >> 12 - 1 ;
+    uint64_t cpu = (offset_log_reg >> 12) - 1 ;
     if(lh.valid) {
-        log_critical("Pmem transaction  in cpu[%lu] need to replay.\n" , cpu);
+        log_critical("Pmem transaction in cpu[%lu] need to replay.\n" , cpu);
         uint16_t n = lh.nr_logs;
         uint32_t len = lh.align_length;
         assert( len % 256 == 0);
