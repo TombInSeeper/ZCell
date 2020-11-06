@@ -241,6 +241,7 @@ zstore_mkfs(const char *dev_list[], int flags) {
     // npm_blks_ = FLOOR_ALIGN(npm_blks_ , 32768);
 
     uint64_t onode_rsv = 1ULL << 20;
+    zsb->onodes_rsv = onode_rsv;
     uint64_t ssd_bitmap_sz = 32UL << 20;  
     uint64_t pm_bitmap_sz = 1UL << 20;
 
