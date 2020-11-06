@@ -41,7 +41,7 @@ static inline int stupid_allocator_init_bitmap_entry(struct stupid_allocator_t *
     for ( ; i < end ; ) {
         uint64_t *v = &(allocator->bs_[i>>9].bits_[(i & 511) >> 6]);
         uint64_t mask = (1ULL <<(i & 63));
-        if (!(*v)) {
+        if ( ( i + 64 < end ) && !(*v)) {
             total_free += 64;
             i += 64;
         } else {
