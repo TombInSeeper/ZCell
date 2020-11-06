@@ -88,8 +88,10 @@ extern void pmem_recovery(struct pmem_t *pmem) {
     char  pm_log_pload [4096];
     uint64_t offset_ulog_pload = offset_log_reg + sizeof(lh);
     pmem_read(pmem, &lh,offset_log_reg,sizeof(lh));
+    
+    uint64_t cpu = offset_log_reg >> 12 - 1 ;
     if(lh.valid) {
-        log_critical("Pmem transaction rollback.\n");
+        log_critical("Pmem transaction  in cpu[%lu] need to replay.\n" , cpu);
         uint16_t n = lh.nr_logs;
         uint32_t len = lh.align_length;
         assert( len % 256 == 0);
@@ -105,7 +107,9 @@ extern void pmem_recovery(struct pmem_t *pmem) {
         }
         memset(&lh,0,sizeof(lh));
         pmem_write(pmem,1,&lh,offset_log_reg,sizeof(lh));
-        log_critical("Pmem transaction roll forward done.\n");
+        // log_critical("Pmem transaction roll forward done.\n");
+        log_critical("Pmem transaction  in cpu[%lu] replay done.\n" , cpu);
+
     }
 
 }

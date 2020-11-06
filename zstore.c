@@ -18,6 +18,9 @@
 #define PAGE_ALIGN 4096
 #define PAGE_ALIGN_SHIFT 12
 
+#define ZSTORE_MAGIC 0x1997070519980218
+ 
+
 
 #define container_of(ptr,type,member) SPDK_CONTAINEROF(ptr,type,member)
 
@@ -107,6 +110,11 @@ struct zstore_context_t {
 
     //MetaData Space
     struct pmem_t *pmem_;
+    union zstore_superblock_t *zsb_;
+
+    //Allocator
+    struct stupid_allocator_t *ssd_allocator_;
+    struct stupid_allocator_t *pm_allocator_;
 
     //Transaction 
     uint32_t tx_outstanding_;
@@ -131,12 +139,19 @@ static int zstore_ctx_init(struct zstore_context_t **zs) {
     }
     struct zstore_context_t *zs_ = *zs;
     tailq_init(&zs_->tx_list_);
+    zs_->zsb_ = calloc( 1, sizeof(union zstore_superblock_t));
     
+    zs_->ssd_allocator_ = calloc(1, sizeof(*zs_->ssd_allocator_));
+    zs_->pm_allocator_ = calloc(1, sizeof(*zs_->pm_allocator_));
+
     //Others
     return 0;
 }
 
 static void zstore_ctx_fini(struct zstore_context_t *zs) {
+    free(zs->zsb_);
+    free(zs->pm_allocator_);
+    free(zs->ssd_allocator_);
     free(zs);
 }
 
@@ -180,14 +195,15 @@ zstore_pm_file_close(struct zstore_context_t *zs) {
 }
 
 
-extern int zstore_mkfs(const char *dev_list[], int flags) {
+extern int 
+zstore_mkfs(const char *dev_list[], int flags) {
 
     int rc = zstore_ctx_init(&zstore);
     assert(rc == 0);
 
     union zstore_superblock_t zsb_;
     union zstore_superblock_t *zsb = &zsb_;
-    zsb->magic = 0x1997070519980218;
+    zsb->magic = ZSTORE_MAGIC;
     zsb->ssd_nr_pages = 0;
     zsb->pm_nr_pages = 0;
     zsb->pm_ulog_ofst = 4096;
@@ -231,35 +247,74 @@ extern int zstore_mkfs(const char *dev_list[], int flags) {
     assert(zsb->pm_dy_space_ofst % 4096 == 0);
 
 
-    log_info("ZStore:\n");
-    log_info("superblock_sz : %lu, log_region_sz :%lu,\ 
+    // log_info("ZStore:\n");
+    log_info("ZStore size in 4KB : superblock_sz : %lu, log_region_sz :%lu,\ 
         ssd_bitmap_sz: %lu, dy_bitmap_sz: %lu, otable_sz : %lu\n" ,
         1UL , 255UL , ssd_bitmap_sz >> 12 , pm_bitmap_sz >> 12, (64*onode_rsv)>>12 );
         //128M * 8 * 
-    log_info("ZStore manage ssd GB max :%lu , real: %lu \n" , (ssd_bitmap_sz << 3 << 12 >> 30) , nblks << 12 >> 30 );
-    log_info("ZStore manage pm GB max :%lu , real: %lu \n" , (pm_bitmap_sz << 3 << 12 >> 30) , npm_blks_ << 12 >> 30 );
-
-    
+    log_info("ZStore manage ssd GB max :%lu GB, real: %lu GB\n" , (ssd_bitmap_sz << 3 << 12 >> 30) , nblks << 12 >> 30 );
+    log_info("ZStore manage pm GB max :%lu GB ,  real: %lu GB\n" , (pm_bitmap_sz << 3 << 12 >> 30) , npm_blks_ << 12 >> 30 );
     log_info("dynamic space sz:%lu \n" , (npm_blks_-(zsb->pm_dy_space_ofst>>12)));
 
-
+    char zeros[4096] = {0};
     pmem_write(zstore->pmem_, 1, zsb ,0 , 4096);    
+    log_info ("Superblock write done\n");
+    int i;
+    for ( i = 0 ; i < 255 ; ++i) {
+        pmem_write(zstore->pmem_, 1, zeros , (i+ 1)*4096 , 4096);    
+    }
+    log_info ("Log region clean done\n");
 
     zstore_bdev_close(zstore);
     zstore_pm_file_close(zstore);
+    zstore_ctx_fini(zstore);
+
+    return 0;
+}
+
+
+extern int 
+zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
+    int rc = zstore_ctx_init(&zstore);
+    if(rc) {
+        log_err("zstore_ctx_init failed\n");
+        return rc;
+    }
+    uint64_t pm_size = 0;
+    zstore_pm_file_open(zstore, dev_list[1] , &pm_size);
+
+    pmem_read(zstore->pmem_ , zstore->zsb_ , 0 , 4096);
+    assert(zstore->zsb_->magic == ZSTORE_MAGIC);
+
+    rc = zstore_bdev_open(zstore, dev_list[0]);
+    assert(rc == 0);
+
+    //If necessary
+    pmem_recovery(zstore->pmem_);
+    
+    stupid_allocator_constructor(zstore->ssd_allocator_, zstore->zsb_->ssd_nr_pages );
+    log_info("SSD allocator bitmap entry number:%lu\n",zstore->ssd_allocator_->nr_entrys_);
+
+    stupid_allocator_constructor(zstore->pm_allocator_, zstore->zsb_->pm_nr_pages );
+    log_info("PM allocator bitmap entry number:%lu\n",zstore->pm_allocator_->nr_entrys_);
+
+
+    return 0;
+}
+
+extern int zstore_unmount() {
+
+    stupid_allocator_destructor(zstore->pm_allocator_);
+    stupid_allocator_destructor(zstore->ssd_allocator_);
+
+    zstore_bdev_close(zstore);
+    zstore_pm_file_close(zstore);
+
     zstore_ctx_fini(zstore);
     return 0;
 }
 
 
-extern int zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/)
-{
-
-    // TAILQ_INIT
-
-}
-
-extern int zstore_unmount();
 
 extern const int zstore_obj_async_op_context_size();
 

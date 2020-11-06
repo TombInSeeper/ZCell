@@ -15,6 +15,10 @@ void _sys_init(void *arg) {
     };
     int rc = zstore_mkfs(devs,0);
     assert (rc == 0);
+
+    rc = zstore_mount(devs,0);
+    assert (rc == 0);
+
 }
 
 
