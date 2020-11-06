@@ -67,7 +67,9 @@ union zstore_superblock_t {
 
 union otable_entry_t {
     struct {
-        uint64_t oid;
+        uint64_t valid :1;
+        uint64_t rsv : 15;
+        uint64_t oid : 48;
         uint64_t mtime;
         uint64_t lsize;
         uint64_t psize;
@@ -116,6 +118,9 @@ struct zstore_context_t {
     struct stupid_allocator_t *ssd_allocator_;
     struct stupid_allocator_t *pm_allocator_;
 
+    //onode table
+    union otable_entry_t *otable_;
+
     //Transaction 
     uint32_t tx_outstanding_;
     tailq_head(zstore_tx_list_t , zstore_transacion_t) tx_list_;
@@ -144,14 +149,17 @@ static int zstore_ctx_init(struct zstore_context_t **zs) {
     zs_->ssd_allocator_ = calloc(1, sizeof(*zs_->ssd_allocator_));
     zs_->pm_allocator_ = calloc(1, sizeof(*zs_->pm_allocator_));
 
+    zs_->otable_ = calloc( 1UL << 20U, sizeof(union otable_entry_t));
+
     //Others
     return 0;
 }
 
 static void zstore_ctx_fini(struct zstore_context_t *zs) {
-    free(zs->zsb_);
+    free(zs->otable_);
     free(zs->pm_allocator_);
     free(zs->ssd_allocator_);
+    free(zs->zsb_);
     free(zs);
 }
 
@@ -325,6 +333,18 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
     log_info("PM allocator detect %lu blocks , %lu free blocks\n" 
         ,zstore->pm_allocator_->nr_total_
         ,zstore->pm_allocator_->nr_free_);
+
+
+    log_info("Onode table recovery..\n");
+    uint64_t objs = 0;
+    for ( i = 0 ; i < zstore->zsb_->onodes_rsv ; ++i) {
+        uint64_t ofst = zstore->zsb_->pm_otable_ofst + i * sizeof(union otable_entry_t);
+        pmem_read(zstore->pmem_ , &zstore->otable_[i], ofst , sizeof(union otable_entry_t));
+        if(zstore->otable_[i].valid) {
+            objs++;
+        }
+    }
+    log_info("Onode table object_id max:%lu, objs find:%lu \n",zstore->zsb_->onodes_rsv, objs);
 
     return 0;
 }
