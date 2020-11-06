@@ -300,7 +300,7 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
     size_t i;
     for ( i = 0 ; i < zstore->ssd_allocator_->nr_entrys_ ; ++i) {
         uint64_t ofst = zstore->zsb_->pm_ssd_bitmap_ofst + (sizeof(se) * i);
-        pmem_read(zstore, &se, ofst, sizeof(se));
+        pmem_read(zstore->pmem_, &se, ofst, sizeof(se));
         stupid_allocator_init_bitmap_entry(zstore->ssd_allocator_, i ,&se);
     }
 
@@ -312,7 +312,7 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
     log_info("PM allocator bitmap entry number:%lu\n",zstore->pm_allocator_->nr_entrys_);
     for ( i = 0 ; i < zstore->pm_allocator_->nr_entrys_ ; ++i) {
         uint64_t ofst = zstore->zsb_->pm_dy_bitmap_ofst + (sizeof(se) * i);
-        pmem_read(zstore, &se, ofst, sizeof(se));
+        pmem_read(zstore->pmem_, &se, ofst, sizeof(se));
         stupid_allocator_init_bitmap_entry(zstore->pm_allocator_, i ,&se);
     }
 
