@@ -108,9 +108,7 @@ extern void pmem_recovery(struct pmem_t *pmem) {
         pmem_write(pmem,1,&lh,offset_log_reg,sizeof(lh));
         // log_critical("Pmem transaction roll forward done.\n");
         log_critical("Pmem transaction  in cpu[%lu] replay done.\n" , cpu);
-
     }
-
 }
 
 
