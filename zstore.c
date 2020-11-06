@@ -260,10 +260,16 @@ zstore_mkfs(const char *dev_list[], int flags) {
     pmem_write(zstore->pmem_, 1, zsb ,0 , 4096);    
     log_info ("Superblock write done\n");
     int i;
-    for ( i = 0 ; i < 255 ; ++i) {
+    for (i = 0 ; i < 255 ; ++i) {
         pmem_write(zstore->pmem_, 1, zeros , (i+ 1)*4096 , 4096);    
     }
     log_info ("Log region clean done\n");
+
+    for ( i = (zsb->pm_ssd_bitmap_ofst >> 12 ) ; i < (zsb->pm_dy_space_ofst >> 12) ; ++i) {
+        pmem_write(zstore->pmem_, 1, zeros , i << 12 , 4096);    
+    }
+    log_info ("Bitmap region and onode table region clean done\n");
+
 
     zstore_bdev_close(zstore);
     zstore_pm_file_close(zstore);
@@ -304,7 +310,7 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
         stupid_allocator_init_bitmap_entry(zstore->ssd_allocator_, i ,&se);
     }
 
-    log_info("SSD allocator detect %lu blocks , %lu free blocks" 
+    log_info("SSD allocator detect %lu blocks , %lu free blocks\n" 
         ,zstore->ssd_allocator_->nr_total_
         ,zstore->ssd_allocator_->nr_free_);
 
@@ -316,7 +322,7 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
         stupid_allocator_init_bitmap_entry(zstore->pm_allocator_, i ,&se);
     }
 
-    log_info("PM allocator detect %lu blocks , %lu free blocks" 
+    log_info("PM allocator detect %lu blocks , %lu free blocks\n" 
         ,zstore->pm_allocator_->nr_total_
         ,zstore->pm_allocator_->nr_free_);
 
