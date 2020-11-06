@@ -224,7 +224,7 @@ zstore_mkfs(const char *dev_list[], int flags) {
     assert(blk_sz == 4096);
 
     uint64_t nblks = spdk_bdev_get_num_blocks(zstore->nvme_bdev_);
-    uint64_t nblks_ = FLOOR_ALIGN(nblks, 4096 * 8);
+    // uint64_t nblks_ = FLOOR_ALIGN(nblks, 4096 * 8);
     // log_info("SSD Block number = %lu , floor_align 32768 to %lu\n", nblks , nblks_);
     // assert (nblks == nblks_);
     zsb->ssd_nr_pages = nblks;
@@ -256,8 +256,7 @@ zstore_mkfs(const char *dev_list[], int flags) {
 
 
     // log_info("ZStore:\n");
-    log_info("ZStore size in 4KB : superblock_sz : %lu, log_region_sz :%lu,\ 
-        ssd_bitmap_sz: %lu, dy_bitmap_sz: %lu, otable_sz : %lu\n" ,
+    log_info("ZStore size in 4KB : superblock_sz : %lu, log_region_sz :%lu, ssd_bitmap_sz: %lu, dy_bitmap_sz: %lu, otable_sz : %lu\n" ,
         1UL , 255UL , ssd_bitmap_sz >> 12 , pm_bitmap_sz >> 12, (64*onode_rsv)>>12 );
         //128M * 8 * 
     log_info("ZStore manage ssd GB max :%lu GB, real: %lu GB\n" , (ssd_bitmap_sz << 3 << 12 >> 30) , nblks << 12 >> 30 );
