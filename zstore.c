@@ -1,5 +1,3 @@
-//For meta data storage
-//
 
 //For data storage
 #include <spdk/bdev.h>
@@ -14,6 +12,8 @@
 #include "pm.h"
 
 #include "util/log.h"
+
+#include "store_common.h"
 
 #define PAGE_ALIGN 4096
 #define PAGE_ALIGN_SHIFT 12
@@ -80,8 +80,15 @@ union otable_entry_t {
 };
 
 
+enum IO_TYPE {
+    READ = 1,
+    WRITE = 2
+};
+
 struct zstore_data_bio {
-    struct iovec iov[4];
+    void *ztore_tx;
+    int io_type;
+    struct iovec iov;
     tailq_entry(zstore_data_bio) bio_lhook_;
 };
 
@@ -90,10 +97,23 @@ enum zstore_tx_state {
     PM_TX,
 };
 
+enum zstore_tx_type {
+    READ_ONLY = 1,
+    WRITE = 2
+};
+
 struct zstore_transacion_t {
-    int state_;
+    void *zstore_;
+    int tx_type_;
+    uint16_t state_;
+    uint16_t err_;
+
+    cb_func_t user_cb_;
+    void *user_cb_arg_;
+
     uint32_t bio_outstanding_;
     tailq_head(bio_list_t, zstore_data_bio) bio_list_;
+    
     union pmem_transaction_t *pm_tx_;
     tailq_entry(zstore_transacion_t) zstore_tx_lhook_;
 };
@@ -125,6 +145,9 @@ struct zstore_context_t {
     uint32_t tx_outstanding_;
     tailq_head(zstore_tx_list_t , zstore_transacion_t) tx_list_;
 
+    uint32_t tx_rdonly_outstanding_;
+    tailq_head(zstore_tx_rdonly_list_t , zstore_transacion_t) tx_rdonly_list_;
+
 };
 
 static __thread struct zstore_context_t *zstore; //TLS 
@@ -137,7 +160,8 @@ static void spdk_bdev_event_cb_common(enum spdk_bdev_event_type type, struct spd
     return;
 }
 
-static int zstore_ctx_init(struct zstore_context_t **zs) {
+static int 
+zstore_ctx_init(struct zstore_context_t **zs) {
     *zs = calloc(1, sizeof(**zs));
     if(!(*zs)) {
         return -1;
@@ -155,7 +179,8 @@ static int zstore_ctx_init(struct zstore_context_t **zs) {
     return 0;
 }
 
-static void zstore_ctx_fini(struct zstore_context_t *zs) {
+static void 
+zstore_ctx_fini(struct zstore_context_t *zs) {
     free(zs->otable_);
     free(zs->pm_allocator_);
     free(zs->ssd_allocator_);
@@ -164,7 +189,8 @@ static void zstore_ctx_fini(struct zstore_context_t *zs) {
 }
 
 
-static int zstore_bdev_open(struct zstore_context_t *zs, const char *dev) {
+static int 
+zstore_bdev_open(struct zstore_context_t *zs, const char *dev) {
     int rc = spdk_bdev_open_ext(dev, 1, spdk_bdev_event_cb_common ,NULL, &zstore->nvme_bdev_desc_);
     if(rc) {
         log_err("bdev %s open failed\n", dev);
@@ -183,7 +209,8 @@ static int zstore_bdev_open(struct zstore_context_t *zs, const char *dev) {
     return 0;
 }
 
-static void zstore_bdev_close(struct zstore_context_t *zs) {
+static void 
+zstore_bdev_close(struct zstore_context_t *zs) {
     spdk_put_io_channel(zs->nvme_io_channel_);
     spdk_bdev_close(zs->nvme_bdev_desc_);
 }
@@ -278,7 +305,6 @@ zstore_mkfs(const char *dev_list[], int flags) {
     }
     log_info ("Bitmap region and onode table region clean done\n");
 
-
     zstore_bdev_close(zstore);
     zstore_pm_file_close(zstore);
     zstore_ctx_fini(zstore);
@@ -349,24 +375,176 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
     return 0;
 }
 
-extern int zstore_unmount() {
-
+extern int 
+zstore_unmount() {
     stupid_allocator_destructor(zstore->pm_allocator_);
     stupid_allocator_destructor(zstore->ssd_allocator_);
-
     zstore_bdev_close(zstore);
     zstore_pm_file_close(zstore);
-
     zstore_ctx_fini(zstore);
     return 0;
 }
 
 
+//....
 
-extern const int zstore_obj_async_op_context_size();
+static int 
+zstore_tx_metadata(struct zstore_transacion_t *tx) {
 
-extern int zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb);
+    return 0;
+}
 
+
+void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
+    // message_t *m = cb_arg;
+    assert (success);
+    
+    spdk_bdev_free_io(bdev_io);
+    
+    struct zstore_data_bio *zdb = cb_arg;
+    struct zstore_transacion_t *tx_ctx = zdb->ztore_tx;
+    struct zstore_context_t *zs = tx_ctx->zstore_;
+    tailq_remove(&tx_ctx->bio_list_ , zdb , bio_lhook_);
+    tx_ctx->bio_outstanding_--;
+    
+    if(tx_ctx->bio_outstanding_ == 0) {
+        if(tx_ctx->tx_type_ == READ_ONLY) {
+            tx_ctx->user_cb_(tx_ctx->err_, tx_ctx->user_cb_);
+            tailq_remove(&zs->tx_rdonly_list_ , tx_ctx , zstore_tx_lhook_);    
+            zs->tx_rdonly_outstanding_--;
+            log_debug("Current tx_rdonly =%u\n",zs->tx_rdonly_outstanding_);
+        } else if (tx_ctx->tx_type_ == WRITE) {
+            tx_ctx ->state_ = PM_TX;
+            if(tailq_first(&zs->tx_rdonly_list_) == tx_ctx) {
+                do {
+                    struct zstore_transacion_t *tx = tailq_first(&zs->tx_list_);
+                    if ( tx == NULL || tx->state_ != PM_TX) {
+                        break;
+                    }
+                    if (tx->state_ == PM_TX) {
+                        zstore_tx_metadata(tx);
+                        tx->err_ = OSTORE_EXECUTE_OK;
+                        tx->user_cb_(tx->err_ , tx->user_cb_arg_);   
+                        tailq_remove(&zs->tx_list_ , tx , zstore_tx_lhook_);
+                        zs->tx_outstanding_--;
+                        log_debug("Current tx=%u\n",zs->tx_outstanding_);
+                    }
+                } while (1);
+            }
+        };
+    }
+}
+
+
+int _do_create(void *r , cb_func_t cb_) {
+    struct zstore_context_t *zs = zstore;
+    
+    message_t *opr = ostore_rqst(r);
+
+    struct op_create_t* op = (void*)opr->meta_buffer;
+    
+    //Trait args
+    uint64_t oid = (op->oid << 16) >> 16;
+    
+    //Lookup
+    union otable_entry_t ote;
+    struct zstore_extent_t ze[8];
+    uint64_t ze_nr = 0;
+    int rc;
+    if( 0 <= oid && oid < zs->zsb_->onodes_rsv) {
+        if(!zs->otable_[oid].valid) {
+            rc =  stupid_alloc_space(zs->pm_allocator_, 1 , &ze, &ze_nr);
+            if(rc){
+                return OSTORE_NO_NODE;
+            }
+            assert(ze_nr == 1);
+            uint64_t align_lba_ = ze->lba_ << 12 + zs->zsb_->pm_dy_space_ofst;
+
+            log_info("Allocate pm block bitmap:%lu , ofst = %lu \n" , ze->lba_ ,  align_lba_);
+            
+            uint64_t align_len_ = ze->len_;
+            char zero_tmp[4096] = {0};
+
+            //Zero
+            pmem_write(zs->pmem_, 1 , zero_tmp , align_lba_ ,4096);
+
+            ote.data_idx_addr =(uint32_t)(align_lba_ >> 12 );
+            ote.oid = oid;
+            ote.valid = 1;
+            ote.rsv = 0;
+            
+        } 
+    } else {
+        return OSTORE_NO_NODE;
+    }
+
+    struct zstore_transacion_t *tx = ostore_async_ctx(r);
+    
+    tx->state_ = PM_TX;
+    //Allocate new onode block
+    tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
+    
+    //1. onode entry
+    pmem_transaction_add(zs->pmem_ ,tx->pm_tx_, 
+        zs->zsb_->pm_otable_ofst + sizeof(union otable_entry_t)*oid , 64 , &ote);
+    //2. bitmap
+    int i ;
+    for ( i = 0 ; i < ze_nr ; ++i) {
+        pmem_transaction_add(zs->pmem_ , tx->pm_tx_ ,
+            zs->zsb_->pm_ssd_bitmap_ofst + sizeof(struct stupid_bitmap_entry_t)* (ze[i].lba_ >> 9) , 64 ,
+            &zs->pm_allocator_->bs_[(ze[i].lba_ >> 9)]);    
+        //uint64_t k = ze[i].lba_;  
+    }
+    bool s = pmem_transaction_apply(zs->pmem_, tx->pm_tx_);
+    assert(s);
+    
+    //Check
+    
+
+
+    pmem_transaction_free(zs->pmem_, tx->pm_tx_);
+
+    cb_( r , OSTORE_EXECUTE_OK);
+    return OSTORE_SUBMIT_OK;
+}
+int _do_delete(void *r , cb_func_t cb_) {
+    message_t *opr = ostore_rqst(r);
+    struct op_delete_t* op = (void*)opr->meta_buffer;
+    cb_( r , 0 );
+    return OSTORE_SUBMIT_OK;
+}
+int _do_read(void *r , cb_func_t cb_) {
+    message_t *opr = ostore_rqst(r);
+    struct op_read_t* op = (void*)opr->meta_buffer;
+    cb_( r , 0 );
+    return OSTORE_SUBMIT_OK;
+}
+int _do_write(void *r , cb_func_t cb_) {
+    message_t *opr = ostore_rqst(r);
+    struct op_write_t* op = (void*)opr->meta_buffer;
+    uint64_t oid = op->oid;
+    
+    
+    cb_( r , 0 );
+    return OSTORE_SUBMIT_OK;
+}
+static const op_handle_func_ptr_t obj_op_table[] = {
+    [msg_oss_op_create] = _do_create,
+    [msg_oss_op_delete] = _do_delete,
+    [msg_oss_op_write] = _do_write,
+    [msg_oss_op_read] = _do_read,
+};
+
+extern const int zstore_obj_async_op_context_size() {
+    return sizeof(struct zstore_transacion_t);
+}
+
+extern int zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
+
+
+
+
+}
 
 
 

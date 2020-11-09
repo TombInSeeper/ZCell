@@ -1,6 +1,7 @@
 #include "objectstore.h"
 #include "util/errcode.h"
 #include "util/chrono.h"
+#include "util/log.h"
 
 #include "message.h"
 #include "operation.h"
@@ -10,8 +11,8 @@
 #include "spdk/util.h"
 
 
-static __thread int g_store = CHUNKSTORE;
-static __thread const char* g_nvme_dev[] = { "Nvme0n1" , NULL, NULL };
+static __thread int g_store = ZSTORE;
+static __thread const char* g_nvme_dev[] = { "Nvme0n1" , "/tmp/mempool", NULL };
 static __thread int g_nr_ops = 100 * 10000;
 static __thread int g_nr_submit = 0;
 static __thread int g_nr_cpl = 0;
@@ -113,7 +114,34 @@ const message_t fake_read_request_msg = {
 };
 
 
+void *_alloc_op_common(uint16_t op_type, uint64_t actx_sz) {
+    // static int seq = 0;
+    void *p = calloc(1, sizeof(message_t) + 128 + actx_sz);
+    switch (op_type) {
+    case msg_oss_op_create:
+        memcpy(p, &fake_create_request_msg, sizeof(fake_create_request_msg));
+        break;
+    case msg_oss_op_read:
+        memcpy(p, &fake_read_request_msg, sizeof(fake_read_request_msg));
+        break;
+    case msg_oss_op_write:
+        memcpy(p, &fake_write_request_msg, sizeof(fake_write_request_msg));
+        break;
+    case msg_oss_op_delete:
+        memcpy(p, &fake_delete_request_msg, sizeof(fake_delete_request_msg));
+        break;   
+    default:
+        break;
+    }
+    message_t *m = p;
+    m->meta_buffer = (char*)(p + sizeof(message_t));
+    return p;
 
+}
+
+void _free_op_common( void *p) {
+    free(p);
+}
 
 void* _alloc_write_op() {
 
@@ -147,8 +175,7 @@ void _free_write_op(void *p) {
     free(p);
 }
 
-void _sys_fini()
-{
+void _sys_fini() {
     os->unmount();
     spdk_free(rbuf);
     spdk_free(wbuf);
@@ -186,7 +213,6 @@ void _write_complete(void *ctx, int sts) {
 }
 
 
-
 void _do_write_test( void* ctx , int st) {
     (void)ctx;
     (void)st;
@@ -213,15 +239,22 @@ void _stat_cb( void* rqst ,int st) {
 
     _do_write_test(NULL,0);
 }
+
+
+void _unit_test_done(void * r , int status) {
+    assert(status == 0);
+    _free_op_common(r);
+    spdk_app_stop(0);
+}
+
 void _do_uint_test() {
-    SPDK_NOTICELOG("enter\n");
-    void *op = malloc(sizeof(message_t) + os->obj_async_op_context_size());
-    memcpy(op,&fake_stat_request_msg,sizeof(message_t));
-    message_t *m = op;
-    m->meta_buffer = malloc(sizeof(op_stat_result_t));
-    int rc = os->obj_async_op_call(op,_stat_cb);    
-    assert(rc == OSTORE_SUBMIT_OK);
-    SPDK_NOTICELOG("end\n");
+    void *op = _alloc_op_common(msg_oss_op_create, os->obj_async_op_context_size());    
+    
+    op_create_t *opc = ((message_t *)(op))->meta_buffer;
+    opc->oid = 0x1;
+
+    
+    os->obj_async_op_call(op, _unit_test_done);
 }
 
 void _sys_init(void *arg) {
@@ -232,11 +265,20 @@ void _sys_init(void *arg) {
 
 
     os = ostore_get_impl(g_store);
+
+    uint64_t s , e ; 
+    s = now();
     int rc = os->mkfs(g_nvme_dev,0);
     assert(rc == SUCCESS);
+    e = now();
+    log_info("mkfs time %lu us \n" , (e - s));
 
+    s = now();
     rc = os->mount(g_nvme_dev,0);
     assert(rc == SUCCESS);
+    e = now();
+    log_info("mount time %lu us \n" , (e - s));
+    
 
     _do_uint_test();
 
@@ -262,11 +304,10 @@ static void parse_args(int argc , char **argv) {
 	}
 }
 
-int main( int argc , char **argv)
-{
+int main( int argc , char **argv) {
     struct spdk_app_opts opts;
     spdk_app_opts_init(&opts);
-    opts.name = "server";
+    opts.name = "test_objectstore";
     opts.config_file = "spdk.conf";
     opts.reactor_mask = "0x1";
     opts.shutdown_cb = _sys_fini;
@@ -275,6 +316,8 @@ int main( int argc , char **argv)
 
     SPDK_NOTICELOG("starting app\n");
     int rc = spdk_app_start(&opts , _sys_init , NULL);
+ 
+ 
     if(rc) {
         return -1;
     }

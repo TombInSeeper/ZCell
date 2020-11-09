@@ -1,9 +1,8 @@
 #include "objectstore.h"
 #include "nullstore.h"
 #include "chunkstore.h"
+#include "zstore.h"
 #include "string.h"
-
-
 
 #define REGISTER_OSTORE(idx, name) \
     [idx] = {\
@@ -17,11 +16,13 @@
 const static objstore_impl_t impls[] = {
     REGISTER_OSTORE(NULLSTORE,nullstore),
     REGISTER_OSTORE(CHUNKSTORE,chunkstore),
+    REGISTER_OSTORE(ZSTORE,zstore),
 };
 
 static inline bool support_ostore(int store_type) {
     return store_type == NULLSTORE ||
-        store_type == CHUNKSTORE ;
+        store_type == CHUNKSTORE || 
+        store_type == ZSTORE;
 }
 
 extern const objstore_impl_t* ostore_get_impl(int store_type) {

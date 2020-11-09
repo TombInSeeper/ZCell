@@ -29,7 +29,8 @@ enum message_type {
  * hdr + meta_buffer (meta_buffer 存放具体的 rpc 参数) + data_buffer (如果有数据要传输，比如写操作)
  * 
  * response 格式：
- * hdr ( rpc id + 操作码 + 状态码) + data_buffer (保存 rpc 执行结果)
+ * hdr ( rpc id + 
+ * 操作码 + 状态码) + data_buffer (保存 rpc 执行结果)
  * 
 */
 typedef struct msg_hdr_t {
@@ -75,13 +76,13 @@ static void inline message_move(message_t *dst ,  message_t *src) {
     memset(src,0,sizeof(*src));
 }
 
-static inline void* message_cliam_meta(message_t *src) {
+static inline void* message_claim_meta(message_t *src) {
     void *meta = src->meta_buffer;
     src->meta_buffer = NULL;
     return meta;
 } 
 
-static inline void* message_cliam_data(message_t *src) {
+static inline void* message_claim_data(message_t *src) {
     void *data = src->data_buffer;
     src->data_buffer = NULL;
     return data;
