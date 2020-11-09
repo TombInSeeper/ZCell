@@ -453,12 +453,12 @@ int _do_create(void *r , cb_func_t cb_) {
     int rc;
     if( 0 <= oid && oid < zs->zsb_->onodes_rsv) {
         if(!zs->otable_[oid].valid) {
-            rc =  stupid_alloc_space(zs->pm_allocator_, 1 , &ze, &ze_nr);
+            rc =  stupid_alloc_space(zs->pm_allocator_, 1 , ze, &ze_nr);
             if(rc){
                 return OSTORE_NO_NODE;
             }
             assert(ze_nr == 1);
-            uint64_t align_lba_ = ze->lba_ << 12 + zs->zsb_->pm_dy_space_ofst;
+            uint64_t align_lba_ = (ze->lba_ << 12) + zs->zsb_->pm_dy_space_ofst;
 
             log_info("Allocate pm block bitmap:%lu , ofst = %lu \n" , ze->lba_ ,  align_lba_);
             
@@ -541,7 +541,8 @@ extern const int zstore_obj_async_op_context_size() {
 
 extern int zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
 
-
+uint16_t op = message_get_op(request_msg_with_op_context);
+    return (obj_op_table[op])(request_msg_with_op_context, _cb);
 
 
 }
