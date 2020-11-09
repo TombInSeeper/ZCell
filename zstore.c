@@ -508,6 +508,7 @@ int _do_create(void *r , cb_func_t cb_) {
     //Check
     pmem_transaction_free(zs->pmem_, tx->pm_tx_);
 
+    log_info("User Callback..\n");
     cb_( r , OSTORE_EXECUTE_OK);
     return OSTORE_SUBMIT_OK;
 }
