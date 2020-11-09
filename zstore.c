@@ -409,7 +409,7 @@ void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
     
     if(tx_ctx->bio_outstanding_ == 0) {
         if(tx_ctx->tx_type_ == TX_RDONLY) {
-            tx_ctx->user_cb_(tx_ctx->err_, tx_ctx->user_cb_);
+            tx_ctx->user_cb_(tx_ctx->user_cb_ , tx_ctx->err_);
             tailq_remove(&zs->tx_rdonly_list_ , tx_ctx , zstore_tx_lhook_);    
             zs->tx_rdonly_outstanding_--;
             log_debug("Current tx_rdonly =%u\n",zs->tx_rdonly_outstanding_);
@@ -510,19 +510,24 @@ int _do_create(void *r , cb_func_t cb_) {
 int _do_delete(void *r , cb_func_t cb_) {
     message_t *opr = ostore_rqst(r);
     struct op_delete_t* op = (void*)opr->meta_buffer;
+    (void)op;
+    
     cb_( r , 0 );
     return OSTORE_SUBMIT_OK;
 }
 int _do_read(void *r , cb_func_t cb_) {
     message_t *opr = ostore_rqst(r);
     struct op_read_t* op = (void*)opr->meta_buffer;
+    (void)op;
     cb_( r , 0 );
     return OSTORE_SUBMIT_OK;
 }
 int _do_write(void *r , cb_func_t cb_) {
     message_t *opr = ostore_rqst(r);
     struct op_write_t* op = (void*)opr->meta_buffer;
-    uint64_t oid = op->oid;
+    (void)op;
+    
+    // uint64_t oid = op->oid;
     
     
     cb_( r , 0 );
@@ -540,11 +545,8 @@ extern const int zstore_obj_async_op_context_size() {
 }
 
 extern int zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
-
-uint16_t op = message_get_op(request_msg_with_op_context);
+    uint16_t op = message_get_op(request_msg_with_op_context);
     return (obj_op_table[op])(request_msg_with_op_context, _cb);
-
-
 }
 
 
