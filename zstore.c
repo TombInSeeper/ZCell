@@ -158,6 +158,7 @@ static void spdk_bdev_event_cb_common(enum spdk_bdev_event_type type, struct spd
 {
     log_warn("Bdev event\n");
     return;
+
 }
 
 static int 
@@ -191,8 +192,6 @@ zstore_ctx_fini(struct zstore_context_t *zs) {
 
 static int 
 zstore_bdev_open(struct zstore_context_t *zs, const char *dev) {
-
-
     zs->nvme_bdev_ = spdk_bdev_get_by_name(dev);
     // zs->nvme_bdev_ = spdk_bdev_desc_get_bdev(zs->nvme_bdev_desc_);
     if(!zs->nvme_bdev_) {
@@ -531,10 +530,7 @@ int _do_write(void *r , cb_func_t cb_) {
     message_t *opr = ostore_rqst(r);
     struct op_write_t* op = (void*)opr->meta_buffer;
     (void)op;
-    
     // uint64_t oid = op->oid;
-    
-    
     cb_( r , 0 );
     return OSTORE_SUBMIT_OK;
 }
