@@ -244,6 +244,11 @@ void _stat_cb( void* rqst ,int st) {
 void _unit_test_done(void * r , int status) {
     assert(status == 0);
     _free_op_common(r);
+    
+    log_info("Unmount....\n");
+    os->unmount();
+    
+    log_info("App exit....\n");
     spdk_app_stop(0);
 }
 
