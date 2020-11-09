@@ -88,7 +88,7 @@ client_admin_tool:client_admin_tool.o liboss.o $(MSGR_OBJS)
 # test_pm:test_pm.o pm.o
 # 	$(LINK_C)
 
-test_objectstore: test_objectstore.o $(OSTORE_OBJS)
+test_objstore: test_objstore.o $(OSTORE_OBJS)
 	$(LINK_C)
 
 %.o: %.c %.d
