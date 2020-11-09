@@ -191,20 +191,25 @@ zstore_ctx_fini(struct zstore_context_t *zs) {
 
 static int 
 zstore_bdev_open(struct zstore_context_t *zs, const char *dev) {
-    int rc = spdk_bdev_open_ext(dev, 1, spdk_bdev_event_cb_common ,NULL, &zstore->nvme_bdev_desc_);
+
+
+    zs->nvme_bdev_ = spdk_bdev_get_by_name(dev);
+    // zs->nvme_bdev_ = spdk_bdev_desc_get_bdev(zs->nvme_bdev_desc_);
+    if(!zs->nvme_bdev_) {
+        log_err("bdev %s get bdev failed\n", dev);
+        return -1;
+    }
+    
+    int rc = spdk_bdev_open(zs->nvme_bdev_, 1 , NULL, NULL, &zs->nvme_bdev_desc_);
     if(rc) {
         log_err("bdev %s open failed\n", dev);
         return rc;
     }
+
     zs->nvme_io_channel_ = spdk_bdev_get_io_channel(zs->nvme_bdev_desc_);
     if(!zs->nvme_io_channel_) {
         log_err("bdev %s get io-channel failed\n", dev);
-        return rc;
-    }
-    zs->nvme_bdev_ = spdk_bdev_desc_get_bdev(zs->nvme_bdev_desc_);
-    if(!zs->nvme_bdev_) {
-        log_err("bdev %s get bdev failed\n", dev);
-        return rc;
+        return -1;
     }
     return 0;
 }
@@ -460,7 +465,7 @@ int _do_create(void *r , cb_func_t cb_) {
             assert(ze_nr == 1);
             uint64_t align_lba_ = (ze->lba_ << 12) + zs->zsb_->pm_dy_space_ofst;
 
-            log_info("Allocate pm block bitmap:%lu , ofst = %lu \n" , ze->lba_ ,  align_lba_);
+            log_info("Allocate pm block bitmap:%lu , ofst = %lu 4K\n" , ze->lba_ ,  align_lba_ >> 12);
             
             uint64_t align_len_ = ze->len_;
             char zero_tmp[4096] = {0};
@@ -487,11 +492,14 @@ int _do_create(void *r , cb_func_t cb_) {
     //1. onode entry
     pmem_transaction_add(zs->pmem_ ,tx->pm_tx_, 
         zs->zsb_->pm_otable_ofst + sizeof(union otable_entry_t)*oid , 64 , &ote);
+    
+    // log_debug("Overwrite %lu oentry")
+    
     //2. bitmap
     int i ;
     for ( i = 0 ; i < ze_nr ; ++i) {
         pmem_transaction_add(zs->pmem_ , tx->pm_tx_ ,
-            zs->zsb_->pm_ssd_bitmap_ofst + sizeof(struct stupid_bitmap_entry_t)* (ze[i].lba_ >> 9) , 64 ,
+            zs->zsb_->pm_dy_bitmap_ofst + sizeof(struct stupid_bitmap_entry_t)* (ze[i].lba_ >> 9) , 64 ,
             &zs->pm_allocator_->bs_[(ze[i].lba_ >> 9)]);    
         //uint64_t k = ze[i].lba_;  
     }
@@ -499,9 +507,6 @@ int _do_create(void *r , cb_func_t cb_) {
     assert(s);
     
     //Check
-
-
-
     pmem_transaction_free(zs->pmem_, tx->pm_tx_);
 
     cb_( r , OSTORE_EXECUTE_OK);
