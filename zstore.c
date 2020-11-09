@@ -424,7 +424,7 @@ void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
                     if (tx->state_ == PM_TX) {
                         zstore_tx_metadata(tx);
                         tx->err_ = OSTORE_EXECUTE_OK;
-                        tx->user_cb_(tx->err_ , tx->user_cb_arg_);   
+                        tx->user_cb_(tx->user_cb_arg_ , tx->err_);   
                         tailq_remove(&zs->tx_list_ , tx , zstore_tx_lhook_);
                         zs->tx_outstanding_--;
                         log_debug("Current tx=%u\n",zs->tx_outstanding_);
