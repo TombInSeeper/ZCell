@@ -81,8 +81,8 @@ union otable_entry_t {
 
 
 enum IO_TYPE {
-    READ = 1,
-    WRITE = 2
+    IO_READ = 1,
+    IO_WRITE = 2,
 };
 
 struct zstore_data_bio {
@@ -98,8 +98,8 @@ enum zstore_tx_state {
 };
 
 enum zstore_tx_type {
-    READ_ONLY = 1,
-    WRITE = 2
+    TX_RDONLY = 1,
+    TX_WRITE = 2
 };
 
 struct zstore_transacion_t {
@@ -408,12 +408,12 @@ void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
     tx_ctx->bio_outstanding_--;
     
     if(tx_ctx->bio_outstanding_ == 0) {
-        if(tx_ctx->tx_type_ == READ_ONLY) {
+        if(tx_ctx->tx_type_ == TX_RDONLY) {
             tx_ctx->user_cb_(tx_ctx->err_, tx_ctx->user_cb_);
             tailq_remove(&zs->tx_rdonly_list_ , tx_ctx , zstore_tx_lhook_);    
             zs->tx_rdonly_outstanding_--;
             log_debug("Current tx_rdonly =%u\n",zs->tx_rdonly_outstanding_);
-        } else if (tx_ctx->tx_type_ == WRITE) {
+        } else if (tx_ctx->tx_type_ == TX_WRITE) {
             tx_ctx ->state_ = PM_TX;
             if(tailq_first(&zs->tx_rdonly_list_) == tx_ctx) {
                 do {
@@ -499,7 +499,7 @@ int _do_create(void *r , cb_func_t cb_) {
     assert(s);
     
     //Check
-    
+
 
 
     pmem_transaction_free(zs->pmem_, tx->pm_tx_);
