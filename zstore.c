@@ -233,7 +233,6 @@ zstore_pm_file_close(struct zstore_context_t *zs) {
     pmem_close(zs->pmem_);
 }
 
-
 extern int 
 zstore_mkfs(const char *dev_list[], int flags) {
 
@@ -315,7 +314,6 @@ zstore_mkfs(const char *dev_list[], int flags) {
 
     return 0;
 }
-
 
 extern int 
 zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
@@ -440,11 +438,10 @@ void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
 }
 
 
-int _do_create(void *r , cb_func_t cb_) {
+static int _do_create_delete_common(void * r , cb_func_t cb_) 
+{
     struct zstore_context_t *zs = zstore;
-    
     message_t *opr = ostore_rqst(r);
-
     struct op_create_t* op = (void*)opr->meta_buffer;
     
     //Trait args
@@ -476,14 +473,11 @@ int _do_create(void *r , cb_func_t cb_) {
             ote.oid = oid;
             ote.valid = 1;
             ote.rsv = 0;
-            
         } 
     } else {
         return OSTORE_NO_NODE;
     }
-
-    struct zstore_transacion_t *tx = ostore_async_ctx(r);
-    
+    struct zstore_transacion_t *tx = ostore_async_ctx(r);   
     tx->state_ = PM_TX;
     //Allocate new onode block
     tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
@@ -511,6 +505,11 @@ int _do_create(void *r , cb_func_t cb_) {
     log_info("User Callback..\n");
     cb_( r , OSTORE_EXECUTE_OK);
     return OSTORE_SUBMIT_OK;
+}
+
+int _do_create(void *r , cb_func_t cb_)
+{
+    
 }
 int _do_delete(void *r , cb_func_t cb_) {
     message_t *opr = ostore_rqst(r);

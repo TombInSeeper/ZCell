@@ -245,20 +245,13 @@ void _unit_test_done(void * r , int status) {
     assert(status == 0);
     _free_op_common(r);
     
-    log_info("Unmount....\n");
-    os->unmount();
-    
-    log_info("App exit....\n");
-    spdk_app_stop(0);
+    _sys_fini();
 }
 
 void _do_uint_test() {
     void *op = _alloc_op_common(msg_oss_op_create, os->obj_async_op_context_size());    
-    
     op_create_t *opc = ((message_t *)(op))->meta_buffer;
     opc->oid = 0x1;
-
-    
     os->obj_async_op_call(op, _unit_test_done);
 }
 
