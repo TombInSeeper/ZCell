@@ -20,7 +20,8 @@ static int g_base_port = 18000;
 static const char *g_core_mask = "0x1";
 static int g_store_type = NULLSTORE;
 static int g_idle = 0;
-
+static const char *dev_list[] = {"Nvme0n1", "/tmp/mempool" ,NULL};
+ 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
 	while ((opt = getopt(argc, argv, "i:p:c:s:d")) != -1) {
@@ -46,7 +47,7 @@ static void parse_args(int argc , char **argv) {
                 g_store_type = CHUNKSTORE;
             } else if (!strcmp(optarg,"zeta")) {
                 log_info("Ostore type is zetastore\n");
-                g_store_type = CHUNKSTORE;
+                g_store_type = ZSTORE;
             } else {
                 log_err("Unknown storage backend:%s \n" , optarg);
                 exit(1);
@@ -477,7 +478,7 @@ void _sys_fini() {
 int _ostore_boot(const objstore_impl_t *oimpl , int new) {
     //TODO get ostore global config
     //....
-    const char *dev_list[] = {"Nvme0n1" , NULL ,NULL};
+    
     int flags = 0;
     int rc;
     if(new) {
