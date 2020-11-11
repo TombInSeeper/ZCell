@@ -173,7 +173,7 @@ op_handler(read) {
     _obj2blk(le32_to_cpu(op_args->oid), le32_to_cpu(op_args->ofst),le32_to_cpu(op_args->len),
         &bdev_ofst,&bdev_len);
 
-    log_debug("oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
+    log_debug("oid=%lu, ofst=%lu KiB,len= %lu KiB, bdev_block_ofst=%lu,bdev_block_num=%lu \n",
         op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
 
     int rc = spdk_bdev_read_blocks(cs->device.bdev_desc,
@@ -206,7 +206,7 @@ op_handler(write) {
         log_err("Bdev IO submit error.\n");
         return OSTORE_IO_ERROR;
     }
-    log_debug("seq=%u,oid=%u, ofst=%u KiB,len= %u KiB, bdev_block_ofst=%lu,bdev_block_num=%lu submit OK\n",
+    log_debug("seq=%lu,oid=%lu, ofst=%lu KiB,len= %lu KiB, bdev_block_ofst=%lu,bdev_block_num=%lu submit OK\n",
         m->header.seq,
         op_args->oid, op_args->ofst, op_args->len, bdev_ofst,bdev_len);
     return OSTORE_SUBMIT_OK;
