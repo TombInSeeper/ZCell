@@ -53,7 +53,7 @@ static void parse_args(int argc , char **argv) {
             }
             break;
 		default:
-			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-c core_mask]\n", argv[0]);
+			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-c core_mask] [-s[null|chunk|zeta]]\n", argv[0]);
 			exit(1);
 		}
 	}
