@@ -1,4 +1,3 @@
-
 //For data storage
 #include <spdk/bdev.h>
 #include <spdk/util.h>
@@ -14,13 +13,10 @@
 #include "util/log.h"
 
 #include "store_common.h"
-
 #define PAGE_ALIGN 4096
 #define PAGE_ALIGN_SHIFT 12
 
 #define ZSTORE_MAGIC 0x1997070519980218
- 
-
 
 #define container_of(ptr,type,member) SPDK_CONTAINEROF(ptr,type,member)
 
@@ -35,7 +31,6 @@
 #define tailq_remove(head,elem,field) TAILQ_REMOVE(head,elem,field)
 
 #define tailq_first(head) TAILQ_FIRST(head)
-
 
 
 union zstore_superblock_t {
@@ -60,10 +55,6 @@ union zstore_superblock_t {
     };
     uint8_t align[PAGE_ALIGN];
 };
-
-
-
-
 
 union otable_entry_t {
     struct {
@@ -91,12 +82,10 @@ struct zstore_data_bio {
     struct iovec iov;
     tailq_entry(zstore_data_bio) bio_lhook_;
 };
-
 enum zstore_tx_state {
     DATA_IO = 1,
     PM_TX,
 };
-
 enum zstore_tx_type {
     TX_RDONLY = 1,
     TX_WRITE = 2
@@ -162,7 +151,8 @@ static void spdk_bdev_event_cb_common(enum spdk_bdev_event_type type, struct spd
 }
 
 static int 
-zstore_ctx_init(struct zstore_context_t **zs) {
+zstore_ctx_init(struct zstore_context_t **zs) 
+{
     *zs = calloc(1, sizeof(**zs));
     if(!(*zs)) {
         return -1;
@@ -181,7 +171,8 @@ zstore_ctx_init(struct zstore_context_t **zs) {
 }
 
 static void 
-zstore_ctx_fini(struct zstore_context_t *zs) {
+zstore_ctx_fini(struct zstore_context_t *zs) 
+{
     free(zs->otable_);
     free(zs->pm_allocator_);
     free(zs->ssd_allocator_);
@@ -191,7 +182,8 @@ zstore_ctx_fini(struct zstore_context_t *zs) {
 
 
 static int 
-zstore_bdev_open(struct zstore_context_t *zs, const char *dev) {
+zstore_bdev_open(struct zstore_context_t *zs, const char *dev) 
+{
     zs->nvme_bdev_ = spdk_bdev_get_by_name(dev);
     // zs->nvme_bdev_ = spdk_bdev_desc_get_bdev(zs->nvme_bdev_desc_);
     if(!zs->nvme_bdev_) {
@@ -391,13 +383,15 @@ zstore_unmount() {
 //....
 
 static int 
-zstore_tx_metadata(struct zstore_transacion_t *tx) {
+zstore_tx_metadata(struct zstore_transacion_t *tx) 
+{
 
     return 0;
 }
 
 
-void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) {
+void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) 
+{
     // message_t *m = cb_arg;
     assert (success);
     
@@ -442,18 +436,26 @@ static int _do_create_delete_common(void * r , cb_func_t cb_)
 {
     struct zstore_context_t *zs = zstore;
     message_t *opr = ostore_rqst(r);
-    struct op_create_t* op = (void*)opr->meta_buffer;
-    
-    //Trait args
-    uint64_t oid = (op->oid << 16) >> 16;
+    struct op_create_t *opcr; 
+    struct op_delete_t *opde; 
+    uint64_t oid;
+    bool is_create = false;
+    if(message_get_op(opr) == msg_oss_op_create) {
+        opcr = (void*)opr->meta_buffer;
+        oid = (opcr->oid << 16) >> 16;
+        is_create = true;
+    } else {
+        opde = (void*)opr->meta_buffer;
+        oid = (opde->oid << 16) >> 16;
+    }
     
     //Lookup
-    union otable_entry_t ote;
+    union otable_entry_t ote = {0};
     struct zstore_extent_t ze[8];
     uint64_t ze_nr = 0;
     int rc;
     if( 0 <= oid && oid < zs->zsb_->onodes_rsv) {
-        if(!zs->otable_[oid].valid) {
+        if(!zs->otable_[oid].valid && is_create) {
             rc =  stupid_alloc_space(zs->pm_allocator_, 1 , ze, &ze_nr);
             if(rc){
                 return OSTORE_NO_NODE;
@@ -461,7 +463,7 @@ static int _do_create_delete_common(void * r , cb_func_t cb_)
             assert(ze_nr == 1);
             uint64_t align_lba_ = (ze->lba_ << 12) + zs->zsb_->pm_dy_space_ofst;
 
-            log_info("Allocate pm block bitmap:%lu , ofst = %lu 4K\n" , ze->lba_ ,  align_lba_ >> 12);
+            log_debug("Allocate pm block bitmap:%lu , ofst = %lu 4K\n" , ze->lba_ ,  align_lba_ >> 12);
             
             uint64_t align_len_ = ze->len_;
             char zero_tmp[4096] = {0};
@@ -473,10 +475,24 @@ static int _do_create_delete_common(void * r , cb_func_t cb_)
             ote.oid = oid;
             ote.valid = 1;
             ote.rsv = 0;
-        } 
+        } else if (zs->otable_[oid].valid == 1 && !is_create) {
+
+            union otable_entry_t *oe = &zs->otable_[oid];
+            uint64_t data_idx = oe->data_idx_addr;
+            data_idx <<= 12;
+            ze[0].lba_ = data_idx;
+            ze[0].len_ = 1;
+
+            //free data_index
+            stupid_free_space(zs->pm_allocator_, ze , 1);
+        
+        } else {
+            return OSTORE_NO_NODE;
+        }
     } else {
         return OSTORE_NO_NODE;
     }
+
     struct zstore_transacion_t *tx = ostore_async_ctx(r);   
     tx->state_ = PM_TX;
     //Allocate new onode block
@@ -499,26 +515,41 @@ static int _do_create_delete_common(void * r , cb_func_t cb_)
     bool s = pmem_transaction_apply(zs->pmem_, tx->pm_tx_);
     assert(s);
     
-    //Check
     pmem_transaction_free(zs->pmem_, tx->pm_tx_);
 
-    log_info("User Callback..\n");
-    cb_( r , OSTORE_EXECUTE_OK);
+    //Update In-memory data-struct
+    memcpy(&zs->otable_[oid] , &ote , sizeof(ote));
+
+    log_debug("User Callback..\n");
+    cb_(r , OSTORE_EXECUTE_OK);
     return OSTORE_SUBMIT_OK;
 }
 
 int _do_create(void *r , cb_func_t cb_)
 {
-    
+    return _do_create_delete_common( r , cb_);    
 }
-int _do_delete(void *r , cb_func_t cb_) {
-    message_t *opr = ostore_rqst(r);
-    struct op_delete_t* op = (void*)opr->meta_buffer;
-    (void)op;
-    
-    cb_( r , 0 );
-    return OSTORE_SUBMIT_OK;
+int _do_delete(void *r , cb_func_t cb_) 
+{
+    return _do_create_delete_common( r , cb_);    
 }
+
+
+
+
+int _do_rw(void *r , cb_func_t cb_)  {
+    uint64_t oid;
+    uint64_t ofst;
+    uint64_t len;
+    uint64_t flag;
+    if(message_get_op(r) == msg_oss_op_read) {
+
+    }
+    return 0;
+} 
+
+
+
 int _do_read(void *r , cb_func_t cb_) {
     message_t *opr = ostore_rqst(r);
     struct op_read_t* op = (void*)opr->meta_buffer;
