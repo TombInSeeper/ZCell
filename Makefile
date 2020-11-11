@@ -58,7 +58,7 @@ OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o  zstore.o pm.o
 
 
 TEST_BIN= test_objstore
-BIN_TGT=server client_msgr_tool client_admin_tool $(TEST_BIN) 
+BIN_TGT=server client_msgr_tool client_admin_tool  
 
 .PHONY: all clean test
 	
