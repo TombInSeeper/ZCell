@@ -23,10 +23,10 @@ extern void put_io_channel( io_channel *ioch);
 
 
 extern int  io_stat(io_channel *ch);
-extern int  io_create(io_channel *ch , uint32_t oid);
-extern int  io_delete(io_channel *ch , uint32_t oid);
-extern int  io_read(io_channel  *ch, uint32_t oid, uint64_t ofst, uint32_t len);
-extern int  io_write(io_channel *ch, uint32_t oid, const void* buffer, uint64_t ofst, uint32_t len);
+extern int  io_create(io_channel *ch , uint64_t oid);
+extern int  io_delete(io_channel *ch , uint64_t oid);
+extern int  io_read(io_channel  *ch, uint64_t oid, uint64_t ofst, uint32_t len);
+extern int  io_write(io_channel *ch, uint64_t oid, const void* buffer, uint64_t ofst, uint32_t len);
 
 extern int  io_buffer_alloc(void** ptr, uint32_t size);
 extern int  io_buffer_free (void* ptr);

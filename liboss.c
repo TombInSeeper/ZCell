@@ -272,7 +272,7 @@ static int _io_prepare_op_common(io_channel *ch,  int16_t op_type ,uint32_t meta
 extern int io_stat(io_channel *ch) {
     return _io_prepare_op_common(ch, msg_oss_op_stat, 0, NULL, 0, NULL);
 }
-extern int  io_create(io_channel *ch , uint32_t oid) {
+extern int  io_create(io_channel *ch , uint64_t oid) {
     uint32_t meta_size = sizeof(op_create_t);
     void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_create_t));
     do {
@@ -281,7 +281,7 @@ extern int  io_create(io_channel *ch , uint32_t oid) {
     } while(0);
     return _io_prepare_op_common(ch , msg_oss_op_create, meta_size, meta_buffer , 0, NULL);
 }
-extern int  io_delete(io_channel *ch , uint32_t oid) {
+extern int  io_delete(io_channel *ch , uint64_t oid) {
     uint32_t meta_size = sizeof(op_delete_t);
     void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_delete_t));
     do {
@@ -300,7 +300,7 @@ extern int  io_buffer_free (void* ptr) {
     return 0;
 }
 
-extern int  io_read(io_channel  *ch, uint32_t oid, uint64_t ofst, uint32_t len) {
+extern int  io_read(io_channel  *ch, uint64_t oid, uint64_t ofst, uint32_t len) {
     uint32_t meta_size = sizeof(op_read_t);
     void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_read_t));
     do {
@@ -313,7 +313,7 @@ extern int  io_read(io_channel  *ch, uint32_t oid, uint64_t ofst, uint32_t len) 
     return _io_prepare_op_common(ch , msg_oss_op_read, meta_size, meta_buffer , 0, NULL);
 }
 
-extern int  io_write(io_channel *ch, uint32_t oid, const void* buffer, uint64_t ofst, uint32_t len) {
+extern int  io_write(io_channel *ch, uint64_t oid, const void* buffer, uint64_t ofst, uint32_t len) {
     uint32_t meta_size = sizeof(op_write_t);
     void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_write_t));
     const void *data_buffer = buffer;

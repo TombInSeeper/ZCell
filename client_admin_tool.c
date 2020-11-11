@@ -408,6 +408,13 @@ int _run(admin_context_t *ac, int argc , char **argv) {
     if(!strcmp(cmd, "stat")) {
         log_debug("Process [stat] command\n ");
         _do_stat(ac);
+    } else if (!strcmp(cmd, "cre")) {
+        uint32_t oid = atoi(argv[4]);
+        if(_do_create(ac, oid)) {
+            log_err("Create object %u failed\n" , oid);
+            return -1;
+        }
+        return 0;
     } else if (!strcmp(cmd, "put")) {
         uint32_t oid = atoi(argv[4]);
         const char *file = argv[5];
