@@ -72,7 +72,7 @@ test: $(TEST_BIN)
 # test_messager_client:test_messager_client.o $(MSGR_OBJS)
 # 	$(LINK_C)
 
-server:test_server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
+server:server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 	$(LINK_C)
 
 client_msgr_tool:test_client_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
