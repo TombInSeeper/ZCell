@@ -7,7 +7,7 @@ struct extent_t {
 typedef struct extent_t extent_t;
 
 int data_index[] = {
-    0, 1, 2, 3, 4, 5 ,8 ,9 ,10 , -1 ,36 , -1 ,
+    0, 1, 2, 3, -1, 7 ,8 ,-1 ,9 , 10 ,-1 , -1 ,
     511 , 512 , 513 ,514 ,
 };
 
@@ -16,9 +16,13 @@ static void merge(extent_t *e , int *n) {
     extent_t *p = e;
     p->len = 0;
     p->ofst = -1;
+    int in_found_ctx = 0;
     for (i = 0 , j = 0; i < 16; ++i) {
-        if(data_index[i] != -1) {
-            int ba = data_index[i];
+        int ba = data_index[i];
+        if(ba == -1) {
+            in_found_ctx = 0;
+            continue;
+        } else if (ba != -1 && in_found_ctx) {
             if (p->len + p->ofst == ba
                 && (p->ofst >> 9 == ba >> 9)) {
                 p->len++;
@@ -28,6 +32,11 @@ static void merge(extent_t *e , int *n) {
                 p->ofst = data_index[i];
                 p->len = 1;
             }  
+        } else if (ba != -1 && !in_found_ctx) {
+            ++j;
+            p->ofst = data_index[i];
+            p->len = 1;
+            in_found_ctx = 1;
         }
     }
     *n = j;
