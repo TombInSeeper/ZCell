@@ -74,7 +74,7 @@ int main() {
         int j = 0;
         printf("{");
         for(j = 0; j < e[i].len; ++j) {
-            printf("(%d)" , e[i].ofst + j);
+            printf("%d," , e[i].ofst + j);
         }
         printf("}");
     }
@@ -83,7 +83,7 @@ int main() {
     int nbid;
     extent_to_bitmap_id(bid, &nbid, e , ne);
 
-    printf("nbid=%d , bids=",ne);
+    printf("nbid=%d , bids=",nbid);
     for(i = 0 ; i < nbid ; ++i) {
         printf("{%d}", bid[i]);
     }
