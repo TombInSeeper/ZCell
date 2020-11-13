@@ -7,8 +7,8 @@
 #include "stdio.h"
 #include "assert.h"
 #include "messager.h"
-#include "sched.h"
-#include "pthread.h"
+#include <sched.h>
+#include <pthread.h>
 #include "operation.h"
 
 

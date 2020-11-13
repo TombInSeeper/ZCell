@@ -9,7 +9,6 @@
 #include "util/common.h"
 #include "util/assert.h"
 
-
 #define PM_LOG_REGION_SIZE 4096
 
 struct pmem_t {    
@@ -28,6 +27,7 @@ union pm_log_header_t {
 };
 
 struct pm_log_entry_t {
+    void *paddr;
     uint64_t ofst;
     uint64_t length;
     uint64_t value[0];
@@ -128,29 +128,33 @@ extern union pmem_transaction_t* pmem_transaction_alloc(struct pmem_t *pmem) {
 //pmem_addr % 64 == 0
 //len % 64 == 0
 extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *tx,
-    const uint64_t pmem_ofst, size_t len, void *new_value)  
+    const uint64_t pmem_ofst, const void* mem_addr, size_t len, void *new_value)  
 {
-    // const void *pmem_addr = (char*)pmem->map_base + pmem_ofst;
+    uint32_t log_len = sizeof(struct pm_log_entry_t) + len;
     uint32_t alen = tx->lh.align_length;
-    uint32_t tlen = (alen + sizeof(struct pm_log_entry_t) + len) + sizeof(union pm_log_header_t);
+    uint32_t tlen = sizeof(union pm_log_header_t) + alen + log_len;
+    
     tlen = FLOOR_ALIGN(tlen , 256);
     
     if(tlen > PM_LOG_REGION_SIZE) {
-        log_err("Cannot add more range in this Transaction\n");
+        log_err("Cannot add more log into this Transaction\n");
         return false;
     }
 
     uint32_t i = tx->lh.nr_logs++;    
     tx->le[i].length = len;
     tx->le[i].ofst   = pmem_ofst; 
+    tx->le[i].paddr  = mem_addr; 
+
     memcpy(tx->le[i].value , new_value, len);
     
+    tx->lh.align_length = tlen;
+    log_debug("Transaction length update to %u\n" , tlen);
+
     return true;
 }
 
 extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t *tx) {
-
-    // const uint64_t zero_64B[8] __attribute__((aligned(64))) = { 0 };
 
     //Step1. 
     //.....
@@ -169,8 +173,16 @@ extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t
     }
     _mm_sfence();
 
+
+    //Step4.
     memset(&tx->lh , 0 , sizeof(tx->lh));
     pmem_write(pmem,1, &tx->lh, pmem->log_region_ofst, sizeof(tx->lh));
+
+    //Step5. apply 延迟修改的内存内容
+    for(i = 0 ; i < tx->lh.nr_logs; ++i) {
+        if(tx->le[i].paddr)
+            memcpy(tx->le[i].paddr, tx->le[i].value, tx->le[i].length);
+    }
 
     return true;
 }
