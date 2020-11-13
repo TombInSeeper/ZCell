@@ -54,7 +54,8 @@ static void extent_to_bitmap_id( int *bid , int *n , const extent_t *e , const i
             }
         }
         if(!in) {
-            bid[*n++] = (e[i].ofst>>9);
+            bid[*n] = (e[i].ofst>>9);
+            *n = *n + 1;
         }
     }
 } 
@@ -70,7 +71,12 @@ int main() {
     
     printf("ne=%d , exts=",ne);
     for(i = 0 ; i < ne ; ++i) {
-        printf("{%d~%d}" , e[i].ofst , e[i].len);
+        int j = 0;
+        printf("{");
+        for(j = 0; j < e[i].len; ++j) {
+            printf("(%d)" , e[i].ofst + j);
+        }
+        printf("}");
     }
     printf("\n");
 
