@@ -13,9 +13,7 @@ int data_index[] = {
 
 static void merge(extent_t *e , int *n) {
     int i , j ;
-    extent_t *p = e;
-    p->len = 0;
-    p->ofst = -1;
+    extent_t *p = e - 1;
     int in_found_ctx = 0;
     for (i = 0 , j = 0; i < 16; ++i) {
         int ba = data_index[i];
@@ -34,6 +32,7 @@ static void merge(extent_t *e , int *n) {
             }  
         } else if (ba != -1 && !in_found_ctx) {
             ++j;
+            ++p;
             p->ofst = data_index[i];
             p->len = 1;
             in_found_ctx = 1;

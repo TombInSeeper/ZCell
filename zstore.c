@@ -454,12 +454,7 @@ static union otable_entry_t *onode_entry(struct zstore_context_t *zs, uint64_t o
         return NULL;
 }
 
-/**
- * 
- * 获取 op_ofst 到 op_len 之间的物理块地址
- * onode data index block 中的 0xff 代表无效地址  
- * 调用者需要检查 ext_nr
- */
+
 static void object_lba_range_get(struct zstore_context_t *zs, 
     union otable_entry_t *oe , 
     uint32_t *ext_nr, struct zstore_extent_t *exts ,  
@@ -482,118 +477,6 @@ static void object_lba_range_get(struct zstore_context_t *zs,
 }
 
 
-int _do_rw(void *r)  {
-    uint64_t oid;
-    uint64_t ofst;
-    uint64_t len;
-    uint64_t flag;
-    struct zstore_context_t *zs = zstore;
-    message_t *opr = ostore_rqst(r);
-    struct zstore_transacion_t *tx = ostore_async_ctx(r);
-
-
-    bool is_write = false;
-
-    if(message_get_op(r) == msg_oss_op_read) {
-        tx->tx_type_ = TX_RDONLY;
-        struct op_read_t *op = (void*)opr->meta_buffer;
-        oid = op->oid << 16 >> 16;
-        ofst = op->ofst;
-        len = op->len;
-        flag = op->flags;
-    } else {
-        tx->tx_type_ = TX_WRITE;
-        struct op_write_t *op = (void*)opr->meta_buffer;
-        oid = op->oid << 16 >> 16;
-        ofst = op->ofst;
-        len = op->len;
-        flag = op->flags;
-
-        is_write = true;       
-    }
-
-    union otable_entry_t *ote = onode_entry(zs, oid); 
-    if(!ote->valid) {
-        return OSTORE_OBJECT_NOT_EXIST;
-    }
-
-    //PM 事务要求 64 字节对齐的写
-    //data index page 用 4 字节 index 指示一个 4K 对齐的 SSD LBA
-    
-    uint64_t orig_start = ofst >> 12;
-    uint64_t orig_len = len >> 12;
-    //向下对齐
-    uint64_t d_start = (ofst >> 12) & 15;  
-    //向上对齐
-    uint64_t d_end = FLOOR_ALIGN((ofst >> 12) + (len >> 12), 16);
-    uint64_t d_len = d_end - d_start;
-    assert( d_len % 16 == 0 );
-
-    uint64_t obj_data_index_page_addr = ((uint64_t)ote->data_idx_id)<<12;
-    uint64_t r_start = obj_data_index_page_addr + d_start << 2;
-    uint64_t r_len  = d_len << 2;
-
-
-    //代表了object-oid 从 d_ofst 处偏移 d_len 的每 4K 对应的 LBA  
-    uint32_t data_index_range[d_len];
-    pmem_read(zs->pmem_,data_index_range, r_start , r_len);
-
-
-
-    if(!is_write) {
-        uint64_t i ;
-        uint32_t cofst = 0 , clen = 0;
-        for (i = orig_start ; i < orig_len ; ++i) {
-            if(cofst + clen == i) {
-                //是连续的
-                clen++;
-            } else {
-
-            }
-            
-            if(!cofst) {
-                cofst = i;
-                clen = 1;
-            } 
-            
-            tx->bio_outstanding_++;
-
-        };
-    } else {
-        tx->pm_tx_ = pmem_transaction_alloc(zs->pmem_);
-        //Read lba range     
-        //Prepare BIO
-        assert(len & 4095 == 0);
-        assert(ofst & 4095 == 0);
-        struct zstore_extent_t ze[64];
-        uint64_t ze_nr;
-        stupid_alloc_space(zs->ssd_allocator_, len >> 12 , ze , &ze_nr);
-
-        uint64_t i;
-
-    }
-
-
-
-
-    return 0;
-} 
-
-int _do_read(void *r , cb_func_t cb_) {
-    message_t *opr = ostore_rqst(r);
-    struct op_read_t* op = (void*)opr->meta_buffer;
-    (void)op;
-    cb_( r , 0 );
-    return OSTORE_SUBMIT_OK;
-}
-int _do_write(void *r , cb_func_t cb_) {
-    message_t *opr = ostore_rqst(r);
-    struct op_write_t* op = (void*)opr->meta_buffer;
-    (void)op;
-    // uint64_t oid = op->oid;
-    cb_( r , 0 );
-    return OSTORE_SUBMIT_OK;
-}
 
 static int _do_create_delete_common(void *r) 
 {
