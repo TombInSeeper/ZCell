@@ -13,8 +13,14 @@
 #include "util/log.h"
 
 #include "store_common.h"
-#define PAGE_ALIGN 4096
-#define PAGE_ALIGN_SHIFT 12
+
+
+
+#define ZSTORE_PAGE_SHIFT 12
+#define ZSTORE_PAGE_SIZE  (1UL << ZSTORE_PAGE_SHIFT)
+#define ZSTORE_PAGE_MASK (~(ZSTORE_PAGE_SIZE -1))
+#define ZSTORE_TX_IOV_MAX 32
+#define ZSTORE_IO_UNIT_MAX (128UL * 1024)
 
 #define ZSTORE_MAGIC 0x1997070519980218
 
@@ -53,7 +59,7 @@ union zstore_superblock_t {
         
         uint64_t pm_dy_space_ofst;
     };
-    uint8_t align[PAGE_ALIGN];
+    uint8_t align[ZSTORE_PAGE_SIZE];
 };
 
 union otable_entry_t {
@@ -92,11 +98,9 @@ enum zstore_tx_type {
     TX_WRITE = 2
 };
 
-
-
-
 struct zstore_transacion_t {
     void *zstore_;
+    uint64_t tid;
     int tx_type_;
     uint16_t state_;
     uint16_t err_;
@@ -105,7 +109,9 @@ struct zstore_transacion_t {
     void *user_cb_arg_;
 
     uint32_t bio_outstanding_;
+    char *data_buffer;
     struct {
+        uint8_t  io_type;
         uint32_t blk_ofst;
         uint32_t blk_len;
     } *bios_;
@@ -139,14 +145,12 @@ struct zstore_context_t {
 
     uint32_t tx_rdonly_outstanding_;
     tailq_head(zstore_tx_rdonly_list_t , zstore_transacion_t) tx_rdonly_list_;
-
-    struct spdk_poller *tx_poller;
 };
 
 static __thread struct zstore_context_t *zstore; //TLS 
 
 
-static int zstore_tx_poll(void *zs_);
+// static int zstore_tx_poll(void *zs_);
 
 
 static int 
@@ -383,22 +387,32 @@ zstore_unmount() {
 }
 
 
+void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg);
 
-static int 
-zstore_tx_metadata(struct zstore_transacion_t *tx) 
+static int
+zstore_tx_data_bio(struct zstore_transacion_t *tx) 
 {
-    struct zstore_context_t *zs = zstore;
-    assert(tx->bio_outstanding_ == 0);
-    pmem_transaction_apply(zs->pmem_ , tx->pm_tx_);
-    pmem_transaction_free(zs->pmem_, tx->pm_tx_);
+    struct zstore_context_t *zs = tx->zstore_;
+    uint32_t i;
+    uint32_t n = tx->bio_outstanding_;
+    char *buf = tx->data_buffer;
+    for ( i = 0 ; i < n ; ++i) {
+        if(tx->bios_[i].io_type == IO_READ)
+            spdk_bdev_read_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
+                buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);
+        else {
+            spdk_bdev_write_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
+                buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);
+        }
+        buf += ((uint64_t)(tx->bios_[i].blk_len)) << ZSTORE_PAGE_SHIFT;
+    }
     return 0;
 }
-
 static int 
 zstore_tx_end(struct zstore_transacion_t *tx) 
 {
     struct zstore_context_t *zs = zstore;
-    tx->user_cb_(tx->user_cb_arg_ , OSTORE_EXECUTE_OK);
+    tx->user_cb_(tx->user_cb_arg_ , tx->err_);
     if(tx->tx_type_ == TX_RDONLY) {
         zs->tx_rdonly_outstanding_--;
         tailq_remove(&zs->tx_rdonly_list_ , tx , zstore_tx_lhook_);    
@@ -409,12 +423,61 @@ zstore_tx_end(struct zstore_transacion_t *tx)
     return 0;
 }
 
+static int 
+zstore_tx_metadata(struct zstore_transacion_t *tx) 
+{   
+    struct zstore_context_t *zs = tx->zstore_;
+    struct zstore_transacion_t *tx_ctx = tx;
+    if(tx_ctx->tx_type_ == TX_RDONLY) {
+            zstore_tx_end(tx_ctx);
+            log_debug("Current tx_rdonly =%u\n",zs->tx_rdonly_outstanding_);
+    } else if (tx_ctx->tx_type_ == TX_WRITE) {
+        tx_ctx ->state_ = PM_TX;
+        if(tailq_first(&zs->tx_list_) == tx_ctx) {
+            do {
+                struct zstore_transacion_t *tx = tailq_first(&zs->tx_list_);
+                if ( tx == NULL || tx->state_ != PM_TX) {
+                    break;
+                }
+                if (tx->state_ == PM_TX) {
+                    bool s =  pmem_transaction_apply(zs->pmem_ , tx->pm_tx_);
+                    tx->err_ = s ? OSTORE_IO_ERROR : OSTORE_EXECUTE_OK;
+
+                    pmem_transaction_free(zs->pmem_, tx->pm_tx_);
+
+                    zstore_tx_end(tx);
+                    log_debug("Current tx nr=%u\n",zs->tx_outstanding_);
+                }
+            } while (1);
+        }
+    };
+    assert(tx->bio_outstanding_ == 0);
+
+    return 0;
+}
+
+
+
+
+
+static void zstore_tx_execute(struct zstore_transacion_t *tx) {
+    switch (tx->state_) {
+    case DATA_IO:
+        zstore_tx_data_bio(tx);
+        break;
+    case PM_TX:
+        zstore_tx_metadata(tx);
+        break;
+    default:
+        break;
+    }
+
+}
 
 void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) 
 {
     // message_t *m = cb_arg;
     assert (success);
-    
     spdk_bdev_free_io(bdev_io);
     
     // struct zstore_data_bio *zdb = cb_arg;
@@ -424,61 +487,259 @@ void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg)
     tx_ctx->bio_outstanding_--;
     
     if(tx_ctx->bio_outstanding_ == 0) {
-        if(tx_ctx->tx_type_ == TX_RDONLY) {
-            zstore_tx_end(tx_ctx);
-            log_debug("Current tx_rdonly =%u\n",zs->tx_rdonly_outstanding_);
-        } else if (tx_ctx->tx_type_ == TX_WRITE) {
-            tx_ctx ->state_ = PM_TX;
-            if(tailq_first(&zs->tx_rdonly_list_) == tx_ctx) {
-                do {
-                    struct zstore_transacion_t *tx = tailq_first(&zs->tx_list_);
-                    if ( tx == NULL || tx->state_ != PM_TX) {
-                        break;
-                    }
-                    if (tx->state_ == PM_TX) {
-                        zstore_tx_metadata(tx);
-                        tx->err_ = OSTORE_EXECUTE_OK;
-                        zstore_tx_end(tx);
-                        log_debug("Current tx=%u\n",zs->tx_outstanding_);
-                    }
-                } while (1);
-            }
-        };
+        tx_ctx->state_ = PM_TX;
+        if(tx_ctx->bios_) {
+            free(tx_ctx->bios_);
+            tx_ctx->bios_ = NULL;
+        }
+        zstore_tx_execute(tx_ctx);
     }
 }
 
-static union otable_entry_t *onode_entry(struct zstore_context_t *zs, uint64_t oid) {
+static union otable_entry_t *
+onode_entry(struct zstore_context_t *zs, uint64_t oid) {
     if(oid < zs->zsb_->onodes_rsv)
         return &zs->otable_[oid];
     else
         return NULL;
 }
 
+uint64_t onode_pm_ofst( struct zstore_context_t *zs , uint64_t oid ) {
+    return zstore->zsb_->pm_otable_ofst + oid * sizeof(union otable_entry_t);
+} 
 
-static void object_lba_range_get(struct zstore_context_t *zs, 
+static void 
+object_lba_merge_to(uint32_t *bi , uint32_t nbi, 
+    uint32_t *n, struct zstore_extent_t *e ,
+    uint32_t *mb_len )
+{
+    int i , j ;
+    struct zstore_extent_t *p = e - 1;
+    int in_found_ctx = 0;
+    *mb_len = 0;
+    for (i = 0 , j = 0; i < nbi; ++i) {
+        uint32_t ba = bi[i];
+        if(ba == -1) {
+            in_found_ctx = 0;
+            continue;
+        } else if (ba != -1 && in_found_ctx) {
+            *mb_len = *mb_len + 1;
+            if (p->len_ + p->lba_ == ba
+                && (p->lba_ >> 9 == ba >> 9) //不允许跨 bitmap_entry
+                && (p->len_ < ZSTORE_IO_UNIT_MAX)) //不允许大于最大BIO粒度
+            { 
+                p->len_++;
+            } else {
+                ++p;
+                ++j;
+                p->lba_ = ba;
+                p->len_ = 1;
+            }  
+        } else if (ba != -1 && !in_found_ctx) {
+            *mb_len = *mb_len + 1;
+            ++p;
+            ++j;
+            p->lba_ = ba;
+            p->len_ = 1;
+            in_found_ctx = 1;
+        }
+    }
+    *n = j;
+
+}
+
+static void 
+object_lba_range_get(struct zstore_context_t *zs, 
     union otable_entry_t *oe , 
     uint32_t *ext_nr, struct zstore_extent_t *exts ,  
+    uint32_t *mapped_blen,
     uint64_t op_ofst , uint64_t op_len)
 {
-    uint64_t bofst = op_ofst >> PAGE_ALIGN_SHIFT;
-    uint64_t blen = op_len >> PAGE_ALIGN_SHIFT;
+    uint64_t bofst = op_ofst >> ZSTORE_PAGE_SHIFT;
+    uint64_t blen = op_len >> ZSTORE_PAGE_SHIFT;
 
     uint64_t dib_addr = zs->zsb_->pm_dy_space_ofst + 
-        (((uint64_t)oe->data_idx_id) << PAGE_ALIGN_SHIFT);
+        (((uint64_t)oe->data_idx_id) << ZSTORE_PAGE_SHIFT);
     
-    uint32_t dib_[1024];
-    pmem_read(zs->pmem_, &dib_[bofst] , dib_addr + bofst << 2 , blen << 2);
+    uint32_t dib_[ZSTORE_TX_IOV_MAX];
+    pmem_read(zs->pmem_, dib_ , dib_addr + bofst << 2 , blen << 2);
+    
+    object_lba_merge_to(dib_, blen, ext_nr , exts , mapped_blen);
+}
 
-    uint32_t i , j;
-    struct zstore_extent_t *p = exts;
-    p->lba_ = -1;
-    p->len_ = 0;
+static void 
+lba_to_bitmap_id(const uint32_t ne , struct zstore_extent_t *e ,  uint32_t *bid , uint32_t *n )
+{
+    int i;
+    *n = 0;
+    for (i = 0 ; i < ne ; ++i) {
+        int j;
+        int in = 0;
+        for ( j = 0 ; j < *n ; ++j) {
+            if( (e[i].ofst >> 9) == bid[j]) {
+                in = 1;
+                break;
+            }
+        }
+        if(!in) {
+            bid[*n] = (e[i].ofst>>9);
+            *n = *n + 1;
+        }
+    }
 
+}
+
+static void dump_extent(uint32_t ne , struct zstore_extent_t *e) {
+    uint32_t i;
+    for (i = 0 ; i < ne ; ++i ) {
+        log_debug("[0x%lu~0x%lu]\n", e[i].lba_ << 12 , e[i].len_ << 12);        
+    }
 }
 
 
 
-static int _do_create_delete_common(void *r) 
+static int _tx_prep_rw_common(void *r)  {
+    uint16_t op = message_get_op(r);
+    message_t *m = (message_t*)r;
+    struct zstore_transacion_t *tx = ostore_async_ctx(r);   
+    uint64_t oid, op_ofst, op_len , op_flags;
+    void *data_buf = m->data_buffer;
+    if(op  == msg_oss_op_read) {
+        op_read_t * op = (void*)(m->meta_buffer);
+        op->oid = op->oid;
+        op_ofst = op->ofst;
+        op_len = op->len;
+        op_flags = op->flags;
+    } else if ( op == msg_oss_op_write ){
+        op_write_t * op = (void*)(m->meta_buffer);
+        op->oid = op->oid;
+        op_ofst = op->ofst;
+        op_len = op->len;
+        op_flags = op->flags;    
+    } else {
+        log_err("Op error\n");
+        return UNKOWN_OP;
+    }
+    if(!op_len || op_len % ZSTORE_PAGE_SIZE != 0) {
+        return INVALID_OP;
+    }
+    if(op_ofst % ZSTORE_PAGE_SIZE != 0) {
+        return INVALID_OP;
+    }
+
+    union otable_entry_t *oe = onode_entry(zstore, oid);
+    if(!oe) {
+        return OSTORE_NO_NODE;
+    }
+    // if(op == msg_oss_op_read) 
+    uint32_t  mapped_blen;
+
+    uint32_t  ne;
+    struct zstore_extent_t e[ZSTORE_TX_IOV_MAX];
+
+    uint32_t blen = op_len >> ZSTORE_PAGE_SHIFT;
+    uint32_t bofst = op_ofst >> ZSTORE_PAGE_SHIFT;
+    
+    //获取合并后的extent
+    object_lba_range_get(zstore, oe , &ne , e , op_ofst , op_len , &mapped_blen);
+    
+    if(1) {
+        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=");
+        dump_extent(e,ne); 
+    }
+
+
+    tx->data_buffer = data_buf;
+    if(op == msg_oss_op_read) {
+
+        if(ne == 0 || blen != mapped_blen) {
+            return OSTORE_READ_HOLE; 
+        }
+        uint32_t i;
+        tx->tx_type_ = TX_RDONLY;
+        tx->state_ = DATA_IO;
+        tx->bios_ = malloc(sizeof(*tx->bios_) * ne);
+        for (i = 0 ; i < ne ; ++i) {
+            tx->bios_[i].blk_len = e[i].len_;
+            tx->bios_[i].blk_ofst = e[i].lba_;
+        }
+        tx->bio_outstanding_ = ne;
+    
+    } else {
+        if (op_ofst + op_len > (4UL << 20)) {
+            return OSTORE_WRITE_OUT_MAX_SIZE;
+        }
+        tx->tx_type_ = TX_WRITE;
+        tx->state_ = DATA_IO;
+        
+        int bid[ZSTORE_TX_IOV_MAX] , bid2[ZSTORE_TX_IOV_MAX];
+        int nbid , nbid2;
+        
+        if(ne != 0) {
+            log_debug("overwrite\n");
+            stupid_free_space(zstore->ssd_allocator_ , e , ne);
+            lba_to_bitmap_id(ne ,e , bid , &nbid);
+        }
+        
+        struct zstore_extent_t enew[ZSTORE_TX_IOV_MAX];
+        uint32_t enew_nr;
+        int rc = stupid_alloc_space(zstore->ssd_allocator_ , blen , enew , &enew_nr );
+        dump_extent(enew,enew_nr); 
+        
+        if(rc) {
+            log_err("Allocate new space failed\n");
+            return rc;
+        }
+        lba_to_bitmap_id(enew_nr, enew, bid2, &nbid2);
+
+        tx->bios_ = malloc(sizeof(*tx->bios_) * enew_nr);
+        int i;
+        for (i = 0 ; i < enew_nr ; ++i) {
+            tx->bios_[i].blk_len = e[i].len_;
+            tx->bios_[i].blk_ofst = e[i].lba_;
+        }
+        tx->bio_outstanding_ = enew_nr;
+
+        tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
+        int i;
+        bool s;
+        //保存SSD Bitmap 的新值
+        for ( i = 0 ; i < nbid ; ++i) {
+            uint64_t pm_ofst = zstore->zsb_->pm_ssd_bitmap_ofst +
+                bid[i] * sizeof(struct stupid_bitmap_entry_t);
+            // log_debug("Add tx log entry: base_ofst:%lu, ")
+            s = pmem_transaction_add(zstore->pmem_,tx->pm_tx_, pm_ofst , NULL, 64 ,
+                &zstore->ssd_allocator_->bs_[bid[i]]);
+            if (s) {
+                log_err("Too big transaction\n");
+                // pmem_transaction_free(tx->pm_tx_);
+                pmem_transaction_free(zstore->pmem_, tx->pm_tx_);
+                return INVALID_OP;
+            }
+        }
+        for ( i = 0 ; i < nbid2 ; ++i) {
+            uint64_t pm_ofst = zstore->zsb_->pm_ssd_bitmap_ofst +
+                bid2[i] * sizeof(struct stupid_bitmap_entry_t);
+            s = pmem_transaction_add(zstore->pmem_,tx->pm_tx_, pm_ofst , NULL, 64 ,
+                &zstore->ssd_allocator_->bs_[bid2[i]]);
+            if (s) {
+                log_err("Too big transaction\n");
+                pmem_transaction_free(zstore->pmem_, tx->pm_tx_);
+                return INVALID_OP;
+            }
+        }
+
+        //
+        uint64_t oe_ofst = zstore->zsb_->pm_otable_ofst + 
+            sizeof(*oe) * oid;
+
+        pmem_transaction_add(zstore->pmem_, tx->pm_tx_, oe_ofst ,
+            oe , sizeof(*oe) , oe );
+    }
+    return 0;
+}
+
+static int _tx_prep_cre_del_common(void *r) 
 {
     struct zstore_context_t *zs = zstore;
     message_t *opr = ostore_rqst(r);
@@ -534,13 +795,14 @@ static int _do_create_delete_common(void *r)
     }
 
     struct zstore_transacion_t *tx = ostore_async_ctx(r);   
+    tx->tx_type_ = TX_WRITE;
     tx->state_ = PM_TX;
     tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
     //1. onode entry
     pmem_transaction_add(zs->pmem_ ,tx->pm_tx_, 
         zs->zsb_->pm_otable_ofst + sizeof(union otable_entry_t)*oid , 
         &zs->otable_[oid],
-        64 , &ote);   
+        sizeof(ote) , &ote);   
     //2. bitmap
     int i ;
     for ( i = 0 ; i < ze_nr ; ++i) {
@@ -551,6 +813,8 @@ static int _do_create_delete_common(void *r)
     }
     return 0;
 }
+
+
 
 static void zstore_tx_prepare(void *request , cb_func_t user_cb,
     struct zstore_transacion_t *tx) 
@@ -568,18 +832,23 @@ static void zstore_tx_prepare(void *request , cb_func_t user_cb,
     tx->bios_ = NULL;
     tx->bio_outstanding_ = 0;
     tx->pm_tx_ = NULL;
-    tx->tx_type_ = 0;
 
     switch (op) {
     case msg_oss_op_create:
-        _do_create_delete_common(request);
+        _tx_prep_cre_del_common(request);
+        assert(tx->state_ == PM_TX);
         break;
     case msg_oss_op_delete:
-        _do_create_delete_common(request);
+        _tx_prep_cre_del_common(request);
+        assert(tx->state_ == PM_TX);
         break;
     case msg_oss_op_read:
+        _tx_prep_rw_common(request);
+        assert(tx->state_ == DATA_IO);
         break;
     case msg_oss_op_write:
+        _tx_prep_rw_common(request);
+        assert(tx->state_ == DATA_IO);
         break;
     default:
         break;
@@ -588,7 +857,6 @@ static void zstore_tx_prepare(void *request , cb_func_t user_cb,
 
     return;
 }
-
 
 static void zstore_tx_enqueue(struct zstore_transacion_t *tx) {
     if(tx->tx_type_ == TX_RDONLY) {
@@ -600,11 +868,9 @@ static void zstore_tx_enqueue(struct zstore_transacion_t *tx) {
     }
 }
 
-
 extern const int zstore_obj_async_op_context_size() {
     return sizeof(struct zstore_transacion_t);
 }
-
 
 extern int zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
     // uint16_t op = message_get_op(request_msg_with_op_context); 
@@ -612,6 +878,7 @@ extern int zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t
     struct zstore_transacion_t *tx = ostore_async_ctx(r);
     zstore_tx_prepare(r, _cb, tx);
     zstore_tx_enqueue(tx);
+    zstore_tx_execute(tx);
     return 0;
 }
 

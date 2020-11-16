@@ -140,7 +140,7 @@ static inline int stupid_alloc_space
             }
         }
     }
-    return -1;
+    return OSTORE_NO_SPACE;
 }
 
 static inline int 
