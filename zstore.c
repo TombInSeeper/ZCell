@@ -747,13 +747,13 @@ _tx_prep_cre_del_common(void *r)
     bool is_create = false;
     if(message_get_op(opr) == msg_oss_op_create) {
         opcr = (void*)opr->meta_buffer;
-        oid = (opcr->oid << 16) >> 16;
+        oid = (opcr->oid);
         is_create = true;
     } else {
         opde = (void*)opr->meta_buffer;
-        oid = (opde->oid << 16) >> 16;
+        oid =  (opde->oid);
+        log_debug("OID=%lu\n",oid);
     }
-    log_debug("OID=%lu\n",oid);
     //Lookup
     union otable_entry_t ote;
     memset(&ote, 0 , sizeof(union otable_entry_t));
