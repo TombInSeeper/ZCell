@@ -425,8 +425,8 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
     struct zstore_context_t *zs = tx->zstore_;
     struct zstore_transacion_t *tx_ctx = tx;
     if(tx_ctx->tx_type_ == TX_RDONLY) {
-            zstore_tx_end(tx_ctx);
-            log_debug("Current tx_rdonly =%u\n",zs->tx_rdonly_outstanding_);
+        zstore_tx_end(tx_ctx);
+        log_debug("Current tx_rdonly =%u\n",zs->tx_rdonly_outstanding_);
     } else if (tx_ctx->tx_type_ == TX_WRITE) {
         tx_ctx ->state_ = PM_TX;
         if(tailq_first(&zs->tx_list_) == tx_ctx) {
@@ -437,7 +437,7 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
                 }
                 if (tx->state_ == PM_TX) {
                     bool s =  pmem_transaction_apply(zs->pmem_ , tx->pm_tx_);
-                    tx->err_ = s ? OSTORE_IO_ERROR : OSTORE_EXECUTE_OK;
+                    tx->err_ = !s ? OSTORE_IO_ERROR : OSTORE_EXECUTE_OK;
 
                     pmem_transaction_free(zs->pmem_, tx->pm_tx_);
 
