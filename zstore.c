@@ -481,7 +481,7 @@ zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg)
     struct zstore_context_t *zs = tx_ctx->zstore_;
     // tailq_remove(&tx_ctx->bio_list_ , zdb , bio_lhook_);
     tx_ctx->bio_outstanding_--;
-    
+    log_debug("Tx=%lu , rest bios=%u \n" , tx_ctx->bio_outstanding_);
     if(tx_ctx->bio_outstanding_ == 0) {
         tx_ctx->state_ = PM_TX;
         if(tx_ctx->bios_) {
