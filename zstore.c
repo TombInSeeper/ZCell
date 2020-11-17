@@ -66,7 +66,7 @@ union otable_entry_t {
         uint64_t mtime;
         uint64_t lsize;
         uint64_t psize;
-        uint32_t rsv;
+        uint32_t rsv2;
         uint32_t data_idx_id;
     };
     uint8_t align[64];
@@ -552,7 +552,7 @@ object_lba_range_get(struct zstore_context_t *zs,
         (((uint64_t)oe->data_idx_id) << ZSTORE_PAGE_SHIFT);
     
     uint32_t dib_[ZSTORE_TX_IOV_MAX];
-    pmem_read(zs->pmem_, dib_ , dib_addr + bofst << 2 , blen << 2);
+    pmem_read(zs->pmem_, dib_ , dib_addr + (bofst << 2) , blen << 2);
     
     object_lba_merge_to(dib_, blen, ext_nr , exts , mapped_blen);
 }
@@ -631,7 +631,8 @@ _tx_prep_rw_common(void *r)  {
     uint32_t bofst = op_ofst >> ZSTORE_PAGE_SHIFT;
     
     //获取合并后的extent
-    object_lba_range_get(zstore, oe , &ne , e , op_ofst , op_len , &mapped_blen);
+    object_lba_range_get(zstore, oe , &ne , 
+        e , &mapped_blen , op_ofst , op_len);
     
     if(1) {
         log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=");

@@ -75,13 +75,13 @@ static inline void dump_bitmap(const char* prefix, uint64_t v) {
     printf("}\n");
 }
 
-static inline void dump_extent(struct zstore_extent_t *ze , uint64_t nr) {
-    size_t i;
-    for ( i = 0 ; i < nr ; ++i) {
-        printf("{%lu,%lu}" , ze[i].lba_, ze[i].len_);
-    }
-    printf("\n");
-}
+// static inline void dump_extent(struct zstore_extent_t *ze , uint64_t nr) {
+//     size_t i;
+//     for ( i = 0 ; i < nr ; ++i) {
+//         printf("{%lu,%lu}" , ze[i].lba_, ze[i].len_);
+//     }
+//     printf("\n");
+// }
 
 static inline int stupid_alloc_space
 (struct stupid_allocator_t *allocator, uint64_t sz , struct zstore_extent_t *ex , uint64_t *ex_nr) {
