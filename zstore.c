@@ -418,7 +418,6 @@ static int
 zstore_tx_end(struct zstore_transacion_t *tx) 
 {
     struct zstore_context_t *zs = zstore;
-    tx->user_cb_(tx->user_cb_arg_ , tx->err_);
     if(tx->tx_type_ == TX_RDONLY) {
         zs->tx_rdonly_outstanding_--;
         tailq_remove(&zs->tx_rdonly_list_ , tx , zstore_tx_lhook_);    
@@ -426,6 +425,7 @@ zstore_tx_end(struct zstore_transacion_t *tx)
         zs->tx_outstanding_--;
         tailq_remove(&zs->tx_list_, tx , zstore_tx_lhook_); 
     }
+    tx->user_cb_(tx->user_cb_arg_ , tx->err_);
     return 0;
 }
 
@@ -436,7 +436,6 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
     struct zstore_transacion_t *tx_ctx = tx;
     if(tx_ctx->tx_type_ == TX_RDONLY) {
         zstore_tx_end(tx_ctx);
-        log_debug("Current tx_rdonly =%u\n",zs->tx_rdonly_outstanding_);
     } else if (tx_ctx->tx_type_ == TX_WRITE) {
         tx_ctx ->state_ = PM_TX;
         if(tailq_first(&zs->tx_list_) == tx_ctx) {
@@ -448,11 +447,8 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
                 if (tx->state_ == PM_TX) {
                     bool s =  pmem_transaction_apply(zs->pmem_ , tx->pm_tx_);
                     tx->err_ = !s ? OSTORE_IO_ERROR : OSTORE_EXECUTE_OK;
-
                     pmem_transaction_free(zs->pmem_, tx->pm_tx_);
-
                     zstore_tx_end(tx);
-                    log_debug("Current tx nr=%u\n",zs->tx_outstanding_);
                 }
             } while (1);
         }
