@@ -705,8 +705,8 @@ _tx_prep_rw_common(void *r)  {
         int i;
         for (i = 0 ; i < enew_nr ; ++i) {
             tx->bios_[i].io_type = IO_WRITE;
-            tx->bios_[i].blk_len = e[i].len_;
-            tx->bios_[i].blk_ofst = e[i].lba_;
+            tx->bios_[i].blk_len = enew[i].len_;
+            tx->bios_[i].blk_ofst = enew[i].lba_;
         }
         tx->bio_outstanding_ = enew_nr;
 
