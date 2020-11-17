@@ -116,7 +116,7 @@ const message_t fake_read_request_msg = {
 
 void *_alloc_op_common(uint16_t op_type, uint64_t actx_sz) {
     // static int seq = 0;
-    void *p = calloc(1, sizeof(message_t) + 128 + actx_sz);
+    void *p = calloc(1, sizeof(message_t) + actx_sz + 128);
     switch (op_type) {
     case msg_oss_op_create:
         memcpy(p, &fake_create_request_msg, sizeof(fake_create_request_msg));
