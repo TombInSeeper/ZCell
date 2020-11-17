@@ -144,7 +144,7 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
     uint32_t i = tx->lh.nr_logs++;    
     tx->le[i].length = len;
     tx->le[i].ofst   = pmem_ofst; 
-    tx->le[i].paddr  = mem_addr; 
+    tx->le[i].paddr  = (const void*)mem_addr; 
 
     memcpy(tx->le[i].value , new_value, len);
     
@@ -190,63 +190,6 @@ extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t
 extern void pmem_transaction_free(struct pmem_t *pmem, union pmem_transaction_t *tx) {
     free(tx);
 }
-
-
-
-
-
-
-// extern void pmem_atomic_multi_update(struct pmem_t *pmem, int cpu, size_t n, struct pmem_update_entry_t *upe) {
-//     size_t i ;    
-//     uint64_t offset_ulog = 4096 + cpu * 4096;
-//     uint64_t offset_ulog_pload = offset_ulog + sizeof(union pm_log_header_t);
-//     uint64_t alen = 0;
-//     union pm_log_header_t *uh = (void*)(pmem->log_prep_region);
-//     struct pm_log_entry_t *ue = (void*)(char *)(uh + 1);
-    
-//     char *ue_start = (void*)ue;
-//     for ( i = 0 ; i < n ; ++i) {
-//         alen += sizeof(struct pm_log_entry_t) + upe[i].len_;
-//         if(alen > 4096 - 64) {
-//             log_err("Transaction is too big:alen=%lu\n", alen);
-//             return;
-//         }
-//         ue->length = upe[i].len_;
-//         ue->ofst = upe[i].offset_;
-//         memcpy(ue->value, upe[i].old_value_, upe[i].len_);       
-//         ue = (void*)((char*)ue + 
-//             sizeof(struct pm_log_entry_t) + ue->length);    
-//     }
-//     alen = (alen + 256 - 1) & (~( 256 - 1));
-//     if (alen > 4096 - 64) {
-//         log_err("Transaction is too big:alen=%lu\n", alen);
-//         return;      
-//     }
-
-//     uh->align_length = alen;
-//     uh->nr_logs = n;
-//     uh->valid = 1;
-    
-//     //Step1. write_flush ulog payload
-//     pmem_write(pmem,1,ue_start,offset_ulog_pload, alen);
-    
-//     //Step2. write_flush ulog header 
-//     pmem_write(pmem,1,uh,offset_ulog,sizeof(*uh));
-    
-//     //Step3. Apply all new update
-//     for( i = 0 ; i < n; ++i) {
-//         pmem_write(pmem, 0 , upe[i].new_value_,upe[i].offset_,upe[i].len_);
-//     }
-//     _mm_sfence();
-
-//     //Step4. 
-
-//     memset(uh,0,sizeof(*uh));
-//     pmem_write(pmem,1,uh,offset_ulog,sizeof(*uh));
-
-//     return;
-// }
-
 
 extern void pmem_close(struct pmem_t *pmem) {
     free(pmem);

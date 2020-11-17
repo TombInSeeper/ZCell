@@ -601,13 +601,13 @@ _tx_prep_rw_common(void *r)  {
     void *data_buf = m->data_buffer;
     if(op  == msg_oss_op_read) {
         op_read_t * op = (void*)(m->meta_buffer);
-        op->oid = op->oid;
+        oid = op->oid;
         op_ofst = op->ofst;
         op_len = op->len;
         op_flags = op->flags;
     } else if ( op == msg_oss_op_write ){
         op_write_t * op = (void*)(m->meta_buffer);
-        op->oid = op->oid;
+        oid = op->oid;
         op_ofst = op->ofst;
         op_len = op->len;
         op_flags = op->flags;    
@@ -615,6 +615,7 @@ _tx_prep_rw_common(void *r)  {
         log_err("Op error\n");
         return UNKOWN_OP;
     }
+
     if(!op_len || op_len % ZSTORE_PAGE_SIZE != 0) {
         return INVALID_OP;
     }
@@ -640,7 +641,7 @@ _tx_prep_rw_common(void *r)  {
         e , &mapped_blen , op_ofst , op_len);
     
     if(1) {
-        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=0x%lx" ,
+        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=0x%x" ,
             tx->tid , oid , op_ofst , op_len , mapped_blen);
         dump_extent(e,ne); 
     }
@@ -670,7 +671,7 @@ _tx_prep_rw_common(void *r)  {
         tx->state_ = DATA_IO;
         
         int bid[ZSTORE_TX_IOV_MAX] , bid2[ZSTORE_TX_IOV_MAX];
-        int nbid , nbid2;
+        int nbid = 0 , nbid2 = 0;
         
         if(ne != 0) {
             log_debug("overwrite\n");
@@ -814,7 +815,8 @@ _tx_prep_cre_del_common(void *r)
 }
 
 
-static void zstore_tx_prepare(void *request , cb_func_t user_cb,
+static void 
+zstore_tx_prepare(void *request , cb_func_t user_cb,
     struct zstore_transacion_t *tx) 
 {
 
@@ -855,7 +857,8 @@ static void zstore_tx_prepare(void *request , cb_func_t user_cb,
     return;
 }
 
-static void zstore_tx_enqueue(struct zstore_transacion_t *tx) {
+static void 
+zstore_tx_enqueue(struct zstore_transacion_t *tx) {
     if(tx->tx_type_ == TX_RDONLY) {
         tailq_insert_tail(&zstore->tx_rdonly_list_ , tx , zstore_tx_lhook_);
         zstore->tx_rdonly_outstanding_++;
@@ -865,11 +868,13 @@ static void zstore_tx_enqueue(struct zstore_transacion_t *tx) {
     }
 }
 
-extern const int zstore_obj_async_op_context_size() {
+extern const int 
+zstore_obj_async_op_context_size() {
     return sizeof(struct zstore_transacion_t);
 }
 
-extern int zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
+extern int 
+zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
     // uint16_t op = message_get_op(request_msg_with_op_context); 
     void *r = request_msg_with_op_context;
     struct zstore_transacion_t *tx = ostore_async_ctx(r);
