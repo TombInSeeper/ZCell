@@ -14,14 +14,11 @@
 
 #include "store_common.h"
 
-
-
 #define ZSTORE_PAGE_SHIFT 12
 #define ZSTORE_PAGE_SIZE  (1UL << ZSTORE_PAGE_SHIFT)
 #define ZSTORE_PAGE_MASK (~(ZSTORE_PAGE_SIZE -1))
 #define ZSTORE_TX_IOV_MAX 32
 #define ZSTORE_IO_UNIT_MAX (128UL * 1024)
-
 #define ZSTORE_MAGIC 0x1997070519980218
 
 #define container_of(ptr,type,member) SPDK_CONTAINEROF(ptr,type,member)
@@ -37,7 +34,6 @@
 #define tailq_remove(head,elem,field) TAILQ_REMOVE(head,elem,field)
 
 #define tailq_first(head) TAILQ_FIRST(head)
-
 
 union zstore_superblock_t {
     struct {
@@ -75,7 +71,6 @@ union otable_entry_t {
     };
     uint8_t align[64];
 };
-
 
 enum IO_TYPE {
     IO_READ = 1,
@@ -151,8 +146,6 @@ static __thread struct zstore_context_t *zstore; //TLS
 
 
 // static int zstore_tx_poll(void *zs_);
-
-
 static int 
 zstore_ctx_init(struct zstore_context_t **zs) 
 {
@@ -182,7 +175,6 @@ zstore_ctx_fini(struct zstore_context_t *zs)
     free(zs->zsb_);
     free(zs);
 }
-
 
 static int 
 zstore_bdev_open(struct zstore_context_t *zs, const char *dev) 
@@ -386,7 +378,6 @@ zstore_unmount() {
     return 0;
 }
 
-
 void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg);
 
 static int
@@ -456,11 +447,8 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
     return 0;
 }
 
-
-
-
-
-static void zstore_tx_execute(struct zstore_transacion_t *tx) {
+static void 
+zstore_tx_execute(struct zstore_transacion_t *tx) {
     switch (tx->state_) {
     case DATA_IO:
         zstore_tx_data_bio(tx);
@@ -474,7 +462,8 @@ static void zstore_tx_execute(struct zstore_transacion_t *tx) {
 
 }
 
-void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) 
+static void 
+zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg) 
 {
     // message_t *m = cb_arg;
     assert (success);
@@ -504,7 +493,8 @@ onode_entry(struct zstore_context_t *zs, uint64_t oid) {
         return NULL;
 }
 
-uint64_t onode_pm_ofst( struct zstore_context_t *zs , uint64_t oid ) {
+uint64_t 
+onode_pm_ofst( struct zstore_context_t *zs , uint64_t oid ) {
     return zstore->zsb_->pm_otable_ofst + oid * sizeof(union otable_entry_t);
 } 
 
@@ -576,29 +566,29 @@ lba_to_bitmap_id(const uint32_t ne , struct zstore_extent_t *e ,  uint32_t *bid 
         int j;
         int in = 0;
         for ( j = 0 ; j < *n ; ++j) {
-            if( (e[i].ofst >> 9) == bid[j]) {
+            if( (e[i].lba_ >> 9) == bid[j]) {
                 in = 1;
                 break;
             }
         }
         if(!in) {
-            bid[*n] = (e[i].ofst>>9);
+            bid[*n] = (e[i].lba_>>9);
             *n = *n + 1;
         }
     }
 
 }
 
-static void dump_extent(uint32_t ne , struct zstore_extent_t *e) {
+static void 
+dump_extent(uint32_t ne , struct zstore_extent_t *e) {
     uint32_t i;
     for (i = 0 ; i < ne ; ++i ) {
         log_debug("[0x%lu~0x%lu]\n", e[i].lba_ << 12 , e[i].len_ << 12);        
     }
 }
 
-
-
-static int _tx_prep_rw_common(void *r)  {
+static int
+_tx_prep_rw_common(void *r)  {
     uint16_t op = message_get_op(r);
     message_t *m = (message_t*)r;
     struct zstore_transacion_t *tx = ostore_async_ctx(r);   
@@ -739,7 +729,8 @@ static int _tx_prep_rw_common(void *r)  {
     return 0;
 }
 
-static int _tx_prep_cre_del_common(void *r) 
+static int 
+_tx_prep_cre_del_common(void *r) 
 {
     struct zstore_context_t *zs = zstore;
     message_t *opr = ostore_rqst(r);
@@ -815,7 +806,6 @@ static int _tx_prep_cre_del_common(void *r)
 }
 
 
-
 static void zstore_tx_prepare(void *request , cb_func_t user_cb,
     struct zstore_transacion_t *tx) 
 {
@@ -853,8 +843,6 @@ static void zstore_tx_prepare(void *request , cb_func_t user_cb,
     default:
         break;
     }
-
-
     return;
 }
 
