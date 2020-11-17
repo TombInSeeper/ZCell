@@ -753,7 +753,7 @@ _tx_prep_cre_del_common(void *r)
         opde = (void*)opr->meta_buffer;
         oid = (opde->oid << 16) >> 16;
     }
-    
+    log_debug("OID=%lu\n",oid);
     //Lookup
     union otable_entry_t ote;
     memset(&ote, 0 , sizeof(union otable_entry_t));
