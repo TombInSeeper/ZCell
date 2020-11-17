@@ -378,7 +378,7 @@ zstore_unmount() {
     return 0;
 }
 
-void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg);
+static void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg);
 
 static int
 zstore_tx_data_bio(struct zstore_transacion_t *tx) 
@@ -798,8 +798,9 @@ _tx_prep_cre_del_common(void *r)
     int i ;
     for ( i = 0 ; i < ze_nr ; ++i) {
         pmem_transaction_add(zs->pmem_ , tx->pm_tx_ ,          
-            zs->zsb_->pm_dy_bitmap_ofst + sizeof(struct stupid_bitmap_entry_t)* (ze[i].lba_ >> 9) , 64 ,
+            zs->zsb_->pm_dy_bitmap_ofst + sizeof(struct stupid_bitmap_entry_t)* (ze[i].lba_ >> 9) , 
             NULL,
+            sizeof(struct stupid_bitmap_entry_t),
             &(zs->pm_allocator_->bs_[(ze[i].lba_ >> 9)]));    
     }
     return 0;
