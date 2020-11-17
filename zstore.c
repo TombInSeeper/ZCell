@@ -425,6 +425,7 @@ zstore_tx_end(struct zstore_transacion_t *tx)
         zs->tx_outstanding_--;
         tailq_remove(&zs->tx_list_, tx , zstore_tx_lhook_); 
     }
+    log_debug("Tx=%lu End\n",tx->tid);
     tx->user_cb_(tx->user_cb_arg_ , tx->err_);
     return 0;
 }
@@ -434,6 +435,7 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
 {   
     struct zstore_context_t *zs = tx->zstore_;
     struct zstore_transacion_t *tx_ctx = tx;
+    assert(tx->bio_outstanding_ == 0);
     if(tx_ctx->tx_type_ == TX_RDONLY) {
         zstore_tx_end(tx_ctx);
     } else if (tx_ctx->tx_type_ == TX_WRITE) {
@@ -453,8 +455,6 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
             } while (1);
         }
     };
-    assert(tx->bio_outstanding_ == 0);
-
     return 0;
 }
 
