@@ -134,6 +134,8 @@ struct zstore_context_t {
     //onode table
     union otable_entry_t *otable_;
 
+    uint64_t tid_max;
+
     //Transaction 
     uint32_t tx_outstanding_;
     tailq_head(zstore_tx_list_t , zstore_transacion_t) tx_list_;
@@ -147,6 +149,7 @@ static __thread struct zstore_context_t *zstore; //TLS
 
 // static int zstore_tx_poll(void *zs_);
 static int 
+
 zstore_ctx_init(struct zstore_context_t **zs) 
 {
     *zs = calloc(1, sizeof(**zs));
@@ -399,6 +402,7 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
     }
     return 0;
 }
+
 static int 
 zstore_tx_end(struct zstore_transacion_t *tx) 
 {
@@ -635,7 +639,8 @@ _tx_prep_rw_common(void *r)  {
         e , &mapped_blen , op_ofst , op_len);
     
     if(1) {
-        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=");
+        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=" ,
+            tx->tid , oid , op_ofst , op_len , mapped_blen);
         dump_extent(e,ne); 
     }
 
@@ -824,6 +829,7 @@ static void zstore_tx_prepare(void *request , cb_func_t user_cb,
     tx->bios_ = NULL;
     tx->bio_outstanding_ = 0;
     tx->pm_tx_ = NULL;
+    tx->tid = zstore->
 
     switch (op) {
     case msg_oss_op_create:
