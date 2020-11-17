@@ -454,6 +454,7 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
 
 static void 
 zstore_tx_execute(struct zstore_transacion_t *tx) {
+    log_debug("TX=%lu exectute\n" , tx->tid);
     switch (tx->state_) {
     case DATA_IO:
         zstore_tx_data_bio(tx);
@@ -747,13 +748,14 @@ _tx_prep_cre_del_common(void *r)
     bool is_create = false;
     if(message_get_op(opr) == msg_oss_op_create) {
         opcr = (void*)opr->meta_buffer;
-        oid = (opcr->oid);
+        oid = (opcr->oid) << 16 >> 16;
         is_create = true;
     } else {
         opde = (void*)opr->meta_buffer;
-        oid =  (opde->oid);
-        log_debug("OID=%lu\n",oid);
+        oid =  (opde->oid) << 16 >> 16;
     }
+    log_debug("OID=%lu\n",oid);
+
     //Lookup
     union otable_entry_t ote;
     memset(&ote, 0 , sizeof(union otable_entry_t));
@@ -859,6 +861,8 @@ zstore_tx_prepare(void *request , cb_func_t user_cb,
 
 static void 
 zstore_tx_enqueue(struct zstore_transacion_t *tx) {
+    
+    log_debug("TX=%lu enqueue\n" , tx->tid);
     if(tx->tx_type_ == TX_RDONLY) {
         tailq_insert_tail(&zstore->tx_rdonly_list_ , tx , zstore_tx_lhook_);
         zstore->tx_rdonly_outstanding_++;

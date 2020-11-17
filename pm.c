@@ -133,9 +133,7 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
     uint32_t log_len = sizeof(struct pm_log_entry_t) + len;
     uint32_t alen = tx->lh.align_length;
     uint32_t tlen = sizeof(union pm_log_header_t) + alen + log_len;
-    
-    tlen = FLOOR_ALIGN(tlen , 256);
-    
+        
     if(tlen > PM_LOG_REGION_SIZE) {
         log_err("Cannot add more log into this Transaction\n");
         return false;
@@ -149,12 +147,14 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
     memcpy(tx->le[i].value , new_value, len);
     
     tx->lh.align_length = tlen;
-    log_debug("Transaction length update to %u\n" , tlen);
 
     return true;
 }
 
 extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t *tx) {
+
+    tx->lh.align_length = FLOOR_ALIGN(tx->lh.align_length , 256);
+    log_debug("Transaction length update to %u\n" , tx->lh.align_length );
 
     //Step1. 
     //.....
