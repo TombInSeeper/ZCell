@@ -87,6 +87,7 @@ enum zstore_tx_state {
     PREPARE ,
     DATA_IO ,
     PM_TX,
+    END,
 };
 enum zstore_tx_type {
     TX_RDONLY = 1,
@@ -464,18 +465,18 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
 static void 
 zstore_tx_execute(struct zstore_transacion_t *tx) {
     switch (tx->state_) {
-    case DATA_IO:
-        log_debug("TX=%lu execute data IO\n" , tx->tid);
-        zstore_tx_data_bio(tx);
-        break;
-    case PM_TX:
-        log_debug("TX=%lu execute meta tx\n" , tx->tid);
-        zstore_tx_metadata(tx);
-        break;
-    default:
-        break;
+        int state;
+        case DATA_IO:
+            log_debug("TX=%lu execute data IO\n" , tx->tid);
+            zstore_tx_data_bio(tx);
+            break;
+        case PM_TX:
+            log_debug("TX=%lu execute meta tx and end life\n" , tx->tid);
+            zstore_tx_metadata(tx);
+            break;
+        default:
+            break;
     }
-
 }
 
 static void 
