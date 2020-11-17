@@ -394,7 +394,7 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
     char *buf = tx->data_buffer;
     for ( i = 0 ; i < n ; ++i) {
         int rc;
-        log_debug("Tx=%lu, bio[%u]={%u,%u}", tx->tid, i,
+        log_debug("Tx=%lu, bio[%u]={%u,%u}\n", tx->tid, i,
             tx->bios_[i].blk_ofst , tx->bios_[i].blk_len);
         if(tx->bios_[i].io_type == IO_READ) {
             rc = spdk_bdev_read_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
@@ -463,12 +463,13 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
 
 static void 
 zstore_tx_execute(struct zstore_transacion_t *tx) {
-    log_debug("TX=%lu exectute\n" , tx->tid);
     switch (tx->state_) {
     case DATA_IO:
+        log_debug("TX=%lu execute data IO\n" , tx->tid);
         zstore_tx_data_bio(tx);
         break;
     case PM_TX:
+        log_debug("TX=%lu execute meta tx\n" , tx->tid);
         zstore_tx_metadata(tx);
         break;
     default:
