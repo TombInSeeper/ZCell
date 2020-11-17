@@ -183,76 +183,97 @@ void _sys_fini() {
 }
 
 
-void _dump_perf() {
-    double time = g_end_us - g_start_us; 
-    double qps = (g_nr_ops / time) * 1e3;
-    SPDK_NOTICELOG("qps=%lf K/s \n" , qps);
-    SPDK_NOTICELOG("avg_lat= %lf us \n" , time / g_nr_ops);
-}
+// void _dump_perf() {
+//     double time = g_end_us - g_start_us; 
+//     double qps = (g_nr_ops / time) * 1e3;
+//     SPDK_NOTICELOG("qps=%lf K/s \n" , qps);
+//     SPDK_NOTICELOG("avg_lat= %lf us \n" , time / g_nr_ops);
+// }
 
-void _write_complete(void *ctx, int sts) {
-    if(sts) {
-        assert("status code error\n" == NULL);
-    }
-    _free_write_op(ctx);
-    g_nr_cpl++;
-    if(g_nr_cpl == g_nr_submit) {
-        g_end_us = now();
-        _dump_perf();
-        _sys_fini();
-    } else if (g_nr_submit < g_nr_ops){
-       void *op = _alloc_write_op();
-       int rc = os->obj_async_op_call(op, _write_complete);
-       if(rc) {
-            assert("submit error\n" == NULL);
-       }
-       g_nr_submit++;
-    } else {
+// void _write_complete(void *ctx, int sts) {
+//     if(sts) {
+//         assert("status code error\n" == NULL);
+//     }
+//     _free_write_op(ctx);
+//     g_nr_cpl++;
+//     if(g_nr_cpl == g_nr_submit) {
+//         g_end_us = now();
+//         _dump_perf();
+//         _sys_fini();
+//     } else if (g_nr_submit < g_nr_ops){
+//        void *op = _alloc_write_op();
+//        int rc = os->obj_async_op_call(op, _write_complete);
+//        if(rc) {
+//             assert("submit error\n" == NULL);
+//        }
+//        g_nr_submit++;
+//     } else {
 
-    }
-}
-
-
-void _do_write_test( void* ctx , int st) {
-    (void)ctx;
-    (void)st;
-    int dp = g_qd;
-    g_start_us = now();
-    while (dp--) {
-        void *op = _alloc_write_op();
-        if(os->obj_async_op_call(op, _write_complete)) {
-            assert("submit error\n" == NULL);
-        }
-        g_nr_submit++;
-    }
-}
+//     }
+// }
 
 
-void _stat_cb( void* rqst ,int st) {
-    message_t *m = rqst;
-    op_stat_result_t *rst = (void*)(m->meta_buffer);    
-    SPDK_NOTICELOG("ostore state:max_oid=%u ,cap_gb=%u G ,obj_sz=%u K ,obj_blksz=%u K\n",
-        rst->max_oid ,rst->capcity_gib, rst->max_obj_size_kib, rst->obj_blk_sz_kib);
-    g_max_oid = rst->max_oid;
-    free(rqst);
-    // _sys_fini();
+// void _do_write_test( void* ctx , int st) {
+//     (void)ctx;
+//     (void)st;
+//     int dp = g_qd;
+//     g_start_us = now();
+//     while (dp--) {
+//         void *op = _alloc_write_op();
+//         if(os->obj_async_op_call(op, _write_complete)) {
+//             assert("submit error\n" == NULL);
+//         }
+//         g_nr_submit++;
+//     }
+// }
 
-    _do_write_test(NULL,0);
-}
+
+// void _stat_cb( void* rqst ,int st) {
+//     message_t *m = rqst;
+//     op_stat_result_t *rst = (void*)(m->meta_buffer);    
+//     SPDK_NOTICELOG("ostore state:max_oid=%u ,cap_gb=%u G ,obj_sz=%u K ,obj_blksz=%u K\n",
+//         rst->max_oid ,rst->capcity_gib, rst->max_obj_size_kib, rst->obj_blk_sz_kib);
+//     g_max_oid = rst->max_oid;
+//     free(rqst);
+//     // _sys_fini();
+
+//     _do_write_test(NULL,0);
+// }
 
 
-void _unit_test_done(void * r , int status) {
+void _write_test_done(void * r , int status) {
     assert(status == 0);
     _free_op_common(r);
     
-    _sys_fini();
+   _sys_fini();
 }
 
-void _do_uint_test() {
+void _do_write_test() {
+    void *op = _alloc_op_common(msg_oss_op_write, os->obj_async_op_context_size());    
+    op_write_t *opc = ((message_t *)(op))->meta_buffer;
+    opc->oid = 0x1;
+    opc->ofst = 0x0;
+    opc->flags = 0;
+    opc->len = 0x1000;
+    
+    message_t *m = op;
+    m->data_buffer = wbuf;
+    strcpy(wbuf , "123456789");  
+    os->obj_async_op_call(op, _write_test_done);
+}
+
+void _create_test_done(void * r , int status) {
+    assert(status == 0);
+    _free_op_common(r);
+    
+   _do_write_test();
+}
+
+void _do_create_test() {
     void *op = _alloc_op_common(msg_oss_op_create, os->obj_async_op_context_size());    
     op_create_t *opc = ((message_t *)(op))->meta_buffer;
     opc->oid = 0x1;
-    os->obj_async_op_call(op, _unit_test_done);
+    os->obj_async_op_call(op, _create_test_done);
 }
 
 void _sys_init(void *arg) {
@@ -277,8 +298,7 @@ void _sys_init(void *arg) {
     e = now();
     log_info("mount time %lu us \n" , (e - s));
     
-
-    _do_uint_test();
+    _do_create_test();
 
 }
 
