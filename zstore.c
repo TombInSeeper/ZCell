@@ -797,10 +797,10 @@ _tx_prep_cre_del_common(void *r)
     //2. bitmap
     int i ;
     for ( i = 0 ; i < ze_nr ; ++i) {
-        pmem_transaction_add(zs->pmem_ , tx->pm_tx_ ,
+        pmem_transaction_add(zs->pmem_ , tx->pm_tx_ ,          
             zs->zsb_->pm_dy_bitmap_ofst + sizeof(struct stupid_bitmap_entry_t)* (ze[i].lba_ >> 9) , 64 ,
             NULL,
-            &zs->pm_allocator_->bs_[(ze[i].lba_ >> 9)]);    
+            &(zs->pm_allocator_->bs_[(ze[i].lba_ >> 9)]));    
     }
     return 0;
 }
