@@ -558,7 +558,7 @@ object_lba_range_get(struct zstore_context_t *zs,
 }
 
 static void 
-lba_to_bitmap_id(const uint32_t ne , struct zstore_extent_t *e ,  uint32_t *bid , uint32_t *n )
+lba_to_bitmap_id(const uint32_t ne , struct zstore_extent_t *e ,  int *bid , int *n )
 {
     int i;
     *n = 0;
