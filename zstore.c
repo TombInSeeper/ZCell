@@ -382,7 +382,8 @@ zstore_unmount() {
     return 0;
 }
 
-static void zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg);
+static void 
+zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg);
 
 static int
 zstore_tx_data_bio(struct zstore_transacion_t *tx) 
@@ -390,14 +391,15 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
     struct zstore_context_t *zs = tx->zstore_;
     uint32_t i;
     uint32_t n = tx->bio_outstanding_;
-    log_debug("Tx=%lu ,prepare %u bios\n",tx->tid , n);
+    log_debug("Tx=%lu ,submit %u bios\n",tx->tid , n);
     char *buf = tx->data_buffer;
     for ( i = 0 ; i < n ; ++i) {
+        int rc;
         if(tx->bios_[i].io_type == IO_READ)
-            spdk_bdev_read_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
+            rc = spdk_bdev_read_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
                 buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);
         else {
-            spdk_bdev_write_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
+            rc = spdk_bdev_write_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
                 buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);
         }
         buf += ((uint64_t)(tx->bios_[i].blk_len)) << ZSTORE_PAGE_SHIFT;
@@ -660,6 +662,7 @@ _tx_prep_rw_common(void *r)  {
         tx->state_ = DATA_IO;
         tx->bios_ = malloc(sizeof(*tx->bios_) * ne);
         for (i = 0 ; i < ne ; ++i) {
+            tx->bios_[i].io_type = IO_READ;
             tx->bios_[i].blk_len = e[i].len_;
             tx->bios_[i].blk_ofst = e[i].lba_;
         }
@@ -695,6 +698,7 @@ _tx_prep_rw_common(void *r)  {
         tx->bios_ = malloc(sizeof(*tx->bios_) * enew_nr);
         int i;
         for (i = 0 ; i < enew_nr ; ++i) {
+            tx->bios_[i].io_type = IO_WRITE;
             tx->bios_[i].blk_len = e[i].len_;
             tx->bios_[i].blk_ofst = e[i].lba_;
         }
