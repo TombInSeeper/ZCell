@@ -672,7 +672,7 @@ _tx_prep_rw_common(void *r)  {
         }
         
         struct zstore_extent_t enew[ZSTORE_TX_IOV_MAX];
-        uint32_t enew_nr;
+        uint64_t enew_nr;
         int rc = stupid_alloc_space(zstore->ssd_allocator_ , blen , enew , &enew_nr );
         dump_extent(enew,enew_nr); 
         
