@@ -691,7 +691,6 @@ _tx_prep_rw_common(void *r)  {
         tx->bio_outstanding_ = enew_nr;
 
         tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
-        int i;
         bool s;
         //保存SSD Bitmap 的新值
         for ( i = 0 ; i < nbid ; ++i) {
