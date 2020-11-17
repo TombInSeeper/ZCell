@@ -134,7 +134,7 @@ void *_alloc_op_common(uint16_t op_type, uint64_t actx_sz) {
         break;
     }
     message_t *m = p;
-    m->meta_buffer = (char*)(p + sizeof(message_t));
+    m->meta_buffer = (char*)(p + sizeof(message_t) + actx_sz);
     return p;
 
 }
