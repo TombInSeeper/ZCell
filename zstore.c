@@ -391,18 +391,23 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
     struct zstore_context_t *zs = tx->zstore_;
     uint32_t i;
     uint32_t n = tx->bio_outstanding_;
-    log_debug("Tx=%lu ,submit %u bios\n",tx->tid , n);
     char *buf = tx->data_buffer;
     for ( i = 0 ; i < n ; ++i) {
         int rc;
-        if(tx->bios_[i].io_type == IO_READ)
+        if(tx->bios_[i].io_type == IO_READ) {
+
             rc = spdk_bdev_read_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
-                buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);
+            buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);       
+        }
         else {
             rc = spdk_bdev_write_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
                 buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);
         }
-        buf += ((uint64_t)(tx->bios_[i].blk_len)) << ZSTORE_PAGE_SHIFT;
+        if(rc) {
+            log_err("Submit error\n");
+            return OSTORE_IO_ERROR;
+        }
+        buf += ((uint64_t)(tx->bios_[i].blk_len) << ZSTORE_PAGE_SHIFT);
     }
     return 0;
 }
