@@ -390,6 +390,7 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
     struct zstore_context_t *zs = tx->zstore_;
     uint32_t i;
     uint32_t n = tx->bio_outstanding_;
+    log_debug("Tx=%lu ,prepare %u bios\n",tx->tid , n);
     char *buf = tx->data_buffer;
     for ( i = 0 ; i < n ; ++i) {
         if(tx->bios_[i].io_type == IO_READ)
