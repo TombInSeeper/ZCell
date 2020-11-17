@@ -259,7 +259,10 @@ void _do_write_test() {
     message_t *m = op;
     m->data_buffer = wbuf;
     strcpy(wbuf , "123456789");  
-    os->obj_async_op_call(op, _write_test_done);
+    int rc = os->obj_async_op_call(op, _write_test_done);
+    if(rc) {
+        _sys_fini();
+    }
 }
 
 void _create_test_done(void * r , int status) {
@@ -273,7 +276,10 @@ void _do_create_test() {
     void *op = _alloc_op_common(msg_oss_op_create, os->obj_async_op_context_size());    
     op_create_t *opc = ((message_t *)(op))->meta_buffer;
     opc->oid = 0x1;
-    os->obj_async_op_call(op, _create_test_done);
+    int rc = os->obj_async_op_call(op, _create_test_done);
+    if(rc) {
+        _sys_fini();
+    }
 }
 
 void _sys_init(void *arg) {

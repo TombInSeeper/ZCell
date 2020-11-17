@@ -642,7 +642,7 @@ _tx_prep_rw_common(void *r)  {
         e , &mapped_blen , op_ofst , op_len);
     
     if(1) {
-        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=0x%x" ,
+        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=0x%x\n" ,
             tx->tid , oid , op_ofst , op_len , mapped_blen);
         dump_extent(e,ne); 
     }
@@ -708,7 +708,7 @@ _tx_prep_rw_common(void *r)  {
             // log_debug("Add tx log entry: base_ofst:%lu, ")
             s = pmem_transaction_add(zstore->pmem_,tx->pm_tx_, pm_ofst , NULL, 64 ,
                 &zstore->ssd_allocator_->bs_[bid[i]]);
-            if (s) {
+            if (!s) {
                 log_err("Too big transaction\n");
                 // pmem_transaction_free(tx->pm_tx_);
                 pmem_transaction_free(zstore->pmem_, tx->pm_tx_);
@@ -720,7 +720,7 @@ _tx_prep_rw_common(void *r)  {
                 bid2[i] * sizeof(struct stupid_bitmap_entry_t);
             s = pmem_transaction_add(zstore->pmem_,tx->pm_tx_, pm_ofst , NULL, 64 ,
                 &zstore->ssd_allocator_->bs_[bid2[i]]);
-            if (s) {
+            if (!s) {
                 log_err("Too big transaction\n");
                 pmem_transaction_free(zstore->pmem_, tx->pm_tx_);
                 return INVALID_OP;
@@ -817,7 +817,7 @@ _tx_prep_cre_del_common(void *r)
 }
 
 
-static void 
+static int 
 zstore_tx_prepare(void *request , cb_func_t user_cb,
     struct zstore_transacion_t *tx) 
 {
@@ -835,28 +835,28 @@ zstore_tx_prepare(void *request , cb_func_t user_cb,
     tx->bio_outstanding_ = 0;
     tx->pm_tx_ = NULL;
     tx->tid = zstore->tid_max_++;
-
+    int rc;
     switch (op) {
     case msg_oss_op_create:
-        _tx_prep_cre_del_common(request);
+        rc = _tx_prep_cre_del_common(request);
         assert(tx->state_ == PM_TX);
         break;
     case msg_oss_op_delete:
-        _tx_prep_cre_del_common(request);
+        rc =_tx_prep_cre_del_common(request);
         assert(tx->state_ == PM_TX);
         break;
     case msg_oss_op_read:
-        _tx_prep_rw_common(request);
+        rc = _tx_prep_rw_common(request);
         assert(tx->state_ == DATA_IO);
         break;
     case msg_oss_op_write:
-        _tx_prep_rw_common(request);
+        rc =_tx_prep_rw_common(request);
         assert(tx->state_ == DATA_IO);
         break;
     default:
         break;
     }
-    return;
+    return rc;
 }
 
 static void 
@@ -882,7 +882,10 @@ zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
     // uint16_t op = message_get_op(request_msg_with_op_context); 
     void *r = request_msg_with_op_context;
     struct zstore_transacion_t *tx = ostore_async_ctx(r);
-    zstore_tx_prepare(r, _cb, tx);
+    int rc = zstore_tx_prepare(r, _cb, tx);
+    if(rc) {
+        return INVALID_OP;
+    }
     zstore_tx_enqueue(tx);
     zstore_tx_execute(tx);
     return 0;
