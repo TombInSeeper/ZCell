@@ -134,7 +134,7 @@ struct zstore_context_t {
     //onode table
     union otable_entry_t *otable_;
 
-    uint64_t tid_max;
+    uint64_t tid_max_;
 
     //Transaction 
     uint32_t tx_outstanding_;
@@ -149,7 +149,6 @@ static __thread struct zstore_context_t *zstore; //TLS
 
 // static int zstore_tx_poll(void *zs_);
 static int 
-
 zstore_ctx_init(struct zstore_context_t **zs) 
 {
     *zs = calloc(1, sizeof(**zs));
@@ -164,6 +163,8 @@ zstore_ctx_init(struct zstore_context_t **zs)
     zs_->pm_allocator_ = calloc(1, sizeof(*zs_->pm_allocator_));
 
     zs_->otable_ = calloc( 1UL << 20U, sizeof(union otable_entry_t));
+
+    zs_->tid_max_ = 0;
 
     //Others
     return 0;
@@ -584,10 +585,10 @@ lba_to_bitmap_id(const uint32_t ne , struct zstore_extent_t *e ,  int *bid , int
 }
 
 static void 
-dump_extent(uint32_t ne , struct zstore_extent_t *e) {
+dump_extent(struct zstore_extent_t *e , uint32_t ne) {
     uint32_t i;
     for (i = 0 ; i < ne ; ++i ) {
-        log_debug("[0x%lu~0x%lu]\n", e[i].lba_ << 12 , e[i].len_ << 12);        
+        log_debug("[0x%lu~0x%lu]\n", e[i].lba_ , e[i].len_ );        
     }
 }
 
@@ -639,7 +640,7 @@ _tx_prep_rw_common(void *r)  {
         e , &mapped_blen , op_ofst , op_len);
     
     if(1) {
-        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=" ,
+        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=0x%lx" ,
             tx->tid , oid , op_ofst , op_len , mapped_blen);
         dump_extent(e,ne); 
     }
@@ -829,7 +830,7 @@ static void zstore_tx_prepare(void *request , cb_func_t user_cb,
     tx->bios_ = NULL;
     tx->bio_outstanding_ = 0;
     tx->pm_tx_ = NULL;
-    tx->tid = zstore->
+    tx->tid = zstore->tid_max_++;
 
     switch (op) {
     case msg_oss_op_create:
