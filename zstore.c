@@ -747,7 +747,8 @@ _tx_prep_cre_del_common(void *r)
     }
     
     //Lookup
-    union otable_entry_t ote = {0};
+    union otable_entry_t ote;
+    memset(&ote, 0 , sizeof(union otable_entry_t));
     struct zstore_extent_t ze[1];
     uint64_t ze_nr = 0;
     int rc;
