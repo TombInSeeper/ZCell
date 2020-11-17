@@ -394,8 +394,9 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
     char *buf = tx->data_buffer;
     for ( i = 0 ; i < n ; ++i) {
         int rc;
+        log_debug("Tx=%lu, bio[%u]={%u,%u}", tx->tid,
+            tx->bios_[i].blk_ofst , tx->bios_[i].blk_len);
         if(tx->bios_[i].io_type == IO_READ) {
-
             rc = spdk_bdev_read_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
             buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);       
         }
