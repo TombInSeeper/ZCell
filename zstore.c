@@ -30,9 +30,7 @@
 #define tailq_init(head) TAILQ_INIT(head)
 //head：queue head, elem: ptr to elem, filed：hook of list
 #define tailq_insert_tail(head,elem,field) TAILQ_INSERT_TAIL(head,elem,field)
-
 #define tailq_remove(head,elem,field) TAILQ_REMOVE(head,elem,field)
-
 #define tailq_first(head) TAILQ_FIRST(head)
 
 union zstore_superblock_t {
@@ -146,7 +144,6 @@ struct zstore_context_t {
 };
 
 static __thread struct zstore_context_t *zstore; //TLS 
-
 
 // static int zstore_tx_poll(void *zs_);
 static int 
@@ -824,7 +821,6 @@ _tx_prep_cre_del_common(void *r)
     }
     return 0;
 }
-
 
 static int 
 zstore_tx_prepare(void *request , cb_func_t user_cb,
