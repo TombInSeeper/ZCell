@@ -6,7 +6,6 @@
 #include "spdk/env.h"
 #include "message.h"
 #include "operation.h"
-#include "util/errcode.h"
 
 #define ostore_rqst(req) ((void*)(req))
 #define ostore_async_ctx(req) ((void*)( (char*)((req)) + sizeof(message_t)))

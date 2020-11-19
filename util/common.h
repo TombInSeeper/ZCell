@@ -8,7 +8,6 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#include "./errcode.h"
 
 
 /**

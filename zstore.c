@@ -12,6 +12,7 @@
 #include "store_common.h"
 
 #include "util/log.h"
+#include "util/errcode.h"
 
 
 #define ZSTORE_PAGE_SHIFT 12

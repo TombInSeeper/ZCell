@@ -7,10 +7,10 @@
 
 #include "util/log.h"
 #include "util/fixed_cache.h"
+#include "util/errcode.h"
 
 #include "messager.h"
 #include "objectstore.h"
-#include "operation.h"
 
 
 #define NR_REACTOR_MAX 256
@@ -175,7 +175,7 @@ static inline void _response_broken_op(message_t *request, uint16_t status_code)
 
 //Operation handle
 static void _do_op_unknown(message_t *request) {
-    _response_broken_op(request, UNKOWN_OP);
+    _response_broken_op(request, UNKNOWN_OP);
 }
 
 static void oss_op_cb(void *ctx, int status_code) {
