@@ -840,7 +840,7 @@ zstore_tx_prepare(void *request , cb_func_t user_cb,
     tx->bio_outstanding_ = 0;
     tx->pm_tx_ = NULL;
     tx->tid = zstore->tid_max_++;
-    int rc;
+    int rc = 0;
     switch (op) {
     case msg_oss_op_create:
         rc = _tx_prep_cre_del_common(request);
@@ -859,6 +859,7 @@ zstore_tx_prepare(void *request , cb_func_t user_cb,
         assert(tx->state_ == DATA_IO);
         break;
     default:
+        rc = UNKOWN_OP;
         break;
     }
     return rc;
