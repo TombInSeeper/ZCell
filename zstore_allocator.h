@@ -2,6 +2,8 @@
 #define ZSTORE_ALLOCATOR_H
 
 #include "util/common.h"
+#include "util/errcode.h"
+
 #include <malloc.h>
 
 struct zstore_extent_t {
