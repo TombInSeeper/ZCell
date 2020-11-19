@@ -564,6 +564,14 @@ object_lba_range_get(struct zstore_context_t *zs,
     uint32_t dib_[ZSTORE_TX_IOV_MAX];
     pmem_read(zs->pmem_, dib_ , dib_addr + (bofst << 2) , blen << 2);
     
+    if(1) {
+        int i;
+        log_debug("DataIndex of object(0x%lu)(0x%lx~0x%lx):" , oe->oid , bofst , blen);
+        for ( i = 0 ; i < blen; ++i) {
+            log_debug("0x%lx," dib_[i]);
+        };
+    }
+
     object_lba_merge_to(dib_, blen, ext_nr , exts , mapped_blen);
 }
 
@@ -653,14 +661,14 @@ _tx_prep_rw_common(void *r)  {
 
 
     tx->data_buffer = data_buf;
+    
     if(op == msg_oss_op_read) {
-
-        if(ne == 0 || blen != mapped_blen) {
-            return OSTORE_READ_HOLE; 
-        }
         uint32_t i;
         tx->tx_type_ = TX_RDONLY;
         tx->state_ = DATA_IO;
+        if(ne == 0 || blen != mapped_blen) {
+            return OSTORE_READ_HOLE; 
+        }
         tx->bios_ = malloc(sizeof(*tx->bios_) * ne);
         for (i = 0 ; i < ne ; ++i) {
             tx->bios_[i].io_type = IO_READ;
