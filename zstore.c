@@ -618,7 +618,7 @@ _tx_prep_rw_common(void *r)  {
         op_flags = op->flags;    
     } else {
         log_err("Op error\n");
-        return UNKOWN_OP;
+        return UNKNOWN_OP;
     }
 
     if(!op_len || op_len % ZSTORE_PAGE_SIZE != 0) {
@@ -859,7 +859,7 @@ zstore_tx_prepare(void *request , cb_func_t user_cb,
         assert(tx->state_ == DATA_IO);
         break;
     default:
-        rc = UNKOWN_OP;
+        rc = UNKNOWN_OP;
         break;
     }
     return rc;
