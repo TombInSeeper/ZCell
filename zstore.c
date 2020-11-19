@@ -566,10 +566,11 @@ object_lba_range_get(struct zstore_context_t *zs,
     
     if(1) {
         int i;
-        log_debug("DataIndex of object(0x%lu)(0x%lx~0x%lx):" , oe->oid , bofst , blen);
-        for ( i = 0 ; i < blen; ++i) {
-            log_debug("0x%lx," dib_[i]);
-        };
+        log_debug("DataIndex of object 0x%lu [0x%lx~0x%lx]:" , oe->oid , bofst , blen);
+        for (i = 0 ; i < blen;  ++i) {
+            log_debug("0x%x,", dib_[i]);
+        }
+        
     }
 
     object_lba_merge_to(dib_, blen, ext_nr , exts , mapped_blen);
