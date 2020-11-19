@@ -67,6 +67,8 @@ typedef struct message_t {
 #define message_get_meta_len(m) (le16_to_cpu((((message_t*)(m))->header.meta_length)))
 #define message_get_data_len(m) (le32_to_cpu((((message_t*)(m))->header.data_length)))
 #define message_get_rsv(m,i) (le32_to_cpu((((message_t*)(m))->header.rsv[(i)])))
+#define message_get_meta_buffer(m) ((void*)((((message_t*)(m))->meta_buffer)))
+#define message_get_data_buffer(m) ((void*)((((message_t*)(m))->data_buffer)))
 
 
 
