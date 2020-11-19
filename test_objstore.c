@@ -239,15 +239,55 @@ void _sys_fini() {
 
 //     _do_write_test(NULL,0);
 // }
+void _delete_test_done(void * r , int status) {
+    assert(status == 0);
+    _free_op_common(r);
 
+    _sys_fini();    
+}
+
+void _do_delete_test() {
+    void *op = _alloc_op_common(msg_oss_op_delete, os->obj_async_op_context_size());    
+    op_delete_t *opc = ((message_t *)(op))->meta_buffer;
+    opc->oid = 0x1;
+    int rc = os->obj_async_op_call(op, _delete_test_done);
+    if(rc) {
+        _sys_fini();
+    }
+}
+
+
+void _read_test_done(void * r , int status) {
+    assert(status == 0);
+    _free_op_common(r);
+    
+    assert(!strcmp(rbuf,"123456789"));
+
+    _do_delete_test();
+}
+
+void _do_read_test() {
+    void *op = _alloc_op_common(msg_oss_op_read, os->obj_async_op_context_size());    
+    op_read_t *opc = ((message_t *)(op))->meta_buffer;
+    opc->oid = 0x1;
+    opc->ofst = 0x0;
+    opc->flags = 0;
+    opc->len = 0x1000;
+    
+    message_t *m = op;
+    m->data_buffer = rbuf;
+    int rc = os->obj_async_op_call(op, _read_test_done);
+    if(rc) {
+        _sys_fini();
+    }
+}
 
 void _write_test_done(void * r , int status) {
     assert(status == 0);
     _free_op_common(r);
     
-   _sys_fini();
+    _do_read_test();
 }
-
 void _do_write_test() {
     void *op = _alloc_op_common(msg_oss_op_write, os->obj_async_op_context_size());    
     op_write_t *opc = ((message_t *)(op))->meta_buffer;
