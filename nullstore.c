@@ -1,6 +1,6 @@
 #include "nullstore.h"
 #include "store_common.h"
-
+#include "util/errcode.h"
 
 static void fake_async_cb_wrapper(void *cb  , void* cb_arg) {
     cb_func_t _cb =  cb;

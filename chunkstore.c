@@ -1,7 +1,7 @@
 #include "chunkstore.h"
 #include "objectstore.h"
 #include "util/log.h"
-
+#include "util/errcode.h"
 #include "spdk/bdev.h"
 
 #define op_handler(name) static int _do_ ## name ( void* ctx, cb_func_t cb) 
