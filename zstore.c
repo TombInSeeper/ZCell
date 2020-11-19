@@ -9,10 +9,10 @@
 #include "zstore_allocator.h"
 #include "zstore.h"
 #include "pm.h"
+#include "store_common.h"
 
 #include "util/log.h"
 
-#include "store_common.h"
 
 #define ZSTORE_PAGE_SHIFT 12
 #define ZSTORE_PAGE_SIZE  (1UL << ZSTORE_PAGE_SHIFT)
@@ -94,7 +94,7 @@ enum zstore_tx_type {
 
 struct zstore_transacion_t {
     void *zstore_;
-    uint64_t tid;
+    uint64_t tid_;
     int tx_type_;
     uint16_t state_;
     uint16_t err_;
@@ -392,7 +392,7 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
     char *buf = tx->data_buffer;
     for ( i = 0 ; i < n ; ++i) {
         int rc;
-        log_debug("Tx=%lu, bio[%u]={%u,%u}\n", tx->tid, i,
+        log_debug("Tx=%lu, bio[%u]={%u,%u}\n", tx->tid_, i,
             tx->bios_[i].blk_ofst , tx->bios_[i].blk_len);
         if(tx->bios_[i].io_type == IO_READ) {
             rc = spdk_bdev_read_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
@@ -422,7 +422,7 @@ zstore_tx_end(struct zstore_transacion_t *tx)
         zs->tx_outstanding_--;
         tailq_remove(&zs->tx_list_, tx , zstore_tx_lhook_); 
     }
-    log_debug("Tx=%lu End\n",tx->tid);
+    log_debug("Tx=%lu End\n",tx->tid_);
     tx->user_cb_(tx->user_cb_arg_ , tx->err_);
     return 0;
 }
@@ -458,13 +458,12 @@ zstore_tx_metadata(struct zstore_transacion_t *tx)
 static void 
 zstore_tx_execute(struct zstore_transacion_t *tx) {
     switch (tx->state_) {
-        int state;
         case DATA_IO:
-            log_debug("TX=%lu execute data IO\n" , tx->tid);
+            log_debug("TX=%lu execute data IO\n" , tx->tid_);
             zstore_tx_data_bio(tx);
             break;
         case PM_TX:
-            log_debug("TX=%lu execute meta tx and end life\n" , tx->tid);
+            log_debug("TX=%lu execute meta tx and end life\n" , tx->tid_);
             zstore_tx_metadata(tx);
             break;
         default:
@@ -481,10 +480,10 @@ zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg)
     
     // struct zstore_data_bio *zdb = cb_arg;
     struct zstore_transacion_t *tx_ctx = cb_arg;
-    struct zstore_context_t *zs = tx_ctx->zstore_;
+    // struct zstore_context_t *zs = tx_ctx->zstore_;
     // tailq_remove(&tx_ctx->bio_list_ , zdb , bio_lhook_);
     tx_ctx->bio_outstanding_--;
-    log_debug("Tx=%lu , rest bios=%u \n" , tx_ctx->bio_outstanding_);
+    log_debug("Tx=%lu , rest bios=%u\n" ,tx_ctx->tid_, tx_ctx->bio_outstanding_);
     if(tx_ctx->bio_outstanding_ == 0) {
         tx_ctx->state_ = PM_TX;
         if(tx_ctx->bios_) {
@@ -647,7 +646,7 @@ _tx_prep_rw_common(void *r)  {
     
     if(1) {
         log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=0x%x\n" ,
-            tx->tid , oid , op_ofst , op_len , mapped_blen);
+            tx->tid_ , oid , op_ofst , op_len , mapped_blen);
         dump_extent(e,ne); 
     }
 
@@ -839,7 +838,7 @@ zstore_tx_prepare(void *request , cb_func_t user_cb,
     tx->bios_ = NULL;
     tx->bio_outstanding_ = 0;
     tx->pm_tx_ = NULL;
-    tx->tid = zstore->tid_max_++;
+    tx->tid_ = zstore->tid_max_++;
     int rc = 0;
     switch (op) {
     case msg_oss_op_create:
@@ -868,7 +867,7 @@ zstore_tx_prepare(void *request , cb_func_t user_cb,
 static void 
 zstore_tx_enqueue(struct zstore_transacion_t *tx) {
     
-    log_debug("TX=%lu enqueue\n" , tx->tid);
+    log_debug("TX=%lu enqueue\n" , tx->tid_);
     if(tx->tx_type_ == TX_RDONLY) {
         tailq_insert_tail(&zstore->tx_rdonly_list_ , tx , zstore_tx_lhook_);
         zstore->tx_rdonly_outstanding_++;
