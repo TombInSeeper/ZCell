@@ -585,15 +585,25 @@ object_lba_range_get(struct zstore_context_t *zs,
     uint64_t iend = CEIL_ALIGN((bofst + blen ) , 16);
     uint64_t ilen = (iend - istart);
     
-    log_debug("Read data index block:(bofst=%lu,blen=%lu,istart=%lu,ilen=%lu,\n", 
+    log_debug("Read data index block:(bofst=%lu,blen=%lu,istart=%lu,ilen=%lu)\n", 
         bofst , blen , istart , ilen) ;
-    
+
+
+
     uint32_t *dib_ = dib;
     uint32_t *dib_ofst_ = dib_ + (bofst - istart);
 
     //Read
     pmem_read(zs->pmem_, dib_ , dib_addr + (istart << 2) , ilen << 2);  
     
+    do {
+        uint64_t i ;
+        log_debug("Data Index:");
+        for ( i = 0  ; i < ilen ; ++i) {
+            printf("0x%x," , dib_[i]);
+        }
+        printf("\n");
+    } while (0);
     object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
 }
 
@@ -664,7 +674,7 @@ _tx_prep_rw_common(void *r)  {
         return OSTORE_NO_NODE;
     }
     // if(op == msg_oss_op_read) 
-    uint32_t  mapped_blen;
+    uint32_t  mapped_blen = 0;
 
     uint32_t  ne;
     struct zstore_extent_t e[ZSTORE_TX_IOV_MAX];
@@ -680,7 +690,7 @@ _tx_prep_rw_common(void *r)  {
         e , dib,  &mapped_blen , op_ofst , op_len);
     
     if(1) {
-        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=0x%x\n" ,
+        log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped len=0x%x\n" ,
             tx->tid_ , oid , op_ofst , op_len , mapped_blen);
         dump_extent(e,ne); 
     }
