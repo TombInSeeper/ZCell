@@ -122,7 +122,12 @@ union pmem_transaction_t {
 };
 
 extern union pmem_transaction_t* pmem_transaction_alloc(struct pmem_t *pmem) {
-    return malloc(sizeof(union pmem_transaction_t));
+    union pmem_transaction_t* p = malloc(sizeof(union pmem_transaction_t));
+    if(!p) {
+        return p;
+    }
+    memset(&p->lh , 0 , sizeof(p->lh));
+    return p;
 }
 
 
