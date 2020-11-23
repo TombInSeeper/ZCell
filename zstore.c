@@ -156,6 +156,7 @@ zstore_ctx_init(struct zstore_context_t **zs)
     }
     struct zstore_context_t *zs_ = *zs;
     tailq_init(&zs_->tx_list_);
+    tailq_init(&zs_->tx_rdonly_list_);
     zs_->zsb_ = calloc( 1, sizeof(union zstore_superblock_t));
     
     zs_->ssd_allocator_ = calloc(1, sizeof(*zs_->ssd_allocator_));
