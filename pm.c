@@ -131,30 +131,22 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
     const uint64_t pmem_ofst, const void* mem_addr, size_t len, void *new_value)  
 {
     uint32_t log_len = sizeof(struct pm_log_entry_t) + len;
-    tx->lh.align_length += log_len;
+    struct pm_log_entry_t *pl = (void*)((char*)(tx->le)+tx->lh.align_length);
 
+    tx->lh.align_length += log_len;
     if(tx->lh.align_length > PM_LOG_REGION_SIZE) {
         log_err("Cannot add more log into this Transaction\n");
         return false;
     }
 
-    uint32_t i = tx->lh.nr_logs++;    
-    tx->le[i].length = len;
-    tx->le[i].ofst   = pmem_ofst; 
-    tx->le[i].paddr  = (const void*)mem_addr; 
+    tx->lh.nr_logs++;    
+    
+    
+    pl->length = len;
+    pl->ofst   = pmem_ofst; 
+    pl->paddr  = (const void*)mem_addr; 
 
-    memcpy(tx->le[i].value , new_value, len);
-
-    do {
-        uint64_t i ;
-        log_debug("Data Index PM  to:");
-        for ( i = 0  ; i < len / 4 ; ++i) {
-            printf("0x%x," , ((uint32_t*)new_value)[i]);
-        }
-        printf("\n");
-    } while (0);
-
-
+    memcpy(pl->value , new_value, len);
 
     return true;
 }
