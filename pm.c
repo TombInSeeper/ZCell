@@ -148,7 +148,7 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
     if(mem_addr) {
         log_debug("Deffered apply addr:%p, length=%lu\n" , mem_addr , len);
     }
-    pl->paddr  = (const void*)mem_addr; 
+    pl->paddr  = mem_addr; 
 
     memcpy(pl->value , new_value, len);
 
@@ -157,8 +157,9 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
 
 extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t *tx) {
 
+    log_debug("Transaction orig length %u\n" , tx->lh.align_length );
     tx->lh.align_length = CEIL_ALIGN(tx->lh.align_length , 256);
-    log_debug("Transaction length update to %u\n" , tx->lh.align_length );
+    log_debug("Transaction length ceil align to %u\n" , tx->lh.align_length );
 
     //Step1. 
     //.....
