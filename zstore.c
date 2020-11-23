@@ -833,11 +833,11 @@ _tx_prep_cre_del_common(void *r)
     bool is_create = false;
     if(message_get_op(opr) == msg_oss_op_create) {
         opcr = (void*)opr->meta_buffer;
-        oid = (opcr->oid) << 16 >> 16;
+        oid =  ((opde->oid) << 16) >> 16;
         is_create = true;
     } else {
         opde = (void*)opr->meta_buffer;
-        oid =  (opde->oid) << 16 >> 16;
+        oid =  ((opde->oid) << 16) >> 16;
     }
 
     //Lookup
@@ -846,8 +846,12 @@ _tx_prep_cre_del_common(void *r)
     struct zstore_extent_t ze[1];
     uint64_t ze_nr = 0;
     int rc;
+    union otable_entry_t *old_oe = onode_entry(zs , oid);
+    if(!is_create)
+        log_debug("Delete, OID=%lu , oentry = { dib=%x }\n",oid , old_oe->data_idx_id);
+
     if( 0 <= oid && oid < zs->zsb_->onodes_rsv) {
-        if(!zs->otable_[oid].valid && is_create) {
+        if(!old_oe->valid && is_create) {
             log_debug("Create, OID=%lu\n",oid);
             
             rc =  stupid_alloc_space(zs->pm_allocator_, 1 , ze, &ze_nr);
@@ -866,10 +870,9 @@ _tx_prep_cre_del_common(void *r)
             ote.valid = 1;
             ote.rsv = 0;
         
-        } else if (zs->otable_[oid].valid == 1 && !is_create) {
-            log_debug("Delete, OID=%lu\n",oid);
-
+        } else if (old_oe->valid == 1 && !is_create) {
             union otable_entry_t *oe = onode_entry(zs , oid);
+
             ze[0].lba_ = oe->data_idx_id;
             ze[0].len_ = 1;
 
