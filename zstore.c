@@ -877,6 +877,7 @@ _tx_prep_cre_del_common(void *r)
             stupid_free_space(zs->pm_allocator_, ze , 1);
 
         } else {
+            log_debug("Failed, OID=%lu\n",oid);
             return OSTORE_NO_NODE;
         }
     } else {
