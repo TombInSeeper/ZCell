@@ -669,6 +669,8 @@ _tx_prep_rw_common(void *r)  {
     }
 
     union otable_entry_t *oe = onode_entry(zstore, oid);
+    
+    
     if(!oe) {
         return OSTORE_NO_NODE;
     }
