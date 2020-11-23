@@ -59,7 +59,8 @@ typedef uint64_t _le64;
 #define rmb()   asm volatile("lfence":::"memory")
 #define wmb()   asm volatile("sfence" ::: "memory")
 
-#define FLOOR_ALIGN(v , align) (((v) + (align) - 1) & (~((align)-1)) ) 
+#define CEIL_ALIGN(v , align) (((v) + (align) - 1) & (~((align)-1)) ) 
+#define FLOOR_ALIGN(v , align) (((v)) & (~((align)-1)) ) 
 
 
 #endif

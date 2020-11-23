@@ -495,7 +495,7 @@ zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg)
     }
 }
 
-static union otable_entry_t *
+static inline union otable_entry_t *
 onode_entry(struct zstore_context_t *zs, uint64_t oid) {
     if(oid < zs->zsb_->onodes_rsv)
         return &zs->otable_[oid];
@@ -503,10 +503,19 @@ onode_entry(struct zstore_context_t *zs, uint64_t oid) {
         return NULL;
 }
 
-uint64_t 
+static inline uint64_t 
 onode_pm_ofst( struct zstore_context_t *zs , uint64_t oid ) {
     return zstore->zsb_->pm_otable_ofst + oid * sizeof(union otable_entry_t);
 } 
+
+
+static inline uint64_t
+object_data_index_block( struct zstore_context_t *zs , union otable_entry_t *oe )
+{
+    uint64_t dib_addr = zs->zsb_->pm_dy_space_ofst + 
+        (((uint64_t)oe->data_idx_id) << ZSTORE_PAGE_SHIFT);
+    return dib_addr;
+}
 
 static void 
 object_lba_merge_to(uint32_t *bi , uint32_t nbi, 
@@ -548,33 +557,46 @@ object_lba_merge_to(uint32_t *bi , uint32_t nbi,
 
 }
 
+
+
+
+
 static void 
 object_lba_range_get(struct zstore_context_t *zs, 
     union otable_entry_t *oe , 
     uint32_t *ext_nr, struct zstore_extent_t *exts ,  
     uint32_t *mapped_blen,
+    uint32_t *dib,
     uint64_t op_ofst , uint64_t op_len)
 {
+
     uint64_t bofst = op_ofst >> ZSTORE_PAGE_SHIFT;
     uint64_t blen = op_len >> ZSTORE_PAGE_SHIFT;
-
-    uint64_t dib_addr = zs->zsb_->pm_dy_space_ofst + 
-        (((uint64_t)oe->data_idx_id) << ZSTORE_PAGE_SHIFT);
+    uint64_t dib_addr = object_data_index_block(zs , oe);
     
-    uint32_t dib_[ZSTORE_TX_IOV_MAX];
-    pmem_read(zs->pmem_, dib_ , dib_addr + (bofst << 2) , blen << 2);
+    //64B alined read/write
+    //
+    //Data Index Block
+    //bofst = 3 , blen = 14
+    //istart = 0 , iend = 32
+    //dib[0][1][2][3][4][5]..[15] | [16][17]..[31]
+    //             3-----------------16
+    uint64_t istart = FLOOR_ALIGN(bofst , 16);
+    uint64_t iend = CEIL_ALIGN((bofst + blen ) , 16);
+    uint64_t ilen = (iend - istart);
     
-    if(1) {
-        int i;
-        log_debug("DataIndex of object 0x%lu [0x%lx~0x%lx]:" , oe->oid , bofst , blen);
-        for (i = 0 ; i < blen;  ++i) {
-            log_debug("0x%x,", dib_[i]);
-        }
-        
-    }
+    log_debug("Read data index block:(bofst=%lu,blen=%lu,istart=%lu,ilen=%lu,\n", 
+        bofst , blen , istart , ilen) ;
+    
+    uint32_t *dib_ = dib;
+    uint32_t *dib_ofst_ = dib_ + (bofst - istart);
 
-    object_lba_merge_to(dib_, blen, ext_nr , exts , mapped_blen);
+    //Read
+    pmem_read(zs->pmem_, dib_ , dib_addr + (istart << 2) , ilen << 2);  
+    
+    object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
 }
+
 
 static void 
 lba_to_bitmap_id(const uint32_t ne , struct zstore_extent_t *e ,  int *bid , int *n )
@@ -650,9 +672,12 @@ _tx_prep_rw_common(void *r)  {
     uint32_t blen = op_len >> ZSTORE_PAGE_SHIFT;
     uint32_t bofst = op_ofst >> ZSTORE_PAGE_SHIFT;
     
+    uint32_t dib[ZSTORE_TX_IOV_MAX];
+
+
     //获取合并后的extent
     object_lba_range_get(zstore, oe , &ne , 
-        e , &mapped_blen , op_ofst , op_len);
+        e , dib,  &mapped_blen , op_ofst , op_len);
     
     if(1) {
         log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped lba range=0x%x\n" ,
@@ -742,7 +767,32 @@ _tx_prep_rw_common(void *r)  {
             }
         }
 
-        //
+        //DataIndex Update
+        do {
+            uint64_t data_index_shift = 2;
+            uint64_t dib_addr = object_data_index_block(zstore, oe);
+            uint64_t istart = FLOOR_ALIGN(bofst , 16);
+            uint64_t iend = CEIL_ALIGN(bofst + blen , 16);
+            uint64_t imlen = (iend - istart);
+            uint64_t iofst = bofst - istart;
+            uint64_t itail = (bofst + blen);
+            uint64_t j;
+            uint64_t i = iofst;
+            for ( j = 0 ; j < enew_nr ; ++j) {
+                uint64_t k;
+                for ( k = 0 ; k < enew[j].len_ ; ++k) {
+                    dib[i++] = enew[j].lba_ + k;
+                }
+            }
+            assert(i == itail);
+            pmem_transaction_add(zstore->pmem_, tx , 
+                dib_addr + (istart << data_index_shift) ,
+                NULL, imlen << data_index_shift, dib);
+
+        } while(0);
+
+        
+        //oentry 的新值
         uint64_t oe_ofst = zstore->zsb_->pm_otable_ofst + 
             sizeof(*oe) * oid;
 
