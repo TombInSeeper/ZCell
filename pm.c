@@ -134,16 +134,20 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
     struct pm_log_entry_t *pl = (void*)((char*)(tx->le)+tx->lh.align_length);
 
     tx->lh.align_length += log_len;
+    tx->lh.nr_logs++;    
+
     if(tx->lh.align_length > PM_LOG_REGION_SIZE) {
         log_err("Cannot add more log into this Transaction\n");
         return false;
     }
 
-    tx->lh.nr_logs++;    
     
     
     pl->length = len;
     pl->ofst   = pmem_ofst; 
+    if(mem_addr) {
+        log_debug("Deffered apply addr:%p, length=%lu\n" , mem_addr , len);
+    }
     pl->paddr  = (const void*)mem_addr; 
 
     memcpy(pl->value , new_value, len);
