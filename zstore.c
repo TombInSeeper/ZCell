@@ -848,7 +848,9 @@ _tx_prep_cre_del_common(void *r)
     int rc;
     union otable_entry_t *old_oe = onode_entry(zs , oid);
     if(!is_create)
-        log_debug("Delete, OID=%lu , oentry = { dib=%x }\n",oid , old_oe->data_idx_id);
+        log_debug("Delete, OID=%lu , oentry = { valid=%d , dib=%x }\n",oid , 
+            old_oe->valid,
+            old_oe->data_idx_id);
 
     if( 0 <= oid && oid < zs->zsb_->onodes_rsv) {
         if(!old_oe->valid && is_create) {
