@@ -604,7 +604,7 @@ object_lba_range_get(struct zstore_context_t *zs,
         }
         printf("\n");
     } while (0);
-    object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , &mapped_blen);
+    object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
 }
 
 
@@ -687,7 +687,7 @@ _tx_prep_rw_common(void *r)  {
 
     //获取合并后的extent
     object_lba_range_get(zstore, oe , &ne , 
-        e , dib,  &mapped_blen , op_ofst , op_len);
+        e , &mapped_blen , dib ,op_ofst , op_len);
     
     if(1) {
         log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped len=0x%x\n" ,
