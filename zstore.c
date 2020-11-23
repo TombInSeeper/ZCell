@@ -839,7 +839,6 @@ _tx_prep_cre_del_common(void *r)
         opde = (void*)opr->meta_buffer;
         oid =  (opde->oid) << 16 >> 16;
     }
-    log_debug("OID=%lu\n",oid);
 
     //Lookup
     union otable_entry_t ote;
@@ -849,6 +848,8 @@ _tx_prep_cre_del_common(void *r)
     int rc;
     if( 0 <= oid && oid < zs->zsb_->onodes_rsv) {
         if(!zs->otable_[oid].valid && is_create) {
+            log_debug("Create, OID=%lu\n",oid);
+            
             rc =  stupid_alloc_space(zs->pm_allocator_, 1 , ze, &ze_nr);
             if(rc){
                 return OSTORE_NO_NODE;
@@ -864,7 +865,9 @@ _tx_prep_cre_del_common(void *r)
             ote.oid = oid;
             ote.valid = 1;
             ote.rsv = 0;
+        
         } else if (zs->otable_[oid].valid == 1 && !is_create) {
+            log_debug("Delete, OID=%lu\n",oid);
 
             union otable_entry_t *oe = onode_entry(zs , oid);
             ze[0].lba_ = oe->data_idx_id;
@@ -872,7 +875,7 @@ _tx_prep_cre_del_common(void *r)
 
             //free data_index block
             stupid_free_space(zs->pm_allocator_, ze , 1);
-        
+
         } else {
             return OSTORE_NO_NODE;
         }
@@ -889,6 +892,7 @@ _tx_prep_cre_del_common(void *r)
         zs->zsb_->pm_otable_ofst + sizeof(union otable_entry_t)*oid , 
         &zs->otable_[oid],
         sizeof(ote) , &ote);   
+
     //2. bitmap
     int i ;
     for ( i = 0 ; i < ze_nr ; ++i) {
