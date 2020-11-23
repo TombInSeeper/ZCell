@@ -598,13 +598,13 @@ object_lba_range_get(struct zstore_context_t *zs,
     
     do {
         uint64_t i ;
-        log_debug("Data Index:");
+        log_debug("Data Index Read:");
         for ( i = 0  ; i < ilen ; ++i) {
             printf("0x%x," , dib_[i]);
         }
         printf("\n");
     } while (0);
-    object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
+    object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , &mapped_blen);
 }
 
 
