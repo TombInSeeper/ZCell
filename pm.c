@@ -187,14 +187,15 @@ extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t
     }
     _mm_sfence();
 
+    uint32_t nr_logs = tx->lh.nr_logs;
 
-    //Step4.
+    //Step4. 
     memset(&tx->lh , 0 , sizeof(tx->lh));
     pmem_write(pmem,1, &tx->lh, pmem->log_region_ofst, sizeof(tx->lh));
 
     //Step5. apply 延迟修改的内存内容
     pl = tx->le;
-    for(i = 0 ; i < tx->lh.nr_logs; ++i) {
+    for(i = 0 ; i < nr_logs; ++i) {
         if(pl->paddr) {
             log_debug("Deffered apply memory update\n");
             memcpy(pl->paddr, pl->value, pl->length);
