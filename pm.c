@@ -125,10 +125,9 @@ extern union pmem_transaction_t* pmem_transaction_alloc(struct pmem_t *pmem) {
     return malloc(sizeof(union pmem_transaction_t));
 }
 
-//pmem_addr % 64 == 0
-//len % 64 == 0
+
 extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *tx,
-    const uint64_t pmem_ofst, const void* mem_addr, size_t len, void *new_value)  
+    const uint64_t pmem_ofst, void* mem_addr, size_t len, void *new_value)  
 {
     uint32_t log_len = sizeof(struct pm_log_entry_t) + len;
     struct pm_log_entry_t *pl = (void*)((char*)(tx->le)+tx->lh.align_length);

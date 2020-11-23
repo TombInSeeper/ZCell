@@ -18,7 +18,7 @@ extern union pmem_transaction_t* pmem_transaction_alloc(struct pmem_t *pmem);
 //pmem_addr % 64 == 0
 //len % 64 == 0
 extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *tx,
-    const uint64_t pm_ofst, const void *paddr,
+    const uint64_t pm_ofst, void *paddr,
     size_t len, void *new_value);
 extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t *tx);
 extern void pmem_transaction_free(struct pmem_t *pmem, union pmem_transaction_t *tx);

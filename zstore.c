@@ -897,7 +897,7 @@ _tx_prep_cre_del_common(void *r)
     //1. onode entry
     pmem_transaction_add(zs->pmem_ ,tx->pm_tx_, 
         zs->zsb_->pm_otable_ofst + sizeof(union otable_entry_t) * oid , 
-        onode_entry(zs , oid),
+        old_oe,
         sizeof(ote) , &ote);   
 
     //2. bitmap
