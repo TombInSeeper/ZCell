@@ -890,8 +890,8 @@ _tx_prep_cre_del_common(void *r)
     tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
     //1. onode entry
     pmem_transaction_add(zs->pmem_ ,tx->pm_tx_, 
-        zs->zsb_->pm_otable_ofst + sizeof(union otable_entry_t)*oid , 
-        &zs->otable_[oid],
+        zs->zsb_->pm_otable_ofst + sizeof(union otable_entry_t) * oid , 
+        onode_entry(zs , oid),
         sizeof(ote) , &ote);   
 
     //2. bitmap
