@@ -704,6 +704,7 @@ _tx_prep_rw_common(void *r)  {
         tx->bio_outstanding_ = ne;
     
     } else {
+        log_debug("Prepare write context\n");
         if (op_ofst + op_len > (4UL << 20)) {
             return OSTORE_WRITE_OUT_MAX_SIZE;
         }
@@ -785,7 +786,7 @@ _tx_prep_rw_common(void *r)  {
                 }
             }
             assert(i == itail);
-            pmem_transaction_add(zstore->pmem_, tx , 
+            pmem_transaction_add(zstore->pmem_, tx->pm_tx_ , 
                 dib_addr + (istart << data_index_shift) ,
                 NULL, imlen << data_index_shift, dib);
 
