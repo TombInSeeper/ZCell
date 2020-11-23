@@ -833,7 +833,7 @@ _tx_prep_cre_del_common(void *r)
     bool is_create = false;
     if(message_get_op(opr) == msg_oss_op_create) {
         opcr = (void*)opr->meta_buffer;
-        oid =  ((opde->oid) << 16) >> 16;
+        oid =  ((opcr->oid) << 16) >> 16;
         is_create = true;
     } else {
         opde = (void*)opr->meta_buffer;
@@ -864,8 +864,8 @@ _tx_prep_cre_del_common(void *r)
             char zero_tmp[4096];
             memset(zero_tmp , 0xff , 4096);
             //Initialize
-            uint64_t did_pm_ofst = (ze->lba_ << 12) + zs->zsb_->pm_dy_space_ofst;
-            pmem_write(zs->pmem_, 0 , zero_tmp , did_pm_ofst ,4096);
+            uint64_t did_pm_ofst = (ze->lba_ << ZSTORE_PAGE_SHIFT) + zs->zsb_->pm_dy_space_ofst;
+            pmem_write(zs->pmem_, 0 , zero_tmp , did_pm_ofst , ZSTORE_PAGE_SIZE);
 
             ote.data_idx_id = ze->lba_;
             ote.oid = oid;
@@ -893,6 +893,7 @@ _tx_prep_cre_del_common(void *r)
     tx->tx_type_ = TX_WRITE;
     tx->state_ = PM_TX;
     tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
+    
     //1. onode entry
     pmem_transaction_add(zs->pmem_ ,tx->pm_tx_, 
         zs->zsb_->pm_otable_ofst + sizeof(union otable_entry_t) * oid , 
