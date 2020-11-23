@@ -144,14 +144,24 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
     tx->le[i].paddr  = (const void*)mem_addr; 
 
     memcpy(tx->le[i].value , new_value, len);
-    
+
+    do {
+        uint64_t i ;
+        log_debug("Data Index PM  to:");
+        for ( i = 0  ; i < len / 4 ; ++i) {
+            printf("0x%x," , ((uint32_t*)new_value)[i]);
+        }
+        printf("\n");
+    } while (0);
+
+
 
     return true;
 }
 
 extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t *tx) {
 
-    tx->lh.align_length = FLOOR_ALIGN(tx->lh.align_length , 256);
+    tx->lh.align_length = CEIL_ALIGN(tx->lh.align_length , 256);
     log_debug("Transaction length update to %u\n" , tx->lh.align_length );
 
     //Step1. 
