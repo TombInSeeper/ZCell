@@ -168,8 +168,10 @@ extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t
 
     //Step3.
     size_t i;
+    struct pm_log_entry_t *pl = tx->le;
     for(i = 0 ; i < tx->lh.nr_logs; ++i) {
-        pmem_write(pmem,0, tx->le[i].value, tx->le[i].ofst, tx->le[i].length);
+        pmem_write(pmem,0, pl->value, pl->ofst, pl->length);
+        pl = (void*)((char*)pl + sizeof(struct pm_log_entry_t) + pl->length);
     }
     _mm_sfence();
 
