@@ -183,8 +183,10 @@ extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t
     //Step5. apply 延迟修改的内存内容
     pl = tx->le;
     for(i = 0 ; i < tx->lh.nr_logs; ++i) {
-        if(pl->paddr)
+        if(pl->paddr) {
+            log_debug("Deffered apply memory update\n");
             memcpy(pl->paddr, pl->value, pl->length);
+        }
         pl = (void*)((char*)pl + sizeof(struct pm_log_entry_t) + pl->length);
     }
 
