@@ -555,7 +555,6 @@ object_lba_merge_to(uint32_t *bi , uint32_t nbi,
         }
     }
     *n = j;
-
 }
 
 
@@ -588,8 +587,6 @@ object_lba_range_get(struct zstore_context_t *zs,
     
     log_debug("Read data index block:(bofst=%lu,blen=%lu,istart=%lu,ilen=%lu)\n", 
         bofst , blen , istart , ilen) ;
-
-
 
     uint32_t *dib_ = dib;
     uint32_t *dib_ofst_ = dib_ + (bofst - istart);
@@ -797,6 +794,16 @@ _tx_prep_rw_common(void *r)  {
                 }
             }
             assert(i == itail);
+
+            do {
+                uint64_t i ;
+                log_debug("Data Index Update to:");
+                for ( i = 0  ; i < imlen ; ++i) {
+                    printf("0x%x," , dib[i]);
+                }
+                printf("\n");
+            } while (0);
+
             pmem_transaction_add(zstore->pmem_, tx->pm_tx_ , 
                 dib_addr + (istart << data_index_shift) ,
                 NULL, imlen << data_index_shift, dib);
