@@ -28,7 +28,7 @@ static inline int stupid_allocator_constructor(struct stupid_allocator_t *alloca
     allocator->bs_ = (struct stupid_bitmap_entry_t*)calloc((nr_total >> 9) , sizeof(struct stupid_bitmap_entry_t));
     allocator->nr_total_ = nr_total;
     allocator->nr_free_ = 0;
-    allocator->nr_entrys_ = (FLOOR_ALIGN(nr_total , 512)) >> 9;
+    allocator->nr_entrys_ = (CEIL_ALIGN(nr_total , 512)) >> 9;
     allocator->hint_ = 0;
     return 0;
 }

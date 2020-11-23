@@ -309,8 +309,8 @@ void _create_test_done(void * r , int status) {
     assert(status == 0);
     _free_op_common(r);
     
-//    _do_write_test();
-    _sys_fini();
+   _do_write_test();
+    // _sys_fini();
 }
 
 void _do_create_test() {

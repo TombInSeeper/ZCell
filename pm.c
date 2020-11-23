@@ -135,8 +135,9 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
     const uint64_t pmem_ofst, void* mem_addr, size_t len, void *new_value)  
 {
     uint32_t log_len = sizeof(struct pm_log_entry_t) + len;
-    log_debug("Add log: pofst=0x%lx , maddr:%p, length=%lu , log_addr=%lu\n", 
+    log_debug("Add log: pofst=0x%lx , maddr:%p, length=%lu , log_addr=%u\n", 
         pmem_ofst, mem_addr , len , tx->lh.align_length );
+    
     
     struct pm_log_entry_t *pl = (void*)((char*)(tx->le)+tx->lh.align_length);
 
