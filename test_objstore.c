@@ -445,7 +445,7 @@ int main( int argc , char **argv) {
     opts.reactor_mask = "0x1";
     opts.shutdown_cb = _sys_fini;
 
-    parse_args(argc,argv);
+    // parse_args(argc,argv);
 
     int rc = spdk_app_start(&opts , _sys_init , NULL);
  
