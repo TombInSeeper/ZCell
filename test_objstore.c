@@ -412,6 +412,8 @@ void _load_objstore() {
     assert(rc == SUCCESS);
     e = now();
     log_info("mount time %lu us \n" , (e - s));
+
+    _prepare_objects_start();
 }
 void _sys_init(void *arg) {
     (void)arg;
