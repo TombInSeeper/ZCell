@@ -509,7 +509,6 @@ onode_pm_ofst( struct zstore_context_t *zs , uint64_t oid ) {
     return zstore->zsb_->pm_otable_ofst + oid * sizeof(union otable_entry_t);
 } 
 
-
 static inline uint64_t
 object_data_index_block( struct zstore_context_t *zs , union otable_entry_t *oe )
 {
@@ -557,10 +556,6 @@ object_lba_merge_to(uint32_t *bi , uint32_t nbi,
     }
     *n = j;
 }
-
-
-
-
 
 static void 
 object_lba_range_get(struct zstore_context_t *zs, 
