@@ -94,10 +94,15 @@ enum zstore_tx_type {
     TX_WRITE = 2
 };
 
+enum zstore_tx_attr {
+    TX_SYNC = 0x1,
+};
+
 struct zstore_transacion_t {
     void *zstore_;
     uint64_t tid_;
-    int tx_type_;
+    uint16_t tx_type_;
+    uint16_t tx_attr_;
     uint16_t state_;
     uint16_t err_;
 
@@ -434,7 +439,10 @@ zstore_tx_end(struct zstore_transacion_t *tx)
         tailq_remove(&zs->tx_list_, tx , zstore_tx_lhook_); 
     }
     log_debug("Tx=%lu End\n",tx->tid_);
-    spdk_thread_send_msg(spdk_get_thread(), zstore_user_cb , tx);    
+    if(tx->tx_attr_ & TX_SYNC)
+        spdk_thread_send_msg(spdk_get_thread(), zstore_user_cb , tx);    
+    else 
+        zstore_user_cb(tx);
     return 0;
 }
 
@@ -898,6 +906,7 @@ _tx_prep_cre_del_common(void *r)
     struct zstore_transacion_t *tx = ostore_async_ctx(r);   
     tx->tx_type_ = TX_WRITE;
     tx->state_ = PM_TX;
+    tx->tx_attr_ &= TX_SYNC;
     tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
     
     //1. onode entry
@@ -935,6 +944,7 @@ zstore_tx_prepare(void *request , cb_func_t user_cb,
     tx->bios_ = NULL;
     tx->bio_outstanding_ = 0;
     tx->pm_tx_ = NULL;
+    tx->tx_attr_ = 0;
     tx->tid_ = zstore->tid_max_++;
     int rc = 0;
     switch (op) {

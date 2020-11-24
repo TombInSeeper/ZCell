@@ -261,9 +261,6 @@ struct perf_context_t {
 
     const char *devs[3];
 
-
-
-
     struct {
         uint64_t start_tsc;
         uint64_t oid;
@@ -273,6 +270,13 @@ struct perf_context_t {
         uint64_t end_tsc;
     } prep_obj_ctx;
 
+
+    struct {
+        uint64_t start_tsc;
+        uint64_t offset;
+        uint64_t total_len;
+        uint64_t end_tsc;
+    } prefill_ctx;
 
 };
 
@@ -334,6 +338,33 @@ void _submit_op(void *op , cb_func_t cb) {
 
 
 
+
+void _prefill_objects_free_op(void * op) {
+    _free_op_common(op);
+}
+
+void* _prefill_objects_gen_op() {
+    objstore_impl_t *os = g_perf_ctx.os;
+    void *op = _alloc_op_common(msg_oss_op_write, os->obj_async_op_context_size());    
+    op_write_t *opc = ((message_t *)(op))->meta_buffer;
+    opc->oid = g_perf_ctx.prep_obj_ctx.oid;
+    g_perf_ctx.prep_obj_ctx.oid++;
+    return op;
+}
+
+
+
+void _prefill_objects_start() {
+
+    g_perf_ctx.prefill_ctx.offset = 0 ;
+    g_perf_ctx.prefill_ctx.total_len = 
+        g_perf_ctx.prep_obj_ctx.nr_obj * (4UL << 20) ;
+    g_perf_ctx.prefill_ctx.start_tsc = rdtsc();
+
+
+
+}
+
 void _lanuch_perf() {
     _sys_fini();
 }
@@ -341,6 +372,7 @@ void _lanuch_perf() {
 void _prepare_objects_free_op(void * op) {
     _free_op_common(op);
 }
+
 void* _prepare_objects_gen_op() {
     objstore_impl_t *os = g_perf_ctx.os;
     void *op = _alloc_op_common(msg_oss_op_create, os->obj_async_op_context_size());    
