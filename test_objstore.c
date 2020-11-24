@@ -351,6 +351,7 @@ void* _prepare_objects_gen_op() {
 }
 
 void _prepare_objects_submit_op(void *op , cb_func_t cb)  {
+    g_perf_ctx.prep_obj_ctx.nop_submit++;
     _submit_op(op , cb);
 }
 void _prepare_object_continue(void *r , int status) {
@@ -387,6 +388,7 @@ void _prepare_objects_start() {
     g_perf_ctx.prep_obj_ctx.start_tsc = rdtsc();
 
     void *op = _prepare_objects_gen_op();
+    log_debug("Start...\n");
     _prepare_objects_submit_op(op , _prepare_object_continue);
 }
 
