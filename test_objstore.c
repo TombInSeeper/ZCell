@@ -329,6 +329,11 @@ void _submit_op(void *op , cb_func_t cb) {
     } 
 }
 
+
+
+
+
+
 void _lanuch_perf() {
     _sys_fini();
 }
@@ -376,7 +381,7 @@ void _prepare_object_continue(void *r , int status) {
 }
 
 void _prepare_objects_start() {
-    g_perf_ctx.prep_obj_ctx.nr_obj = 10 * 1024;
+    g_perf_ctx.prep_obj_ctx.nr_obj = 100 * 1024;
     g_perf_ctx.prep_obj_ctx.oid = 1;
     g_perf_ctx.prep_obj_ctx.nop_cpl = 0;
     g_perf_ctx.prep_obj_ctx.nop_submit = 0;
@@ -389,7 +394,6 @@ void _prepare_objects_start() {
         _prepare_objects_submit_op(op , _prepare_object_continue);
     }
 }
-
 void _load_objstore() {
     
     g_perf_ctx.os = ostore_get_impl(ZSTORE);
@@ -413,6 +417,7 @@ void _load_objstore() {
 
     _prepare_objects_start();
 }
+
 void _sys_init(void *arg) {
     (void)arg;
     g_perf_ctx.dma_rbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);

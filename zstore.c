@@ -603,9 +603,9 @@ object_lba_range_get(struct zstore_context_t *zs,
         uint64_t i ;
         log_debug("Data Index Read:");
         for ( i = 0  ; i < ilen ; ++i) {
-            printf("0x%x," , dib_[i]);
+            log_debug("0x%x," , dib_[i]);
         }
-        printf("\n");
+        log_debug("\n");
     } while (0);
     object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
 }
