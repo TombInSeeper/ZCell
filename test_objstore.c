@@ -333,11 +333,6 @@ void _lanuch_perf() {
     _sys_fini();
 }
 
-
-
-
-
-
 void _prepare_objects_free_op(void * op) {
     _free_op_common(op);
 }
@@ -389,7 +384,9 @@ void _prepare_objects_start() {
 
     void *op = _prepare_objects_gen_op();
     log_debug("Start...\n");
-    _prepare_objects_submit_op(op , _prepare_object_continue);
+    uint64_t i;
+    for ( i = 0 ; i < 8 ; ++i)
+        _prepare_objects_submit_op(op , _prepare_object_continue);
 }
 
 void _load_objstore() {
