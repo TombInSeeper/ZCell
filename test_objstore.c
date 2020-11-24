@@ -351,7 +351,7 @@ void _prepare_objects_submit_op(void *op , cb_func_t cb)  {
 }
 void _prepare_object_continue(void *r , int status) {
     if(status) {
-        log_err("Status:%u\n",status);
+        log_err("Status:%u , err:%s\n",status , errcode_str(status));
         _sys_fini();
     }
     g_perf_ctx.prep_obj_ctx.nop_cpl++; 
@@ -382,11 +382,12 @@ void _prepare_objects_start() {
     g_perf_ctx.prep_obj_ctx.nop_submit = 0;
     g_perf_ctx.prep_obj_ctx.start_tsc = rdtsc();
 
-    void *op = _prepare_objects_gen_op();
     log_debug("Start...\n");
     uint64_t i;
-    for ( i = 0 ; i < 8 ; ++i)
+    for ( i = 0 ; i < 8 ; ++i) {
+        void *op = _prepare_objects_gen_op();
         _prepare_objects_submit_op(op , _prepare_object_continue);
+    }
 }
 
 void _load_objstore() {

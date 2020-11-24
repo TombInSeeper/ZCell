@@ -940,18 +940,30 @@ zstore_tx_prepare(void *request , cb_func_t user_cb,
     switch (op) {
     case msg_oss_op_create:
         rc = _tx_prep_cre_del_common(request);
+        if(rc) {
+            return rc;
+        }
         assert(tx->state_ == PM_TX);
         break;
     case msg_oss_op_delete:
         rc =_tx_prep_cre_del_common(request);
+        if(rc) {
+            return rc;
+        }
         assert(tx->state_ == PM_TX);
         break;
     case msg_oss_op_read:
         rc = _tx_prep_rw_common(request);
+        if(rc) {
+            return rc;
+        }
         assert(tx->state_ == DATA_IO);
         break;
     case msg_oss_op_write:
         rc =_tx_prep_rw_common(request);
+        if(rc) {
+            return rc;
+        }
         assert(tx->state_ == DATA_IO);
         break;
     default:

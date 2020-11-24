@@ -20,13 +20,45 @@ enum Status {
     OSTORE_INTERNAL_UNKNOWN_ERRORR
 };
 
+static inline const char *errcode_str(int s) {
+    switch (s) {
+        case SUCCESS:
+            return "SUCCESS";    
+        case UNKNOWN_OP:
+            return "UNKNOWN_OP";
+        case INVALID_OP:
+            return "INVALID_OP";
+        case MSGR_EAGAIN:
+            return "MSGR_EAGAIN";
+        case MSGR_CONNECT_EXCEPTION:
+            return "MSGR_CONNECT_EXCEPTION";
+        case OSTORE_UNSUPPORTED_OPERATION :
+            return "OSTORE_UNSUPPORTED_OPERATION";
+        case OSTORE_OBJECT_EXIST:
+            return "OSTORE_OBJECT_EXIST";
+        case OSTORE_OBJECT_NOT_EXIST:
+            return "OSTORE_OBJECT_NOT_EXIST";
+        case OSTORE_NO_SPACE:
+            return "OSTORE_NO_SPACE";
+        case OSTORE_NO_NODE:
+            return "OSTORE_NO_NODE";
+        case OSTORE_WRITE_OUT_MAX_SIZE:
+            return "OSTORE_WRITE_OUT_MAX_SIZE";
+        case OSTORE_READ_EOF:
+            return "OSTORE_READ_EOF";
+        case OSTORE_IO_ERROR:
+            return "OSTORE_IO_ERROR";
+        case OSTORE_INTERNAL_UNKNOWN_ERRORR:
+            return "OSTORE_INTERNAL_UNKNOWN_ERRORR";
+        default:
+            return "????";
+    }
+}
+
 #define OSTORE_SUBMIT_OK SUCCESS
 #define OSTORE_EXECUTE_OK SUCCESS
 
 
-
-
-#define errstr(code) #code
 
 
 #endif
