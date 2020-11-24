@@ -906,7 +906,7 @@ _tx_prep_cre_del_common(void *r)
     struct zstore_transacion_t *tx = ostore_async_ctx(r);   
     tx->tx_type_ = TX_WRITE;
     tx->state_ = PM_TX;
-    tx->tx_attr_ &= TX_SYNC;
+    tx->tx_attr_ |= TX_SYNC;
     tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
     
     //1. onode entry
