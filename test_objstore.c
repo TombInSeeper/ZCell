@@ -376,7 +376,7 @@ void _prepare_object_continue(void *r , int status) {
 }
 
 void _prepare_objects_start() {
-    g_perf_ctx.prep_obj_ctx.nr_obj = 1;
+    g_perf_ctx.prep_obj_ctx.nr_obj = 10 * 1024;
     g_perf_ctx.prep_obj_ctx.oid = 1;
     g_perf_ctx.prep_obj_ctx.nop_cpl = 0;
     g_perf_ctx.prep_obj_ctx.nop_submit = 0;
