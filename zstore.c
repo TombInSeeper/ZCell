@@ -88,6 +88,7 @@ enum zstore_tx_state {
     PM_TX,
     END,
 };
+
 enum zstore_tx_type {
     TX_RDONLY = 1,
     TX_WRITE = 2
@@ -413,6 +414,14 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
     return 0;
 }
 
+static void 
+zstore_user_cb( void* ctx)
+{
+    struct zstore_transacion_t *tx = ctx;
+    log_debug("Tx=%lu User Callback\n",tx->tid_);
+    tx->user_cb_(tx->user_cb_arg_ , tx->err_);
+}
+
 static int 
 zstore_tx_end(struct zstore_transacion_t *tx) 
 {
@@ -425,7 +434,7 @@ zstore_tx_end(struct zstore_transacion_t *tx)
         tailq_remove(&zs->tx_list_, tx , zstore_tx_lhook_); 
     }
     log_debug("Tx=%lu End\n",tx->tid_);
-    tx->user_cb_(tx->user_cb_arg_ , tx->err_);
+    spdk_thread_send_msg(spdk_get_thread(), zstore_user_cb , tx);    
     return 0;
 }
 
@@ -969,6 +978,7 @@ extern const int
 zstore_obj_async_op_context_size() {
     return sizeof(struct zstore_transacion_t);
 }
+
 
 extern int 
 zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
