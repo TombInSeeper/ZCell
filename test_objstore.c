@@ -216,7 +216,7 @@ void  ObjectFill_Then(void *ctx_) {
     _sys_fini();
 }
 bool  ObjectFill_Terminate(void *ctx_) {
-     struct ObjectFill_context_t *ctx = ctx_;
+    struct ObjectFill_context_t *ctx = ctx_;
     return ctx->total_len == ctx->cpl_offset;
 }
 bool  ObjectFill_StopSubmit(void *ctx_) {

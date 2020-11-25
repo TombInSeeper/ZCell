@@ -675,9 +675,13 @@ _tx_prep_rw_common(void *r)  {
     }
 
     if(!op_len || op_len % ZSTORE_PAGE_SIZE != 0) {
+        log_err("*ERROR*,TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx\n" ,
+            tx->tid_ , oid , op_ofst , op_len );
         return INVALID_OP;
     }
     if(op_ofst % ZSTORE_PAGE_SIZE != 0) {
+        log_err("*ERROR*,TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx\n" ,
+            tx->tid_ , oid , op_ofst , op_len );
         return INVALID_OP;
     }
 
@@ -774,7 +778,7 @@ _tx_prep_rw_common(void *r)  {
             s = pmem_transaction_add(zstore->pmem_,tx->pm_tx_, pm_ofst , NULL, 64 ,
                 &zstore->ssd_allocator_->bs_[bid[i]]);
             if (!s) {
-                log_err("Too big transaction\n");
+                log_err("*ERROR*,Too big transaction\n");
                 // pmem_transaction_free(tx->pm_tx_);
                 pmem_transaction_free(zstore->pmem_, tx->pm_tx_);
                 return INVALID_OP;
@@ -786,7 +790,7 @@ _tx_prep_rw_common(void *r)  {
             s = pmem_transaction_add(zstore->pmem_,tx->pm_tx_, pm_ofst , NULL, 64 ,
                 &zstore->ssd_allocator_->bs_[bid2[i]]);
             if (!s) {
-                log_err("Too big transaction\n");
+                log_err("*ERROR*,Too big transaction\n");
                 pmem_transaction_free(zstore->pmem_, tx->pm_tx_);
                 return INVALID_OP;
             }
@@ -1010,7 +1014,7 @@ zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
     struct zstore_transacion_t *tx = ostore_async_ctx(r);
     int rc = zstore_tx_prepare(r, _cb, tx);
     if(rc) {
-        return INVALID_OP;
+        return rc;
     }
     zstore_tx_enqueue(tx);
     zstore_tx_execute(tx);
