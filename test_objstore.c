@@ -233,8 +233,10 @@ ASYNC_TASK_DECLARE(perf) {
 void  perf_Then(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
     double t = _tsc2choron(ctx->start_tsc , rdtsc());
-    double bd = ( ((ctx->rw_wio_cpl * ctx->io_size) >> 20) * 1e6 ) / t ;
-    log_info("Use time :%lf s, Bandwidth= %lf MiB/s \n", t / 1e6 ,  bd);
+    double iosz = ((ctx->rw_wio_cpl * ctx->io_size) / ((1UL << 20) * 1.0));
+    double bd = ( iosz * 1e6 ) / t ;
+    log_info("Use time :%lf s, IO Size= %lf GiB , Bandwidth= %lf MiB/s \n", 
+        t / 1e6 ,  iosz ,  bd);
     _sys_fini();
 }
 bool  perf_Terminate(void *ctx_) {
