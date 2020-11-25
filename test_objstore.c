@@ -204,6 +204,10 @@ ASYNC_TASK_DECLARE(ObjectFill) {
     uint64_t end_tsc;
 }g_objfill_ctx;
 void  ObjectFill_Then(void *ctx_) {
+    struct ObjectFill_context_t *ctx = ctx_;
+    double t = _tsc2choron(ctx->start_tsc , rdtsc());
+    double bd = ( (ctx->total_len >> 20) * 1e6 ) / t ;
+    log_info("Use time :lf% s, Bandwidth= %lf MiB/s \n", t / 1e6 ,  bd);
     _sys_fini();
 }
 bool  ObjectFill_Terminate(void *ctx_) {
