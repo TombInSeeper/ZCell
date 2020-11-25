@@ -800,7 +800,7 @@ _tx_prep_rw_common(void *r)  {
             uint64_t iend = CEIL_ALIGN(bofst + blen , 16);
             uint64_t imlen = (iend - istart);
             uint64_t iofst = bofst - istart;
-            uint64_t itail = (bofst + blen);
+            uint64_t itail = (iofst + blen);
             uint64_t j;
             uint64_t i = iofst;
             for ( j = 0 ; j < enew_nr ; ++j) {
