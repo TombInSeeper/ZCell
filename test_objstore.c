@@ -243,7 +243,7 @@ void* ObjectFill_OpGenerate(void *ctx_) {
     r->data_buffer = g_perf_ctx.dma_wbuf;
     op_write_t *opc = message_get_meta_buffer(op);
     opc->oid = (ctx->prep_offset >> 22);
-    opc->ofst = (ctx->prep_offset & (~(4ul << 20) - 1));
+    opc->ofst = (ctx->prep_offset & ((4ul << 20)-1));
     opc->len = 128 << 10;
     opc->flags = 0;
     ctx->prep_offset += (128 << 10);
