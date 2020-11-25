@@ -227,7 +227,7 @@ int  ObjectFill_SubmitOp(void *op , cb_func_t cb) {
 }
 void* ObjectFill_OpGenerate(void *ctx_) {
     struct ObjectFill_context_t *ctx = ctx_;
-    objstore_impl_t *os = g_perf_ctx.os;
+    const objstore_impl_t *os = g_perf_ctx.os;
     void *op = _alloc_op_common(msg_oss_op_write, os->obj_async_op_context_size());    
     message_t *r = op;
     r->priv_ctx = ctx_;
@@ -287,7 +287,7 @@ int  ObjectPrep_SubmitOp(void *op , cb_func_t cb) {
 }
 void* ObjectPrep_OpGenerate(void *ctx_) {
     struct ObjectPrep_context_t *ctx = ctx_;
-    objstore_impl_t *os = g_perf_ctx.os;
+    const objstore_impl_t *os = g_perf_ctx.os;
     void *op = _alloc_op_common(msg_oss_op_create, os->obj_async_op_context_size());  
     message_t *r = op;
     r->priv_ctx = ctx;  
@@ -304,7 +304,7 @@ void* ObjectPrep_OpGenerate(void *ctx_) {
 void _load_objstore() {
     
     g_perf_ctx.os = ostore_get_impl(ZSTORE);
-    objstore_impl_t *os = g_perf_ctx.os;
+    const objstore_impl_t *os = g_perf_ctx.os;
 
     g_perf_ctx.devs[0] = "Nvme0n1";
     g_perf_ctx.devs[1] = "/tmp/mempool";
