@@ -611,9 +611,9 @@ object_lba_range_get(struct zstore_context_t *zs,
         uint64_t i ;
         log_debug("Data Index Read:");
         for ( i = 0  ; i < ilen ; ++i) {
-            log_debug("0x%x," , dib_[i]);
+            printf("0x%x," , dib_[i]);
         }
-        log_debug("\n");
+        printf("\n");
     } while (0);
     object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
 }
@@ -809,6 +809,7 @@ _tx_prep_rw_common(void *r)  {
                     dib[i++] = enew[j].lba_ + k;
                 }
             }
+            log_debug("i = %lu , itail = %lu \n" , i , itail);
             assert(i == itail);
 
             do {
