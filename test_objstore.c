@@ -217,6 +217,7 @@ ASYNC_TASK_DECLARE(perf) {
     double   read_radio;
     uint64_t qd;
     uint64_t io_size;
+    uint64_t max_offset;
 
     uint64_t rw_rio_prep;
     uint64_t rw_rio_submit;
@@ -278,9 +279,9 @@ void* perf_OpGenerate(void *ctx_) {
     op_write_t *opc = message_get_meta_buffer(op);
 
     uint64_t prep_offset;
-    prep_offset = ctx->rw_wio_prep * ctx->io_size;
+    prep_offset = (ctx->rw_wio_prep * ctx->io_size) % ctx->max_offset;
     opc->oid = (prep_offset >> 22);
-    opc->ofst = (prep_offset & ((4ul << 20)-1));
+    opc->ofst = (prep_offset & ((4ul << 20) -1));
     opc->len = ctx->io_size;
     opc->flags = 0;
     ctx->rw_wio_prep++;
@@ -319,6 +320,7 @@ void  ObjectFill_Then(void *ctx_) {
     g_perf_ctx.read_radio = 0;
     g_perf_ctx.io_size = (64 << 10);
     g_perf_ctx.qd = 128;
+    g_perf_ctx.max_offset = g_global_ctx.obj_sz * g_global_ctx.obj_nr;
 
     perf_Start(&g_perf_ctx , g_perf_ctx.qd);
 
