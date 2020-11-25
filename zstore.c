@@ -150,7 +150,9 @@ struct zstore_context_t {
     tailq_head(zstore_tx_rdonly_list_t , zstore_transacion_t) tx_rdonly_list_;
 };
 
-static __thread struct zstore_context_t *zstore; //TLS 
+
+//ZStore 是一个单线程的库,因为存储服务使用Run-to-completion模型
+static __thread struct zstore_context_t *zstore;  
 
 // static int zstore_tx_poll(void *zs_);
 static int 
