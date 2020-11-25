@@ -140,7 +140,7 @@ double _tsc2choron(uint64_t start , uint64_t end) {
 
 
 struct perf_context_t {
-    objstore_impl_t *os;
+    const objstore_impl_t *os;
     const char *devs[3];
     char *dma_wbuf;
     char *dma_rbuf;
@@ -263,7 +263,7 @@ void ObjectPrep_Then(void *ctx_) {
     memset(&g_objfill_ctx , 0 , sizeof(g_objfill_ctx));
     g_objfill_ctx.start_tsc = rdtsc();
     g_objfill_ctx.total_len = g_objprep_ctx.total_obj * g_perf_ctx.obj_sz;
-    log_info("Fill %u objects, total size=%lu kiB\n" ,g_objprep_ctx.total_obj, g_objfill_ctx.total_len >> 10 );
+    log_info("Fill %lu objects, total size=%lu kiB\n" ,g_objprep_ctx.total_obj, g_objfill_ctx.total_len >> 10 );
     ObjectFill_Start(&g_objfill_ctx , g_perf_ctx.obj_fill_dp);
 }
 bool ObjectPrep_Terminate(void *ctx_) {
