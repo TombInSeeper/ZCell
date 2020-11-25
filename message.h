@@ -59,6 +59,7 @@ typedef struct message_t {
     void *priv_ctx;  //指针：属于哪个 session
 } message_t;
 
+#define message_get_ctx(m) ((((message_t*)(m))->priv_ctx))
 #define message_get_seq(m) (le64_to_cpu((((message_t*)(m))->header.seq)))
 #define message_get_op(m) (le16_to_cpu((((message_t*)(m))->header.type)))
 #define message_get_status(m) (le16_to_cpu((((message_t*)(m))->header.status)))

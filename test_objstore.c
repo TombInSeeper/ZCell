@@ -10,23 +10,48 @@
 #include "spdk/env.h"
 #include "spdk/util.h"
 
-// static __thread int g_store = ZSTORE;
-// static __thread const char* g_nvme_dev[] = { "Nvme0n1" , "/tmp/mempool", NULL };
-// static __thread int g_nr_ops = 100 * 10000;
-// static __thread int g_nr_submit = 0;
-// static __thread int g_nr_cpl = 0;
-// static __thread int g_qd = 32;
-// static __thread int g_max_oid = 30 * 1024;
 
-// static uint64_t g_start_us;
-// static uint64_t g_end_us;
+#define ERROR_ON(status)\
+if(status) { \
+    log_err("Status:%u , err:%s\n",status , errcode_str(status)); \ 
+    _sys_fini();\ 
+}
 
-// const objstore_impl_t *os;
-// void *session;
+#ifdef TASK_CTX_OP(op)
+#undef TASK_CTX_OP(op)
+#endif
 
-// char meta_buffer[0x1000];
-// void *rbuf;
-// void *wbuf;
+#define ASYNC_TASK_CTX_OP(op) message_get_ctx(op)
+#define ASYNC_TASK_DECLARE(task_name) \
+    void  task_name ## _Then(void *ctx);\
+    bool  task_name ## _Terminate(void *ctx);\
+    bool  task_name ## _StopSubmit(void *ctx);\
+    void  task_name ## _OpComplete(void *op);\
+    int   task_name ## _SubmitOp(void *op , cb_func_t cb);\
+    void* task_name ## _OpGenerate(void *ctx);\
+    void  task_name ## _Continue(void *op , int s) {\
+        ERROR_ON(s);\
+        void *ctx = ASYNC_TASK_CTX_OP(op);\
+        task_name ## _OpComplete(op);\
+        if(task_name ## _Terminate(ctx)) {\
+            task_name ## _Then(ctx);\
+        } else if (task_name ## _StopSubmit (ctx)) {\
+        \
+        } else {\
+            void *op = task_name ## _OpGenerate(ctx);\
+            task_name ## _SubmitOp(op , task_name ## _Continue);\
+        }\
+    }\
+    void  task_name ## _Start(void *ctx , int dp) { \
+        int i ;\
+        for ( i = 0 ; i < dp ; ++i ) { \
+            void *op = task_name ## _GenerateOp(ctx);\
+            task_name ## _SubmitOp(op , task_name ## _Continue);\
+        }\
+    }\
+    struct task_name ## _context_t
+
+#define ASYNC_TASK_FUNC_IMPL(task)
 
 const message_t fake_stat_request_msg = {
     .state = {
@@ -112,182 +137,10 @@ const message_t fake_read_request_msg = {
 
 
 
-// void _dump_perf() {
-//     double time = g_end_us - g_start_us; 
-//     double qps = (g_nr_ops / time) * 1e3;
-//     SPDK_NOTICELOG("qps=%lf K/s \n" , qps);
-//     SPDK_NOTICELOG("avg_lat= %lf us \n" , time / g_nr_ops);
-// }
-
-// void _write_complete(void *ctx, int sts) {
-//     if(sts) {
-//         assert("status code error\n" == NULL);
-//     }
-//     _free_write_op(ctx);
-//     g_nr_cpl++;
-//     if(g_nr_cpl == g_nr_submit) {
-//         g_end_us = now();
-//         _dump_perf();
-//         _sys_fini();
-//     } else if (g_nr_submit < g_nr_ops){
-//        void *op = _alloc_write_op();
-//        int rc = os->obj_async_op_call(op, _write_complete);
-//        if(rc) {
-//             assert("submit error\n" == NULL);
-//        }
-//        g_nr_submit++;
-//     } else {
-
-//     }
-// }
-
-
-// void _do_write_test( void* ctx , int st) {
-//     (void)ctx;
-//     (void)st;
-//     int dp = g_qd;
-//     g_start_us = now();
-//     while (dp--) {
-//         void *op = _alloc_write_op();
-//         if(os->obj_async_op_call(op, _write_complete)) {
-//             assert("submit error\n" == NULL);
-//         }
-//         g_nr_submit++;
-//     }
-// }
-
-
-// void _stat_cb( void* rqst ,int st) {
-//     message_t *m = rqst;
-//     op_stat_result_t *rst = (void*)(m->meta_buffer);    
-//     SPDK_NOTICELOG("ostore state:max_oid=%u ,cap_gb=%u G ,obj_sz=%u K ,obj_blksz=%u K\n",
-//         rst->max_oid ,rst->capcity_gib, rst->max_obj_size_kib, rst->obj_blk_sz_kib);
-//     g_max_oid = rst->max_oid;
-//     free(rqst);
-//     // _sys_fini();
-
-//     _do_write_test(NULL,0);
-// }
-// void _delete_test_done(void * r , int status) {
-//     assert(status == 0);
-//     _free_op_common(r);
-
-//     _sys_fini();    
-// }
-
-// void _do_delete_test() {
-//     void *op = _alloc_op_common(msg_oss_op_delete, os->obj_async_op_context_size());    
-//     op_delete_t *opc = ((message_t *)(op))->meta_buffer;
-//     opc->oid = 0x1;
-//     int rc = os->obj_async_op_call(op, _delete_test_done);
-//     if(rc) {
-//         _sys_fini();
-//     }
-// }
-
-
-// void _read_test_done(void * r , int status) {
-//     assert(status == 0);
-//     _free_op_common(r);
-    
-//     assert(!strcmp(rbuf,"123456789"));
-
-//     _do_delete_test();
-// }
-
-// void _do_read_test() {
-//     void *op = _alloc_op_common(msg_oss_op_read, os->obj_async_op_context_size());    
-//     op_read_t *opc = ((message_t *)(op))->meta_buffer;
-//     opc->oid = 0x1;
-//     opc->ofst = 0x0;
-//     opc->flags = 0;
-//     opc->len = 0x1000;
-    
-//     message_t *m = op;
-//     m->data_buffer = rbuf;
-//     int rc = os->obj_async_op_call(op, _read_test_done);
-//     if(rc) {
-//         _sys_fini();
-//     }
-// }
-
-// void _write_test_done(void * r , int status) {
-//     assert(status == 0);
-//     _free_op_common(r);
-    
-//     _do_read_test();
-// }
-// void _do_write_test() {
-//     void *op = _alloc_op_common(msg_oss_op_write, os->obj_async_op_context_size());    
-//     op_write_t *opc = ((message_t *)(op))->meta_buffer;
-//     opc->oid = 0x1;
-//     opc->ofst = 0x0;
-//     opc->flags = 0;
-//     opc->len = 0x1000;
-    
-//     message_t *m = op;
-//     m->data_buffer = wbuf;
-//     strcpy(wbuf , "123456789");  
-//     int rc = os->obj_async_op_call(op, _write_test_done);
-//     if(rc) {
-//         _sys_fini();
-//     }
-// }
-
-// void _create_test_done(void * r , int status) {
-//     assert(status == 0);
-//     _free_op_common(r);
-    
-//     _do_write_test();
-//     _sys_fini();
-// }
-
-// void _do_create_test() {
-//     void *op = _alloc_op_common(msg_oss_op_create, os->obj_async_op_context_size());    
-//     op_create_t *opc = ((message_t *)(op))->meta_buffer;
-//     opc->oid = 0x1;
-//     int rc = os->obj_async_op_call(op, _create_test_done);
-//     if(rc) {
-//         _sys_fini();
-//     }
-// }
-
-struct perf_context_t {
-
-    objstore_impl_t *os;
-    
-    void *dma_wbuf;
-    void *dma_rbuf;
-
-    const char *devs[3];
-
-    struct {
-        uint64_t start_tsc;
-        uint64_t oid;
-        uint64_t nr_obj;
-        uint64_t nop_submit;
-        uint64_t nop_cpl;
-        uint64_t end_tsc;
-    } prep_obj_ctx;
-
-
-    struct {
-        uint64_t start_tsc;
-        uint64_t offset;
-        uint64_t total_len;
-        uint64_t end_tsc;
-    } prefill_ctx;
-
-};
-
-struct perf_context_t g_perf_ctx;
-
-
 double _tsc2choron(uint64_t start , uint64_t end) {
     uint64_t hz = spdk_get_ticks_hz();
     return ((end-start)/(double)(hz)) * 1e6;
 }
-
 void *_alloc_op_common(uint16_t op_type, uint64_t actx_sz) {
     // static int seq = 0;
     void *p = calloc(1, sizeof(message_t) + actx_sz + 128);
@@ -310,12 +163,11 @@ void *_alloc_op_common(uint16_t op_type, uint64_t actx_sz) {
     message_t *m = p;
     m->meta_buffer = (char*)(p + sizeof(message_t) + actx_sz);
     return p;
-
 }
-
 void _free_op_common(void *p) {
     free(p);
 }
+
 
 
 void _sys_fini() {
@@ -325,107 +177,132 @@ void _sys_fini() {
     spdk_app_stop(0);
 }
 
+
+
+struct perf_context_t {
+    objstore_impl_t *os;
+    const char *devs[3];
+    char *dma_wbuf;
+    char *dma_rbuf;
+    uint32_t obj_sz;
+    int obj_create_dp;
+    int obj_fill_dp;
+    int obj_perf_dp;
+};
+
+//全局上下文
+struct perf_context_t g_perf_ctx;
+
 void _submit_op(void *op , cb_func_t cb) {
     int rc = g_perf_ctx.os->obj_async_op_call(op , cb);
-    if(rc) {
-        log_err("Submit error\n");
-        _sys_fini();
-    } 
+    ERROR_ON(rc);
 }
 
-
-
-
-
-
-
-void _prefill_objects_free_op(void * op) {
-    _free_op_common(op);
-}
-
-void* _prefill_objects_gen_op() {
-    objstore_impl_t *os = g_perf_ctx.os;
-    void *op = _alloc_op_common(msg_oss_op_write, os->obj_async_op_context_size());    
-    op_write_t *opc = ((message_t *)(op))->meta_buffer;
-    opc->oid = g_perf_ctx.prep_obj_ctx.oid;
-    g_perf_ctx.prep_obj_ctx.oid++;
-    return op;
-}
-
-
-
-void _prefill_objects_start() {
-
-    g_perf_ctx.prefill_ctx.offset = 0 ;
-    g_perf_ctx.prefill_ctx.total_len = 
-        g_perf_ctx.prep_obj_ctx.nr_obj * (4UL << 20) ;
-    g_perf_ctx.prefill_ctx.start_tsc = rdtsc();
-
-
-
-}
-
-void _lanuch_perf() {
+//第二阶段：填充所有Object
+ASYNC_TASK_DECLARE(ObjectFill) {
+    uint64_t start_tsc;
+    uint64_t prep_offset;
+    uint64_t submit_offset;
+    uint64_t cpl_offset;
+    uint64_t total_len;
+    uint64_t end_tsc;
+}g_objfill_ctx;
+void  ObjectFill_Then(void *ctx_) {
     _sys_fini();
 }
-
-void _prepare_objects_free_op(void * op) {
+bool  ObjectFill_Terminate(void *ctx_) {
+     struct ObjectFill_context_t *ctx = ctx_;
+    return ctx->total_len == ctx->cpl_offset;
+}
+bool  ObjectFill_StopSubmit(void *ctx_) {
+    struct ObjectFill_context_t *ctx = ctx_;
+    return ctx->total_len == ctx->submit_offset;
+}
+void  ObjectFill_OpComplete(void *op) {
+    struct ObjectFill_context_t *ctx = ASYNC_TASK_CTX_OP(op);
+    ctx->cpl_offset += (128 * 1024);
     _free_op_common(op);
 }
-
-void* _prepare_objects_gen_op() {
+int  ObjectFill_SubmitOp(void *op , cb_func_t cb) {
+    struct ObjectFill_context_t *ctx = ASYNC_TASK_CTX_OP(op);
+    _submit_op(op  , cb);
+    ctx->submit_offset += (128 * 1024);
+    return 0;
+}
+void* ObjectFill_OpGenerate(void *ctx_) {
+    struct ObjectFill_context_t *ctx = ctx_;
     objstore_impl_t *os = g_perf_ctx.os;
-    void *op = _alloc_op_common(msg_oss_op_create, os->obj_async_op_context_size());    
-    op_create_t *opc = ((message_t *)(op))->meta_buffer;
-    opc->oid = g_perf_ctx.prep_obj_ctx.oid;
-    g_perf_ctx.prep_obj_ctx.oid++;
+    void *op = _alloc_op_common(msg_oss_op_write, os->obj_async_op_context_size());    
+    message_t *r = op;
+    r->priv_ctx = ctx_;
+    r->data_buffer = g_perf_ctx.dma_wbuf;
+    op_write_t *opc = ((message_t *)(op))->meta_buffer;
+    opc->oid = (ctx->prep_offset >> 22);
+    opc->ofst = (ctx->prep_offset & (~(4ul << 20) - 1));
+    opc->len = 128 << 10;
+    opc->flags = 0;
+    ctx->prep_offset += (128 << 10);
     return op;
 }
+//void ObjectFill_Continue(void *op , int s);
+//void ObjectFill_Start(void *ctx , int dp);
 
-void _prepare_objects_submit_op(void *op , cb_func_t cb)  {
-    g_perf_ctx.prep_obj_ctx.nop_submit++;
-    _submit_op(op , cb);
-}
-void _prepare_object_continue(void *r , int status) {
-    if(status) {
-        log_err("Status:%u , err:%s\n",status , errcode_str(status));
-        _sys_fini();
-    }
-    g_perf_ctx.prep_obj_ctx.nop_cpl++; 
-    if((g_perf_ctx.prep_obj_ctx.nop_cpl ==
-        g_perf_ctx.prep_obj_ctx.nr_obj) ) 
-    {
-        g_perf_ctx.prep_obj_ctx.end_tsc = rdtsc();
-        double t = g_perf_ctx.prep_obj_ctx.end_tsc - g_perf_ctx.prep_obj_ctx.start_tsc;
-        log_info("Create %lu objs , time %lf us\n", g_perf_ctx.prep_obj_ctx.nr_obj ,
-            _tsc2choron(g_perf_ctx.prep_obj_ctx.start_tsc, g_perf_ctx.prep_obj_ctx.end_tsc ));
-        // rdtsc()
-        _lanuch_perf();
-    } else {
-        if(g_perf_ctx.prep_obj_ctx.nop_submit == 
-            g_perf_ctx.prep_obj_ctx.nr_obj) {
-                return;
-        } else {
-            void *op = _prepare_objects_gen_op();
-            _prepare_objects_submit_op( op ,_prepare_object_continue);
-        }
-    }
-}
 
-void _prepare_objects_start() {
-    g_perf_ctx.prep_obj_ctx.nr_obj = 100 * 1024;
-    g_perf_ctx.prep_obj_ctx.oid = 1;
-    g_perf_ctx.prep_obj_ctx.nop_cpl = 0;
-    g_perf_ctx.prep_obj_ctx.nop_submit = 0;
-    g_perf_ctx.prep_obj_ctx.start_tsc = rdtsc();
+//第一阶段：创建指定个数的Object
+ASYNC_TASK_DECLARE(ObjectPrep) {
+    uint64_t start_tsc;
+    uint64_t total_obj;
+    uint64_t nr_prep_oid;
+    uint64_t nr_submit;
+    uint64_t nr_cpl;
+    uint64_t end_tsc;
+} g_objprep_ctx;
+void ObjectPrep_Then(void *ctx_) {
+    g_objprep_ctx.end_tsc = rdtsc();
+    log_info("Prepare %lu objects , use time %lf us \n" ,
+        g_objprep_ctx.total_obj , _tsc2choron(g_objprep_ctx.start_tsc , g_objprep_ctx.end_tsc));
 
-    log_debug("Start...\n");
-    uint64_t i;
-    for ( i = 0 ; i < 8 ; ++i) {
-        void *op = _prepare_objects_gen_op();
-        _prepare_objects_submit_op(op , _prepare_object_continue);
-    }
+    memset(&g_objfill_ctx , 0 , sizeof(g_objfill_ctx));
+    g_objfill_ctx.start_tsc = rdtsc();
+    g_objfill_ctx.total_len = g_objprep_ctx.total_obj * g_perf_ctx.obj_sz;
+    log_info("Fill %u objects, total size=%lf kiB\n" ,g_objprep_ctx.total_obj, g_objfill_ctx.total_len >> 10 );
+    ObjectFill_Start(&g_objfill_ctx , g_perf_ctx.obj_fill_dp);
 }
+bool ObjectPrep_Terminate(void *ctx_) {
+    struct ObjectPrep_context_t *ctx = ctx_;
+    return ctx->nr_cpl == ctx->total_obj;
+}
+bool ObjectPrep_StopSubmit(void *ctx_) {
+    struct ObjectPrep_context_t *ctx = ctx_;
+    return ctx->nr_submit == ctx->total_obj;
+}
+void ObjectPrep_OpComplete(void *op) {
+    struct ObjectPrep_context_t *ctx = ASYNC_TASK_CTX_OP(op);
+    ctx->nr_cpl++;
+    _free_op_common(op);
+}
+int  ObjectPrep_SubmitOp(void *op , cb_func_t cb) {
+    struct ObjectPrep_context_t *ctx = ASYNC_TASK_CTX_OP(op);
+    _submit_op(op  , cb);
+    ctx->nr_submit++;
+    return 0;
+}
+void* ObjectPrep_OpGenerate(void *ctx_) {
+    struct ObjectPrep_context_t *ctx = ctx_;
+    objstore_impl_t *os = g_perf_ctx.os;
+    void *op = _alloc_op_common(msg_oss_op_create, os->obj_async_op_context_size());  
+    message_t *r = op;
+    r->priv_ctx = ctx;  
+    op_create_t *opc = ((message_t *)(op))->meta_buffer;
+    opc->oid = ctx->nr_prep_oid++;
+    // g_perf_ctx.prep_obj_ctx.oid++;
+    return op;
+}
+//void ObjectPrep_Continue(void *op , int s);
+//void ObjectPrep_Start(void *ctx , int dp);
+
+
+
 void _load_objstore() {
     
     g_perf_ctx.os = ostore_get_impl(ZSTORE);
@@ -447,7 +324,11 @@ void _load_objstore() {
     e = now();
     log_info("mount time %lu us \n" , (e - s));
 
-    _prepare_objects_start();
+
+    memset(&g_objprep_ctx , 0 , sizeof(g_objprep_ctx));
+    g_objprep_ctx.start_tsc = rdtsc();
+    g_objprep_ctx.total_obj = 1;
+    ObjectPrep_Start(&g_objprep_ctx , 1);
 }
 
 void _sys_init(void *arg) {

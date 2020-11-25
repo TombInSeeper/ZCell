@@ -84,18 +84,18 @@ enum IO_TYPE {
 // };
 enum zstore_tx_state {
     PREPARE ,
-    DATA_IO ,
-    PM_TX,
+    DATA_IO , //数据IO阶段
+    PM_TX, //元数据事务阶段
     END,
 };
 
 enum zstore_tx_type {
-    TX_RDONLY = 1,
-    TX_WRITE = 2
+    TX_RDONLY = 1, //针对只读操作
+    TX_WRITE = 2 //针对有写的操作
 };
 
 enum zstore_tx_attr {
-    TX_SYNC = 0x1,
+    TX_SYNC = 0x1, //代表该事务要用 send_msg 模拟异步回调
 };
 
 struct zstore_transacion_t {
@@ -112,9 +112,9 @@ struct zstore_transacion_t {
     uint32_t bio_outstanding_;
     char *data_buffer;
     struct {
-        uint8_t  io_type;
-        uint32_t blk_ofst;
-        uint32_t blk_len;
+        uint32_t  io_type;
+        uint32_t  blk_ofst;
+        uint32_t  blk_len;
     } *bios_;
     // tailq_head(bio_list_t, zstore_data_bio) bio_list_;
     
@@ -420,7 +420,7 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
 }
 
 static void 
-zstore_user_cb( void* ctx)
+zstore_user_cb(void* ctx)
 {
     struct zstore_transacion_t *tx = ctx;
     log_debug("Tx=%lu User Callback\n",tx->tid_);
