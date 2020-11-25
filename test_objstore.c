@@ -314,8 +314,8 @@ void  ObjectFill_Then(void *ctx_) {
     memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
 
     g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
-    g_perf_ctx.time_sec = 15;
-    g_perf_ctx.total_tsc = 15 * g_perf_ctx.tsc_hz;
+    g_perf_ctx.time_sec = 10;
+    g_perf_ctx.total_tsc = 10 * g_perf_ctx.tsc_hz;
     g_perf_ctx.start_tsc = rdtsc();
     g_perf_ctx.read_radio = 0;
     g_perf_ctx.io_size = (64 << 10);
