@@ -333,7 +333,10 @@ void _sys_init(void *arg) {
     (void)arg;
     g_perf_ctx.dma_rbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     g_perf_ctx.dma_wbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
-
+    g_perf_ctx.obj_sz = 4 << 20;
+    g_perf_ctx.obj_create_dp = 1;
+    g_perf_ctx.obj_fill_dp = 16;
+    g_perf_ctx.obj_perf_dp = 0;
     _load_objstore();
 }
 
