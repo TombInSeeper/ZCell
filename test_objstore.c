@@ -141,6 +141,21 @@ double _tsc2choron(uint64_t start , uint64_t end) {
     uint64_t hz = spdk_get_ticks_hz();
     return ((end-start)/(double)(hz)) * 1e6;
 }
+
+
+struct perf_context_t {
+    objstore_impl_t *os;
+    const char *devs[3];
+    char *dma_wbuf;
+    char *dma_rbuf;
+    uint32_t obj_sz;
+    int obj_create_dp;
+    int obj_fill_dp;
+    int obj_perf_dp;
+};
+
+//全局上下文
+struct perf_context_t g_perf_ctx;
 void *_alloc_op_common(uint16_t op_type, uint64_t actx_sz) {
     // static int seq = 0;
     void *p = calloc(1, sizeof(message_t) + actx_sz + 128);
@@ -177,21 +192,6 @@ void _sys_fini() {
     spdk_app_stop(0);
 }
 
-
-
-struct perf_context_t {
-    objstore_impl_t *os;
-    const char *devs[3];
-    char *dma_wbuf;
-    char *dma_rbuf;
-    uint32_t obj_sz;
-    int obj_create_dp;
-    int obj_fill_dp;
-    int obj_perf_dp;
-};
-
-//全局上下文
-struct perf_context_t g_perf_ctx;
 
 void _submit_op(void *op , cb_func_t cb) {
     int rc = g_perf_ctx.os->obj_async_op_call(op , cb);
