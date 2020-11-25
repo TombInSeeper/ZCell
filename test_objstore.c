@@ -144,11 +144,16 @@ struct perf_context_t {
     const char *devs[3];
     char *dma_wbuf;
     char *dma_rbuf;
+    
     uint32_t obj_sz;
+    int obj_nr;
     int obj_create_dp;
     int obj_fill_dp;
     int obj_perf_dp;
 };
+
+
+
 
 //全局上下文
 struct perf_context_t g_perf_ctx;
@@ -329,7 +334,7 @@ void _load_objstore() {
 
     memset(&g_objprep_ctx , 0 , sizeof(g_objprep_ctx));
     g_objprep_ctx.start_tsc = rdtsc();
-    g_objprep_ctx.total_obj = 1;
+    g_objprep_ctx.total_obj = g_perf_ctx.obj_nr;
     ObjectPrep_Start(&g_objprep_ctx , 1);
 }
 
@@ -344,25 +349,19 @@ void _sys_init(void *arg) {
     _load_objstore();
 }
 
-// static void parse_args(int argc , char **argv) {
-//     int opt = -1;
-// 	while ((opt = getopt(argc, argv, "q:c:o:")) != -1) {
-// 		switch (opt) {
-// 		case 'q':
-// 			g_qd = atoi(optarg);
-// 			break;
-//         case 'c':
-// 			g_nr_ops = atoi(optarg);
-// 			break;
-//         case 'o':
-// 			g_max_oid = atoi(optarg);
-// 			break;
-// 		default:
-// 			fprintf(stderr, "Usage: %s [-q qd] [-c nr_ops] \n", argv[0]);
-// 			exit(1);
-// 		}
-// 	}
-// }
+static void parse_args(int argc , char **argv) {
+    int opt = -1;
+	while ((opt = getopt(argc, argv, "n:")) != -1) {
+		switch (opt) {
+		case 'n':
+			g_perf_ctx.obj_nr = atoi(optarg);
+			break;
+		default:
+			log_info(stderr, "Usage: %s [-n nr_objects] \n", argv[0]);
+			exit(1);
+		}
+	}
+}
 
 
 int main( int argc , char **argv) {
@@ -373,7 +372,7 @@ int main( int argc , char **argv) {
     opts.reactor_mask = "0x1";
     opts.shutdown_cb = _sys_fini;
 
-    // parse_args(argc,argv);
+    parse_args(argc,argv);
 
     spdk_app_start(&opts , _sys_init , NULL);
  
