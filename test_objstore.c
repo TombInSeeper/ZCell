@@ -328,7 +328,7 @@ void  ObjectFill_Then(void *ctx_) {
     g_perf_ctx.read_radio = 0.0;
     g_perf_ctx.io_size = (64 << 10);
     g_perf_ctx.qd = 128;
-    g_perf_ctx.max_offset = g_global_ctx.obj_sz * g_global_ctx.obj_nr;
+    g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
 
     log_info("Start perf...\n");
 
