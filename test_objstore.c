@@ -357,7 +357,7 @@ static void parse_args(int argc , char **argv) {
 			g_perf_ctx.obj_nr = atoi(optarg);
 			break;
 		default:
-			log_info(stderr, "Usage: %s [-n nr_objects] \n", argv[0]);
+			log_info("Usage: %s [-n nr_objects] \n", argv[0]);
 			exit(1);
 		}
 	}

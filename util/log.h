@@ -26,6 +26,7 @@
             printf(__VA_ARGS__);\
         }\
     } while (0) 
+    
 #define _log_raw(level, ...) do { \
         if((level) <= DEBUG_LEVEL) {\
             printf(__VA_ARGS__);\
