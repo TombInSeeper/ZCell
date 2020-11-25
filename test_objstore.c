@@ -208,6 +208,7 @@ void _submit_op(void *op , cb_func_t cb) {
 //3. 纯顺序读(128K)
 //4. 纯随机读(4K)
 //5. 读写混合(4K)
+
 ASYNC_TASK_DECLARE(perf) {
 
     uint64_t tsc_hz;
@@ -317,7 +318,6 @@ void  ObjectFill_Then(void *ctx_) {
     log_info("Use time :%lf s, Bandwidth= %lf MiB/s \n", t / 1e6 ,  bd);
     
 
-    log_info("Start perf...\n");
 
     memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
 
@@ -325,10 +325,12 @@ void  ObjectFill_Then(void *ctx_) {
     g_perf_ctx.time_sec = 10;
     g_perf_ctx.total_tsc = 10 * g_perf_ctx.tsc_hz;
     g_perf_ctx.start_tsc = rdtsc();
-    g_perf_ctx.read_radio = 0;
+    g_perf_ctx.read_radio = 0.0;
     g_perf_ctx.io_size = (64 << 10);
     g_perf_ctx.qd = 128;
     g_perf_ctx.max_offset = g_global_ctx.obj_sz * g_global_ctx.obj_nr;
+
+    log_info("Start perf...\n");
 
     perf_Start(&g_perf_ctx , g_perf_ctx.qd);
 
