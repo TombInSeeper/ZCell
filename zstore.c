@@ -655,15 +655,16 @@ _tx_prep_rw_common(void *r)  {
     message_t *m = (message_t*)r;
     struct zstore_transacion_t *tx = ostore_async_ctx(r);   
     uint64_t oid, op_ofst, op_len , op_flags;
+    (void)op_flags;
     void *data_buf = m->data_buffer;
     if(op  == msg_oss_op_read) {
-        op_read_t * op = (void*)(m->meta_buffer);
+        op_read_t * op = message_get_meta_buffer(m);
         oid = op->oid;
         op_ofst = op->ofst;
         op_len = op->len;
         op_flags = op->flags;
     } else if ( op == msg_oss_op_write ){
-        op_write_t * op = (void*)(m->meta_buffer);
+        op_write_t * op = message_get_meta_buffer(m);
         oid = op->oid;
         op_ofst = op->ofst;
         op_len = op->len;
@@ -846,11 +847,11 @@ _tx_prep_cre_del_common(void *r)
     uint64_t oid;
     bool is_create = false;
     if(message_get_op(opr) == msg_oss_op_create) {
-        opcr = (void*)opr->meta_buffer;
+        opcr = message_get_meta_buffer(r);
         oid =  ((opcr->oid) << 16) >> 16;
         is_create = true;
     } else {
-        opde = (void*)opr->meta_buffer;
+        opde = message_get_meta_buffer(r);
         oid =  ((opde->oid) << 16) >> 16;
     }
 
@@ -874,7 +875,6 @@ _tx_prep_cre_del_common(void *r)
             if(rc){
                 return OSTORE_NO_NODE;
             }
-            uint64_t align_len_ = ze->len_;
             char zero_tmp[4096];
             memset(zero_tmp , 0xff , 4096);
             //Initialize
