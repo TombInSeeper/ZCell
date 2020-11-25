@@ -531,7 +531,7 @@ object_data_index_block( struct zstore_context_t *zs , union otable_entry_t *oe 
 {
     uint64_t dib_addr = zs->zsb_->pm_dy_space_ofst + 
         (((uint64_t)oe->data_idx_id) << ZSTORE_PAGE_SHIFT);
-    log_debug("Object %lu data index block addr = 0x%lx\n" , oe->oid, dib_addr);
+    log_debug("Object %lu data index block addr = 0x%lx\n" , (uint64_t)(oe->oid), dib_addr);
     return dib_addr;
 }
 
@@ -1015,6 +1015,7 @@ zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
     zstore_tx_execute(tx);
     return 0;
 }
+
 
 
 
