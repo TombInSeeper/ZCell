@@ -219,6 +219,8 @@ ASYNC_TASK_DECLARE(perf) {
     uint64_t io_size;
     uint64_t max_offset;
 
+
+
     uint64_t rw_rio_prep;
     uint64_t rw_rio_submit;
     uint64_t rw_rio_cpl;
@@ -226,6 +228,8 @@ ASYNC_TASK_DECLARE(perf) {
     uint64_t rw_wio_prep;
     uint64_t rw_wio_submit;
     uint64_t rw_wio_cpl;
+    uint64_t rw_last_cpl_tsc;
+
 
 }g_perf_ctx;
 
@@ -235,23 +239,25 @@ void  perf_Then(void *ctx_) {
     double t = _tsc2choron(ctx->start_tsc , rdtsc());
     double iosz = ((ctx->rw_wio_cpl * ctx->io_size) / ((1UL << 20) * 1.0));
     double bd = ( iosz * 1e6 ) / t ;
-    log_info("Use time :%lf s, IO Size= %lf GiB , Bandwidth= %lf MiB/s \n", 
+    log_info("Use time :%lf s, IO Size= %lf MiB , Bandwidth= %lf MiB/s \n", 
         t / 1e6 ,  iosz ,  bd);
     _sys_fini();
 }
 bool  perf_Terminate(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
-    return (rdtsc() >= (ctx->start_tsc + ctx->total_tsc)) 
+    return (ctx->rw_last_cpl_tsc >= (ctx->start_tsc + ctx->total_tsc)) 
         && ctx->rw_wio_submit == ctx->rw_wio_cpl;
 }
 bool  perf_StopSubmit(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
-    return rdtsc() >= (ctx->start_tsc + ctx->total_tsc);
+    return ctx->rw_last_cpl_tsc >= (ctx->start_tsc + ctx->total_tsc);
 }
 void  perf_OpComplete(void *op) {
     struct perf_context_t *ctx = ASYNC_TASK_CTX_OP(op);
     ctx->rw_wio_cpl++;
     _free_op_common(op);
+
+    ctx->rw_last_cpl_tsc = rdtsc();
 }
 int   perf_SubmitOp(void *op , cb_func_t cb) {
     struct perf_context_t *ctx = ASYNC_TASK_CTX_OP(op);
