@@ -13,13 +13,9 @@
 
 #define ERROR_ON(status)\
 if(status) { \
-    log_err("Status:%u , err:%s\n",status , errcode_str(status)); \ 
-    _sys_fini();\ 
+   log_err("Status:%u , err:%s\n",status , errcode_str(status)); \
+   _sys_fini();\
 }
-
-#ifdef TASK_CTX_OP(op)
-#undef TASK_CTX_OP(op)
-#endif
 
 #define ASYNC_TASK_CTX_OP(op) message_get_ctx(op)
 #define ASYNC_TASK_DECLARE(task_name) \
@@ -45,7 +41,7 @@ if(status) { \
     void  task_name ## _Start(void *ctx , int dp) { \
         int i ;\
         for ( i = 0 ; i < dp ; ++i ) { \
-            void *op = task_name ## _GenerateOp(ctx);\
+            void *op = task_name ## _OpGenerate(ctx);\
             task_name ## _SubmitOp(op , task_name ## _Continue);\
         }\
     }\
@@ -236,7 +232,7 @@ void* ObjectFill_OpGenerate(void *ctx_) {
     message_t *r = op;
     r->priv_ctx = ctx_;
     r->data_buffer = g_perf_ctx.dma_wbuf;
-    op_write_t *opc = ((message_t *)(op))->meta_buffer;
+    op_write_t *opc = message_get_meta_buffer(op);
     opc->oid = (ctx->prep_offset >> 22);
     opc->ofst = (ctx->prep_offset & (~(4ul << 20) - 1));
     opc->len = 128 << 10;
@@ -262,10 +258,12 @@ void ObjectPrep_Then(void *ctx_) {
     log_info("Prepare %lu objects , use time %lf us \n" ,
         g_objprep_ctx.total_obj , _tsc2choron(g_objprep_ctx.start_tsc , g_objprep_ctx.end_tsc));
 
+
+
     memset(&g_objfill_ctx , 0 , sizeof(g_objfill_ctx));
     g_objfill_ctx.start_tsc = rdtsc();
     g_objfill_ctx.total_len = g_objprep_ctx.total_obj * g_perf_ctx.obj_sz;
-    log_info("Fill %u objects, total size=%lf kiB\n" ,g_objprep_ctx.total_obj, g_objfill_ctx.total_len >> 10 );
+    log_info("Fill %u objects, total size=%lu kiB\n" ,g_objprep_ctx.total_obj, g_objfill_ctx.total_len >> 10 );
     ObjectFill_Start(&g_objfill_ctx , g_perf_ctx.obj_fill_dp);
 }
 bool ObjectPrep_Terminate(void *ctx_) {
@@ -293,7 +291,7 @@ void* ObjectPrep_OpGenerate(void *ctx_) {
     void *op = _alloc_op_common(msg_oss_op_create, os->obj_async_op_context_size());  
     message_t *r = op;
     r->priv_ctx = ctx;  
-    op_create_t *opc = ((message_t *)(op))->meta_buffer;
+    op_create_t *opc = message_get_meta_buffer(op);
     opc->oid = ctx->nr_prep_oid++;
     // g_perf_ctx.prep_obj_ctx.oid++;
     return op;
@@ -370,7 +368,7 @@ int main( int argc , char **argv) {
 
     // parse_args(argc,argv);
 
-    int rc = spdk_app_start(&opts , _sys_init , NULL);
+    spdk_app_start(&opts , _sys_init , NULL);
  
     spdk_app_fini();
 
