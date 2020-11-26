@@ -262,6 +262,11 @@ void  perf_Then(void *ctx_) {
     double iosz = ((ctx->rw_wio_cpl * ctx->io_size) / ((1UL << 20) * 1.0));
     double bd = ( iosz * 1e6 ) / t ;
     double iops = (ctx->rw_wio_cpl / t) * 1e3;
+    if(ctx->rand) {
+        log_info("Random test ,io-size=%lu K\n", ctx->io_size >> 10);
+    } else {
+        log_info("Seq test ,io-size=%lu K\n", ctx->io_size >> 10);
+    }
     log_info("Use time :%lf s, IO Size= %lf MiB , Bandwidth= %lf MiB/s , IOPS = %lf K \n", 
         t / 1e6 ,  iosz ,   bd , iops );
     _sys_fini();
