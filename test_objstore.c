@@ -458,8 +458,6 @@ void _load_objstore() {
     g_global_ctx.os = ostore_get_impl(ZSTORE);
     const objstore_impl_t *os = g_global_ctx.os;
 
-
-
     uint64_t s , e ; 
     s = now();
     int rc = os->mkfs(g_global_ctx.devs , 0);
