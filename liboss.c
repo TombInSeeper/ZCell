@@ -98,12 +98,10 @@ static inline op_ctx_t *_get_assi_op_from_msg(message_t *_m) {
 }
 
 static void* msgr_meta_buffer_alloc(size_t sz) {
-    liboss_ctx_t *lc = tls_liboss_ctx();
-    return fcache_get(lc->small_meta_buffers);
+    return malloc(sz);
 }
 static void msgr_meta_buffer_free(void *ptr) {
-    liboss_ctx_t *lc = tls_liboss_ctx();
-    fcache_put(lc->small_meta_buffers, ptr);
+    free(ptr);
 }
 static void* msgr_data_buffer_alloc(uint32_t sz) {
     return malloc(sz);
@@ -277,7 +275,7 @@ extern int  io_create(io_channel *ch , uint64_t oid) {
     void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_create_t));
     do {
         op_create_t *op_args = meta_buffer;
-        op_args->oid = cpu_to_le32(oid);
+        op_args->oid = cpu_to_le64(oid);
     } while(0);
     return _io_prepare_op_common(ch , msg_oss_op_create, meta_size, meta_buffer , 0, NULL);
 }
@@ -286,7 +284,7 @@ extern int  io_delete(io_channel *ch , uint64_t oid) {
     void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_delete_t));
     do {
         op_delete_t *op_args = meta_buffer;
-        op_args->oid = cpu_to_le32(oid);
+        op_args->oid = cpu_to_le64(oid);
     } while(0);
     return _io_prepare_op_common(ch , msg_oss_op_delete, meta_size, meta_buffer , 0, NULL);
 }
@@ -305,10 +303,10 @@ extern int  io_read(io_channel  *ch, uint64_t oid, uint64_t ofst, uint32_t len) 
     void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_read_t));
     do {
         op_read_t *op_args = meta_buffer;
-        op_args->oid = cpu_to_le32(oid);
-        op_args->ofst = cpu_to_le32((uint32_t)ofst);
-        op_args->len = cpu_to_le32(len);
-        op_args->flags = cpu_to_le32(0);
+        op_args->oid = cpu_to_le64(oid);
+        op_args->ofst = cpu_to_le64((uint32_t)ofst);
+        op_args->len = cpu_to_le64(len);
+        op_args->flags = cpu_to_le64(0);
     } while(0);
     return _io_prepare_op_common(ch , msg_oss_op_read, meta_size, meta_buffer , 0, NULL);
 }
@@ -319,10 +317,10 @@ extern int  io_write(io_channel *ch, uint64_t oid, const void* buffer, uint64_t 
     const void *data_buffer = buffer;
     do {
         op_write_t *op_args = meta_buffer;
-        op_args->oid = cpu_to_le32(oid);
-        op_args->ofst = cpu_to_le32((uint32_t)ofst);
-        op_args->len = cpu_to_le32(len);
-        op_args->flags = cpu_to_le32(0);
+        op_args->oid = cpu_to_le64(oid);
+        op_args->ofst = cpu_to_le64((uint32_t)ofst);
+        op_args->len = cpu_to_le64(len);
+        op_args->flags = cpu_to_le64(0);
     } while(0);
     return _io_prepare_op_common(ch , msg_oss_op_write, meta_size, meta_buffer , len, (void*)data_buffer);
 }

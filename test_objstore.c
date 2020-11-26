@@ -11,6 +11,23 @@
 #include "spdk/util.h"
 
 
+/*
+ * 
+ * Intel DC p3700
+ * read bandwidth:2700MB/s
+ * write bandwidth: 1080MB/s
+ * 
+ * 4K read IOPS: 450K
+ * 4K write IOPS: 75K
+ * 
+ * read lat : 120us
+ * write lat : 30us
+ * 
+ * 
+ */
+
+
+
 #define ERROR_ON(status)\
 if(status) { \
    log_err("Status:%u , err:%s\n",status , errcode_str(status)); \
@@ -18,6 +35,7 @@ if(status) { \
 }
 
 #define ASYNC_TASK_CTX_OP(op) message_get_ctx(op)
+
 #define ASYNC_TASK_DECLARE(task_name) \
     void  task_name ## _Then(void *ctx);\
     bool  task_name ## _Terminate(void *ctx);\
@@ -183,22 +201,16 @@ void _free_op_common(void *p) {
     free(p);
 }
 
-
-
 void _sys_fini() {
     g_global_ctx.os->unmount();
     spdk_free(g_global_ctx.dma_rbuf);
     spdk_free(g_global_ctx.dma_wbuf);
     spdk_app_stop(0);
 }
-
-
 void _submit_op(void *op , cb_func_t cb) {
     int rc = g_global_ctx.os->obj_async_op_call(op , cb);
     ERROR_ON(rc);
 }
-
-
 
 
 //第三阶段：执行Perf测试
@@ -208,7 +220,6 @@ void _submit_op(void *op , cb_func_t cb) {
 //3. 纯顺序读(128K)
 //4. 纯随机读(4K)
 //5. 读写混合(4K)
-
 ASYNC_TASK_DECLARE(perf) {
 
     uint64_t tsc_hz;
@@ -219,8 +230,7 @@ ASYNC_TASK_DECLARE(perf) {
     uint64_t qd;
     uint64_t io_size;
     uint64_t max_offset;
-
-
+    int rand;
 
     uint64_t rw_rio_prep;
     uint64_t rw_rio_submit;
@@ -230,7 +240,6 @@ ASYNC_TASK_DECLARE(perf) {
     uint64_t rw_wio_submit;
     uint64_t rw_wio_cpl;
     uint64_t rw_last_cpl_tsc;
-
 
 }g_perf_ctx;
 
@@ -300,9 +309,7 @@ void* perf_OpGenerate(void *ctx_) {
 //void ObjectFill_Start(void *ctx , int dp);
 
 
-
-
-//第二阶段：填充所有Object
+//填充所有Object
 ASYNC_TASK_DECLARE(ObjectFill) {
     uint64_t start_tsc;
     uint64_t prep_offset;
@@ -317,8 +324,6 @@ void  ObjectFill_Then(void *ctx_) {
     double bd = ( (ctx->total_len >> 20) * 1e6 ) / t ;
     log_info("Use time :%lf s, Bandwidth= %lf MiB/s \n", t / 1e6 ,  bd);
     
-
-
     memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
 
     g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
@@ -329,7 +334,7 @@ void  ObjectFill_Then(void *ctx_) {
     g_perf_ctx.io_size = (64 << 10);
     g_perf_ctx.qd = 128;
     g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
-
+    
     log_info("Start perf...\n");
 
     perf_Start(&g_perf_ctx , g_perf_ctx.qd);
@@ -373,7 +378,7 @@ void* ObjectFill_OpGenerate(void *ctx_) {
 //void ObjectFill_Start(void *ctx , int dp);
 
 
-//第一阶段：创建指定个数的Object
+//创建指定个数的Object
 ASYNC_TASK_DECLARE(ObjectPrep) {
     uint64_t start_tsc;
     uint64_t total_obj;
@@ -428,15 +433,12 @@ void* ObjectPrep_OpGenerate(void *ctx_) {
 //void ObjectPrep_Continue(void *op , int s);
 //void ObjectPrep_Start(void *ctx , int dp);
 
-
-
 void _load_objstore() {
     
     g_global_ctx.os = ostore_get_impl(ZSTORE);
     const objstore_impl_t *os = g_global_ctx.os;
 
-    g_global_ctx.devs[0] = "Nvme0n1";
-    g_global_ctx.devs[1] = "/tmp/mempool";
+
 
     uint64_t s , e ; 
     s = now();
@@ -466,6 +468,10 @@ void _sys_init(void *arg) {
     g_global_ctx.obj_create_dp = 1;
     g_global_ctx.obj_fill_dp = 16;
     g_global_ctx.obj_perf_dp = 0;
+
+    g_global_ctx.devs[0] = "Nvme0n1";
+    g_global_ctx.devs[1] = "/tmp/mempool";
+
     _load_objstore();
 }
 
@@ -482,7 +488,6 @@ static void parse_args(int argc , char **argv) {
 		}
 	}
 }
-
 
 int main( int argc , char **argv) {
     struct spdk_app_opts opts;

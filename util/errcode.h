@@ -58,7 +58,4 @@ static inline const char *errcode_str(int s) {
 #define OSTORE_SUBMIT_OK SUCCESS
 #define OSTORE_EXECUTE_OK SUCCESS
 
-
-
-
 #endif

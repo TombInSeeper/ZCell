@@ -744,12 +744,18 @@ _tx_prep_rw_common(void *r)  {
         int bid[ZSTORE_TX_IOV_MAX] , bid2[ZSTORE_TX_IOV_MAX];
         int nbid = 0 , nbid2 = 0;
         
+        bool need_realloc = true;
+
         if(ne != 0) {
+            if(blen == 1) {
+                // log_debug("4k write, directly overwrite\n");
+                need_realloc = false;
+            }
             log_debug("overwrite\n");
             stupid_free_space(zstore->ssd_allocator_ , e , ne);
             lba_to_bitmap_id(ne ,e , bid , &nbid);
         }
-        
+        (void)need_realloc;
         struct zstore_extent_t enew[ZSTORE_TX_IOV_MAX];
         uint64_t enew_nr;
         int rc = stupid_alloc_space(zstore->ssd_allocator_ , blen , enew , &enew_nr );
@@ -833,7 +839,6 @@ _tx_prep_rw_common(void *r)  {
 
         } while(0);
 
-        
         //oentry 的新值
         uint64_t oe_ofst = zstore->zsb_->pm_otable_ofst + 
             sizeof(*oe) * oid;

@@ -26,7 +26,7 @@ typedef struct op_write_t {
     _le64 ofst;
     _le64 len;
     _le64 flags;
-} _packed op_write_t;
+} _packed  op_write_t;
 
 //Result
 typedef struct op_stat_result_t {
