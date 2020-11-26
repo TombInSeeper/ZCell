@@ -164,6 +164,7 @@ struct global_context_t {
     char *dma_rbuf;
     
     uint32_t obj_sz;
+    uint64_t os_async_ctx_sz;
     int obj_nr;
     int obj_create_dp;
     int obj_fill_dp;
@@ -174,9 +175,20 @@ struct global_context_t {
 //全局上下文
 struct global_context_t g_global_ctx;
 
+struct op_tracker_t {
+    uint64_t start_tsc;
+    uint64_t submit_done_tsc;
+    uint64_t complete_tsc;
+};
+
+
+struct op_tracker_t *_get_op_tracker(void *op) {
+    return (struct op_tracker_t *)(((char*)(op))+sizeof(message_t) + g_global_ctx.os_async_ctx_sz + 64);
+}
+
 void *_alloc_op_common(uint16_t op_type, uint64_t actx_sz) {
     // static int seq = 0;
-    void *p = calloc(1, sizeof(message_t) + actx_sz + 128);
+    void *p = calloc(1, sizeof(message_t) + actx_sz + 64 + 64);
     switch (op_type) {
     case msg_oss_op_create:
         memcpy(p, &fake_create_request_msg, sizeof(fake_create_request_msg));
@@ -249,8 +261,9 @@ void  perf_Then(void *ctx_) {
     double t = _tsc2choron(ctx->start_tsc , rdtsc());
     double iosz = ((ctx->rw_wio_cpl * ctx->io_size) / ((1UL << 20) * 1.0));
     double bd = ( iosz * 1e6 ) / t ;
-    log_info("Use time :%lf s, IO Size= %lf MiB , Bandwidth= %lf MiB/s \n", 
-        t / 1e6 ,  iosz ,  bd);
+    double iops = (ctx->rw_wio_cpl / t) * 1e3;
+    log_info("Use time :%lf s, IO Size= %lf MiB , Bandwidth= %lf MiB/s , IOPS = %lf K \n", 
+        t / 1e6 ,  iosz ,   bd , iops );
     _sys_fini();
 }
 bool  perf_Terminate(void *ctx_) {
@@ -295,11 +308,15 @@ void* perf_OpGenerate(void *ctx_) {
     r->priv_ctx = ctx_;
     r->data_buffer = g_global_ctx.dma_wbuf;
     op_write_t *opc = message_get_meta_buffer(op);
-
-    uint64_t prep_offset;
-    prep_offset = (ctx->rw_wio_prep * ctx->io_size) % ctx->max_offset;
-    opc->oid = (prep_offset >> 22);
-    opc->ofst = (prep_offset & ((4ul << 20) -1));
+    if(!ctx->rand) {
+        uint64_t prep_offset;
+        prep_offset = (ctx->rw_wio_prep * ctx->io_size) % ctx->max_offset;
+        opc->oid = (prep_offset >> 22);
+        opc->ofst = (prep_offset & ((4ul << 20) -1));
+    } else {
+        opc->oid = rand() % g_global_ctx.obj_nr;
+        opc->ofst = (rand() % 1024) << 12;
+    }
     opc->len = ctx->io_size;
     opc->flags = 0;
     ctx->rw_wio_prep++;
@@ -331,11 +348,14 @@ void  ObjectFill_Then(void *ctx_) {
     g_perf_ctx.total_tsc = 10 * g_perf_ctx.tsc_hz;
     g_perf_ctx.start_tsc = rdtsc();
     g_perf_ctx.read_radio = 0.0;
-    g_perf_ctx.io_size = (64 << 10);
+    g_perf_ctx.io_size = (4 << 10);
     g_perf_ctx.qd = 128;
+    g_perf_ctx.rand = 1;
     g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
-    
+
     log_info("Start perf...\n");
+
+    srand(time(0));
 
     perf_Start(&g_perf_ctx , g_perf_ctx.qd);
 
@@ -453,6 +473,7 @@ void _load_objstore() {
     e = now();
     log_info("mount time %lu us \n" , (e - s));
 
+    g_global_ctx.os_async_ctx_sz = os->obj_async_op_context_size();
 
     memset(&g_objprep_ctx , 0 , sizeof(g_objprep_ctx));
     g_objprep_ctx.start_tsc = rdtsc();

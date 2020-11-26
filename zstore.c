@@ -120,7 +120,7 @@ struct zstore_transacion_t {
     
     union pmem_transaction_t *pm_tx_;
     tailq_entry(zstore_transacion_t) zstore_tx_lhook_;
-};
+} __attribute__((aligned(64)));
 
 struct zstore_context_t {
     
