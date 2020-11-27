@@ -296,10 +296,14 @@ void  perf_OpComplete(void *op) {
     // ctx->last_peroid_rio_cpl++;
     ctx->last_peroid_wio_cpl++;
 
+    struct op_tracker_t *opt =  _get_op_tracker(op);
+    opt->complete_tsc = rdtsc();
+    ctx->rw_last_cpl_tsc =  opt->complete_tsc;
+
+    uint64_t op_tsc_use = opt->complete_tsc - opt->start_tsc;
+    ctx->last_peroid_lat_tsc_sum += op_tsc_use;
+    
     _free_op_common(op);
-
-    ctx->rw_last_cpl_tsc = rdtsc();
-
 
     // 1s
     if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > ctx->tsc_hz) {
@@ -327,6 +331,9 @@ int   perf_SubmitOp(void *op , cb_func_t cb) {
         ctx->rw_wio_submit++;
     }
     _submit_op(op  , cb);
+
+    _get_op_tracker(op)->submit_done_tsc = rdtsc();
+
     return 0;
 }
 void* perf_OpGenerate(void *ctx_) {
@@ -356,6 +363,10 @@ void* perf_OpGenerate(void *ctx_) {
     }
     opc->len = ctx->io_size;
     opc->flags = 0;
+
+    struct op_tracker_t *opt = _get_op_tracker(op);
+    opt->start_tsc = rdtsc();
+
     ctx->rw_wio_prep++;
     return op;
 }
