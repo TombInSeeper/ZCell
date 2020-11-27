@@ -1,8 +1,8 @@
 #!/bin/bash
 set -x
 
-nrfiles=81920
-totalsize=320G
+nrfiles=8192
+totalsize=32G
 
 dir=/mnt/ext4
 
