@@ -21,11 +21,12 @@ do
         fio --ioengine=libaio --direct=1 --thread \
 --norandommap --nrfiles=4 --size=1G --name=ext4_init_rand \
 --output=/tmp/perf/ext4/rw_${i}K_${j}qd.log --rw=randwrite --bs=4k \
---numjobs=1 
+--numjobs=1 \
 --write_iops_log=/tmp/perf/ext4/rw_${i}K_${j}qd \
 --write_bw_log=/tmp/perf/ext4/rw_${i}K_${j}qd \
 --write_lat_log=/tmp/perf/ext4/rw_${i}K_${j}qd \
 --iodepth=128 --ramp_time=0 --runtime=10 --time_based --group_reporting
+    echo "Start $i K randwrite benchmark  in qd $j done"
     done
 done
 
