@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+#set -x
 
 fio --ioengine=libaio --direct=1 --thread \
 --norandommap --nrfiles=4 --size=1G --name=ext4_init_seq \
