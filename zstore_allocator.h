@@ -105,6 +105,12 @@ static inline int stupid_alloc_space
         // uint64_t mod_mask = (1ULL<<9) - 1;
         // printf("Tgt v: bs[%lu], bits_[%lu] , bit[%lu]\n", i >> 9, (i & 511) >> 6, i & 63);
         uint64_t *v = &(allocator->bs_[i>>9].bits_[(i & 511) >> 6]);
+        if(~(*v)) {
+            //全是 1
+            it += 64;
+            continue;
+        }
+        
         uint64_t mask = (1ULL <<(i & 63));
         //这是目标位
         uint64_t bit = (*v) & mask;        
