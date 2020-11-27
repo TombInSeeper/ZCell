@@ -3,30 +3,25 @@ set -x
 
 nrfiles=81920
 totalsize=320G
-dev=/dev/nvme0n1
-
-nvme format -s 1 -b 4096 ${dev}
-mkfs.ext4 ${dev}
-mount ${dev} /mnt/ext4
 
 
 fio --ioengine=libaio --direct=1 --thread \
 --norandommap --nrfiles=${nrfiles} --size=${totalsize} --name=ext4_init_seq \
---output=/tmp/perf/ext4/init_seq.log --rw=write --bs=128k \
+--output=/run/perf/ext4/init_seq.log --rw=write --bs=128k \
 --numjobs=1 \
 --log_avg_msec=500\
---write_bw_log=/tmp/perf/ext4/ext4_init_seq \
+--write_bw_log=/run/perf/ext4/ext4_init_seq \
 --iodepth=64  --loops=2 --group_reporting
 
 sleep 1
 
 fio --ioengine=libaio --direct=1 --thread \
 --norandommap --nrfiles=${nrfiles} --size=${totalsize} --name=ext4_init_rand \
---output=/tmp/perf/ext4/init_rand.log --rw=randwrite --bs=4k \
+--output=/run/perf/ext4/init_rand.log --rw=randwrite --bs=4k \
 --numjobs=1 --log_avg_msec=500\
---write_iops_log=/tmp/perf/ext4/ext4_init_rand \
---write_bw_log=/tmp/perf/ext4/ext4_init_rand \
---write_lat_log=/tmp/perf/ext4/ext4_init_rand \
+--write_iops_log=/run/perf/ext4/ext4_init_rand \
+--write_bw_log=/run/perf/ext4/ext4_init_rand \
+--write_lat_log=/run/perf/ext4/ext4_init_rand \
 --iodepth=128 --ramp_time=0 --runtime=10 --time_based --group_reporting
 
 sleep 1
@@ -39,11 +34,11 @@ do
         echo "Start $i K randwrite benchmark  in qd $j\n"
         fio --ioengine=libaio --direct=1 --thread \
 --norandommap --nrfiles=${nrfiles} --size=${totalsize} --name=ext4_init_rand \
---output=/tmp/perf/ext4/rw_${i}K_${j}qd.log --rw=randwrite --bs=4k \
+--output=/run/perf/ext4/rw_${i}K_${j}qd.log --rw=randwrite --bs=4k \
 --numjobs=1 --log_avg_msec=500\
---write_iops_log=/tmp/perf/ext4/rw_${i}K_${j}qd \
---write_bw_log=/tmp/perf/ext4/rw_${i}K_${j}qd \
---write_lat_log=/tmp/perf/ext4/rw_${i}K_${j}qd \
+--write_iops_log=/run/perf/ext4/rw_${i}K_${j}qd \
+--write_bw_log=/run/perf/ext4/rw_${i}K_${j}qd \
+--write_lat_log=/run/perf/ext4/rw_${i}K_${j}qd \
 --iodepth=128 --ramp_time=10 --runtime=60 --time_based --group_reporting
         echo "Start $i K randwrite benchmark  in qd $j done"
     done
