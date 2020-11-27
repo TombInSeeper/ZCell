@@ -7,7 +7,7 @@ totalsize=32G
 dir=/mnt/ext4
 
 
-fio --ioengine=libaio --direct=1 --thread --norandommap\
+fio --ioengine=libaio --direct=1 --thread --norandommap \
 --nrfiles=${nrfiles}  --directory=${dir} --filename_format=test.$filenum \
 --size=${totalsize} \
 --name=ext4_init_seq \
