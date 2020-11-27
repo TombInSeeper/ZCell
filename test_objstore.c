@@ -376,6 +376,13 @@ bool  ObjectFill_StopSubmit(void *ctx_) {
 void  ObjectFill_OpComplete(void *op) {
     struct ObjectFill_context_t *ctx = ASYNC_TASK_CTX_OP(op);
     ctx->cpl_offset += (128 * 1024);
+  
+    if(ctx->cpl_offset % (1 << 30) == 0) {
+        double t = _tsc2choron(ctx->start_tsc , rdtsc());
+        double bd = ( (ctx->cpl_offset >> 20) * 1e6 ) / t ;
+        log_info("Use time :%lf s, Bandwidth= %lf MiB/s \n", t / 1e6 ,  bd);
+    }
+
     _free_op_common(op);
 }
 int   ObjectFill_SubmitOp(void *op , cb_func_t cb) {
