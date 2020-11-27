@@ -11,7 +11,7 @@ fio --ioengine=libaio --direct=1 --thread \
 --write_iops_log=/tmp/perf/ext4/ext4_init_rand \
 --write_bw_log=/tmp/perf/ext4/ext4_init_rand \
 --write_lat_log=/tmp/perf/ext4/ext4_init_rand \
---iodepth=64  ---loops=2 --group_reporting
+--iodepth=64  --loops=2 --group_reporting
 
 sleep 1
 
