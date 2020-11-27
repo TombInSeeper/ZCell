@@ -29,7 +29,7 @@ fio --ioengine=libaio --direct=1 --thread --norandommap \
 --write_iops_log=/run/perf/ext4/ext4_init_rand \
 --write_bw_log=/run/perf/ext4/ext4_init_rand \
 --write_lat_log=/run/perf/ext4/ext4_init_rand \
---iodepth=128 --ramp_time=0 --runtime=10 --time_based --group_reporting
+--iodepth=128 --ramp_time=0 --runtime=3600 --time_based --group_reporting
 
 sleep 1
 

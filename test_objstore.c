@@ -165,6 +165,9 @@ struct global_context_t {
     
     uint32_t obj_sz;
     uint64_t os_async_ctx_sz;
+
+    uint64_t io_sz;
+
     int obj_nr;
     int obj_create_dp;
     int obj_fill_dp;
@@ -253,6 +256,13 @@ ASYNC_TASK_DECLARE(perf) {
     uint64_t rw_wio_cpl;
     uint64_t rw_last_cpl_tsc;
 
+    uint64_t peroid_tsc;
+    uint64_t last_peroid_start_tsc;
+    uint64_t last_peroid_wio_cpl;
+    uint64_t last_peroid_rio_cpl;
+
+    uint64_t last_peroid_lat_tsc_sum;
+
 }g_perf_ctx;
 
 
@@ -283,9 +293,31 @@ bool  perf_StopSubmit(void *ctx_) {
 void  perf_OpComplete(void *op) {
     struct perf_context_t *ctx = ASYNC_TASK_CTX_OP(op);
     ctx->rw_wio_cpl++;
+    // ctx->last_peroid_rio_cpl++;
+    ctx->last_peroid_wio_cpl++;
+
     _free_op_common(op);
 
     ctx->rw_last_cpl_tsc = rdtsc();
+
+
+    // 1s
+    if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > ctx->tsc_hz) {
+
+        double iops = ctx->last_peroid_wio_cpl / 1000.0;
+        double bd = (ctx->last_peroid_wio_cpl * ctx->io_size) / (1024*1024.0);
+        double avg_lat = (double)ctx->last_peroid_lat_tsc_sum / ctx->last_peroid_wio_cpl; 
+        avg_lat /= (ctx->tsc_hz / 1e6);
+
+        log_raw_info("%16lf\t%16lf\t%16lf\n",bd , iops , avg_lat);
+
+        ctx->last_peroid_start_tsc = rdtsc();
+        ctx->last_peroid_lat_tsc_sum = 0;
+        ctx->last_peroid_rio_cpl = 0;
+        ctx->last_peroid_wio_cpl = 0;
+    }
+
+    
 }
 int   perf_SubmitOp(void *op , cb_func_t cb) {
     struct perf_context_t *ctx = ASYNC_TASK_CTX_OP(op);
@@ -348,19 +380,30 @@ void  ObjectFill_Then(void *ctx_) {
     
     memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
 
+
+
+    
     g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
-    g_perf_ctx.time_sec = 10;
-    g_perf_ctx.total_tsc = 10 * g_perf_ctx.tsc_hz;
+    g_perf_ctx.time_sec = 60;
+    g_perf_ctx.total_tsc = 60 * g_perf_ctx.tsc_hz;
     g_perf_ctx.start_tsc = rdtsc();
     g_perf_ctx.read_radio = 0.0;
-    g_perf_ctx.io_size = (4 << 10); // 4K
-    g_perf_ctx.qd = 128;
+    g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
+    g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
     g_perf_ctx.rand = 1;
     g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
+    
+    g_perf_ctx.last_peroid_start_tsc = rdtsc();
 
-    log_info("Start perf...\n");
-
+    log_info("Start perf: is_write = %d , io size = %lu K , is_rand = %d , qd = %lu \n" ,  
+        g_perf_ctx.read_radio == 0.0,
+        g_perf_ctx.io_size ,
+        g_perf_ctx.rand ,
+        g_perf_ctx.qd);
+    
     srand(time(0));
+
+    log_raw_info("%16s\t%16s\t%16s\t","BD(MiB/s)","IOPS(K)","avg_lat(us)\n");
 
     perf_Start(&g_perf_ctx , g_perf_ctx.qd);
 
@@ -493,6 +536,7 @@ void _load_objstore() {
 
 void _sys_init(void *arg) {
     (void)arg;
+
     g_global_ctx.dma_rbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     g_global_ctx.dma_wbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     g_global_ctx.obj_sz = 4 << 20;
@@ -501,20 +545,24 @@ void _sys_init(void *arg) {
     g_global_ctx.obj_perf_dp = 0;
 
     g_global_ctx.devs[0] = "Nvme0n1";
-    g_global_ctx.devs[1] = "/tmp/mempool";
+    g_global_ctx.devs[1] = "/run/pmem0";
+
 
     _load_objstore();
 }
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "n:")) != -1) {
+	while ((opt = getopt(argc, argv, "n:b:")) != -1) {
 		switch (opt) {
 		case 'n':
 			g_global_ctx.obj_nr = atoi(optarg);
 			break;
+        case 'b':
+			g_global_ctx.io_sz = (atoi(optarg)) << 10;
+			break;
 		default:
-			log_info("Usage: %s [-n nr_objects] \n", argv[0]);
+			log_info("Usage: %s [-n number of 4MiB objects] [-b block_size (K) ] \n", argv[0]);
 			exit(1);
 		}
 	}
