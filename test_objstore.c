@@ -394,9 +394,6 @@ void  ObjectFill_Then(void *ctx_) {
     
     memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
 
-
-
-    
     g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
     g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
     g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
@@ -560,7 +557,6 @@ void _sys_init(void *arg) {
 
     g_global_ctx.devs[0] = "Nvme0n1";
     g_global_ctx.devs[1] = "/run/pmem0";
-
 
     _load_objstore();
 }
