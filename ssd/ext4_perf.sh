@@ -4,9 +4,13 @@ set -x
 nrfiles=81920
 totalsize=320G
 
+dir=/mnt/ext4
 
-fio --ioengine=libaio --direct=1 --thread \
---norandommap --nrfiles=${nrfiles} --size=${totalsize} --name=ext4_init_seq \
+
+fio --ioengine=libaio --direct=1 --thread --norandommap\
+--nrfiles=${nrfiles}  --directory=${dir} --filename_format=test.$filenum \
+--size=${totalsize} \
+--name=ext4_init_seq \
 --output=/run/perf/ext4/init_seq.log --rw=write --bs=128k \
 --numjobs=1 \
 --log_avg_msec=500\
@@ -15,8 +19,8 @@ fio --ioengine=libaio --direct=1 --thread \
 
 sleep 1
 
-fio --ioengine=libaio --direct=1 --thread \
---norandommap --nrfiles=${nrfiles} --size=${totalsize} --name=ext4_init_rand \
+fio --ioengine=libaio --direct=1 --thread --norandommap \
+--nrfiles=${nrfiles}  --directory=${dir} --filename_format=test.$filenum --size=${totalsize} --name=ext4_init_rand \
 --output=/run/perf/ext4/init_rand.log --rw=randwrite --bs=4k \
 --numjobs=1 --log_avg_msec=500\
 --write_iops_log=/run/perf/ext4/ext4_init_rand \
@@ -33,7 +37,8 @@ do
     do
         echo "Start $i K randwrite benchmark  in qd $j\n"
         fio --ioengine=libaio --direct=1 --thread \
---norandommap --nrfiles=${nrfiles} --size=${totalsize} --name=ext4_init_rand \
+--norandommap --nrfiles=${nrfiles} --size=${totalsize}  --directory=${dir} --filename_format=test.$filenum \
+--name=ext4_init_rand \
 --output=/run/perf/ext4/rw_${i}K_${j}qd.log --rw=randwrite --bs=4k \
 --numjobs=1 --log_avg_msec=500\
 --write_iops_log=/run/perf/ext4/rw_${i}K_${j}qd \
