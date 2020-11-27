@@ -691,6 +691,7 @@ _tx_prep_rw_common(void *r)  {
     
     
     if(!oe) {
+        log_err("oid=%lu\n",oid);
         return OSTORE_NO_NODE;
     }
     // if(op == msg_oss_op_read) 
@@ -885,6 +886,7 @@ _tx_prep_cre_del_common(void *r)
             
             rc =  stupid_alloc_space(zs->pm_allocator_, 1 , ze, &ze_nr);
             if(rc){
+                log_err("oid=%lu\n",oid);
                 return OSTORE_NO_NODE;
             }
             char zero_tmp[4096];
