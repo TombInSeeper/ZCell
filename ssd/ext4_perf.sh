@@ -12,7 +12,7 @@ fio --ioengine=libaio --direct=1 --thread --norandommap \
 --size=${totalsize} \
 --name=ext4_init_seq \
 --output=/run/perf/ext4/init_seq.log --rw=write --bs=128k \
---numjobs=1 \
+--numjobs=4 \
 --log_avg_msec=500\
 --write_bw_log=/run/perf/ext4/ext4_init_seq \
 --iodepth=64  --loops=2 --group_reporting
