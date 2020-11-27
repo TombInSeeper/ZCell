@@ -1,11 +1,10 @@
 #!/bin/bash
 set -x
 
-nrfiles=8192
-totalsize=32G
+nrfiles=81920
+totalsize=320G
 
 dir=/mnt/ext4
-
 
 fio --ioengine=libaio --direct=1 --thread --norandommap \
 --nrfiles=${nrfiles}  --directory=${dir}  \
@@ -14,16 +13,19 @@ fio --ioengine=libaio --direct=1 --thread --norandommap \
 --name=ext4_init_seq \
 --output=/run/perf/ext4/init_seq.log --rw=write --bs=128k \
 --numjobs=1 \
---log_avg_msec=500\
+--log_avg_msec=1000\
 --write_bw_log=/run/perf/ext4/ext4_init_seq \
---iodepth=64 --loops=2 --group_reporting
+--iodepth=128 --loops=2 --group_reporting
 
 sleep 1
 
 fio --ioengine=libaio --direct=1 --thread --norandommap \
---nrfiles=${nrfiles}  --directory=${dir} --filename_format=test.'$'jobname.'$'filenum --size=${totalsize} --name=ext4_init_rand \
+--nrfiles=${nrfiles}  --directory=${dir} \
+--filename_format=test.'$'jobname.'$'filenum  \
+--size=${totalsize} --name=ext4_init_rand \
 --output=/run/perf/ext4/init_rand.log --rw=randwrite --bs=4k \
---numjobs=1 --log_avg_msec=500\
+--numjobs=1 \
+--log_avg_msec=1000 \
 --write_iops_log=/run/perf/ext4/ext4_init_rand \
 --write_bw_log=/run/perf/ext4/ext4_init_rand \
 --write_lat_log=/run/perf/ext4/ext4_init_rand \
@@ -40,12 +42,14 @@ do
         fio --ioengine=libaio --direct=1 --thread \
 --norandommap --nrfiles=${nrfiles} --size=${totalsize}  --directory=${dir} \
 --filename_format=test.'$'jobname.'$'filenum \
---name=ext4_init_rand \
---output=/run/perf/ext4/rw_${i}K_${j}qd.log --rw=randwrite --bs=4k \
---numjobs=1 --log_avg_msec=500\
+--name=ext4_perf_rand \
+--output=/run/perf/ext4/rw_${i}K_${j}qd.log \ 
+--numjobs=1  \
+--log_avg_msec=1000 \
 --write_iops_log=/run/perf/ext4/rw_${i}K_${j}qd \
 --write_bw_log=/run/perf/ext4/rw_${i}K_${j}qd \
 --write_lat_log=/run/perf/ext4/rw_${i}K_${j}qd \
+--rw=randwrite --bs=4k \
 --iodepth=128 --ramp_time=10 --runtime=60 --time_based --group_reporting
         echo "Start $i K randwrite benchmark  in qd $j done"
     done
