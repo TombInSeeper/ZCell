@@ -353,7 +353,7 @@ void  ObjectFill_Then(void *ctx_) {
     g_perf_ctx.total_tsc = 10 * g_perf_ctx.tsc_hz;
     g_perf_ctx.start_tsc = rdtsc();
     g_perf_ctx.read_radio = 0.0;
-    g_perf_ctx.io_size = (4 << 10);
+    g_perf_ctx.io_size = (4 << 10); // 4K
     g_perf_ctx.qd = 128;
     g_perf_ctx.rand = 1;
     g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
