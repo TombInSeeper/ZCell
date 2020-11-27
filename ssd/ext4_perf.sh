@@ -3,15 +3,19 @@ set -x
 
 nrfiles=81920
 totalsize=320G
+dev=/dev/nvme0n1
+
+nvme format -s 1 -b 4096 ${dev}
+mkfs.ext4 ${dev}
+mount ${dev} /mnt/ext4
+
 
 fio --ioengine=libaio --direct=1 --thread \
 --norandommap --nrfiles=${nrfiles} --size=${totalsize} --name=ext4_init_seq \
 --output=/tmp/perf/ext4/init_seq.log --rw=write --bs=128k \
 --numjobs=1 \
 --log_avg_msec=500\
---write_iops_log=/tmp/perf/ext4/ext4_init_rand \
---write_bw_log=/tmp/perf/ext4/ext4_init_rand \
---write_lat_log=/tmp/perf/ext4/ext4_init_rand \
+--write_bw_log=/tmp/perf/ext4/ext4_init_seq \
 --iodepth=64  --loops=2 --group_reporting
 
 sleep 1
