@@ -1,8 +1,8 @@
 #!/bin/bash
 set -x
 
-nrfiles=81920
-totalsize=320G
+nrfiles=8192
+totalsize=32G
 
 fio --ioengine=libaio --direct=1 --thread \
 --norandommap --nrfiles=${nrfiles} --size=${totalsize} --name=ext4_init_seq \
