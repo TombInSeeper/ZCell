@@ -172,6 +172,9 @@ struct global_context_t {
     int obj_create_dp;
     int obj_fill_dp;
     int obj_perf_dp;
+
+    int obj_perf_time;
+
 };
 
 
@@ -395,8 +398,8 @@ void  ObjectFill_Then(void *ctx_) {
 
     
     g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
-    g_perf_ctx.time_sec = 30;
-    g_perf_ctx.total_tsc = 30 * g_perf_ctx.tsc_hz;
+    g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
+    g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
     g_perf_ctx.start_tsc = rdtsc();
     g_perf_ctx.read_radio = 0.0;
     g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
@@ -408,7 +411,7 @@ void  ObjectFill_Then(void *ctx_) {
 
     log_info("Start perf: is_write = %d , io size = %lu K , is_rand = %d , qd = %lu \n" ,  
         g_perf_ctx.read_radio == 0.0,
-        g_perf_ctx.io_size ,
+        g_perf_ctx.io_size >> 10 ,
         g_perf_ctx.rand ,
         g_perf_ctx.qd);
     
@@ -564,7 +567,7 @@ void _sys_init(void *arg) {
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "n:b:")) != -1) {
+	while ((opt = getopt(argc, argv, "n:b:q:t:")) != -1) {
 		switch (opt) {
 		case 'n':
 			g_global_ctx.obj_nr = atoi(optarg);
@@ -572,8 +575,14 @@ static void parse_args(int argc , char **argv) {
         case 'b':
 			g_global_ctx.io_sz = (atoi(optarg)) << 10;
 			break;
+        case 'q':
+			g_global_ctx.obj_perf_dp = (atoi(optarg));
+			break;
+        case 't':
+			g_global_ctx.obj_perf_time = (atoi(optarg));
+			break;
 		default:
-			log_info("Usage: %s [-n number of 4MiB objects] [-b block_size (K) ] \n", argv[0]);
+			log_info("Usage: %s [-n number of 4MiB objects] [-b block_size (K) ]  [-t perf_time ] [-q qd ]\n", argv[0]);
 			exit(1);
 		}
 	}
