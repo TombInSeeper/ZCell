@@ -384,8 +384,8 @@ void  ObjectFill_Then(void *ctx_) {
 
     
     g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
-    g_perf_ctx.time_sec = 60;
-    g_perf_ctx.total_tsc = 60 * g_perf_ctx.tsc_hz;
+    g_perf_ctx.time_sec = 30;
+    g_perf_ctx.total_tsc = 30 * g_perf_ctx.tsc_hz;
     g_perf_ctx.start_tsc = rdtsc();
     g_perf_ctx.read_radio = 0.0;
     g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
@@ -542,7 +542,7 @@ void _sys_init(void *arg) {
     g_global_ctx.obj_sz = 4 << 20;
     g_global_ctx.obj_create_dp = 1;
     g_global_ctx.obj_fill_dp = 16;
-    g_global_ctx.obj_perf_dp = 0;
+    g_global_ctx.obj_perf_dp = 128;
 
     g_global_ctx.devs[0] = "Nvme0n1";
     g_global_ctx.devs[1] = "/run/pmem0";
