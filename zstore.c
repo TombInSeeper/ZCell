@@ -1015,7 +1015,6 @@ zstore_obj_async_op_context_size() {
     return sizeof(struct zstore_transacion_t);
 }
 
-
 extern int 
 zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb) {
     // uint16_t op = message_get_op(request_msg_with_op_context); 

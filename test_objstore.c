@@ -552,7 +552,7 @@ void _sys_init(void *arg) {
     g_global_ctx.dma_wbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     g_global_ctx.obj_sz = 4 << 20;
     g_global_ctx.obj_create_dp = 1;
-    g_global_ctx.obj_fill_dp = 16;
+    g_global_ctx.obj_fill_dp = 32;
     // g_global_ctx.obj_perf_dp = 128;
 
     g_global_ctx.devs[0] = "Nvme0n1";
