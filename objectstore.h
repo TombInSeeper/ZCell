@@ -18,6 +18,8 @@ enum OBJECTSTORE_TYPE{
     ZSTORE,
 };
 
+#define ZSTORE_MOUNT_FLAG_SINGLE_SECTOR_OVERWRITE 0x1
+
 typedef struct objstore_interface_t {  
     // int (*stat)(char *out, uint32_t len);
     //通常不会使用异步的 mount 和 unmount , mkfs

@@ -123,7 +123,10 @@ struct zstore_transacion_t {
 } __attribute__((aligned(64)));
 
 struct zstore_context_t {
-    
+    //mount flags
+    int mnt_flag_;
+
+
     //Data Space
     struct spdk_bdev *nvme_bdev_;
     struct spdk_bdev_desc *nvme_bdev_desc_;
@@ -321,6 +324,10 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
         log_err("zstore_ctx_init failed\n");
         return rc;
     }
+    
+    zstore->mnt_flag_ = flags;
+
+    
     uint64_t pm_size = 0;
     zstore_pm_file_open(zstore, dev_list[1] , &pm_size);
 
@@ -747,27 +754,31 @@ _tx_prep_rw_common(void *r)  {
         
         bool need_realloc = true;
 
-        if(ne != 0) {
-            if(blen == 1) {
-                // log_debug("4k write, directly overwrite\n");
-                need_realloc = false;
-            }
+        if((zstore->mnt_flag_ & ZSTORE_MOUNT_FLAG_SINGLE_SECTOR_OVERWRITE) && (blen == 1)) {
+            need_realloc = false;
+        }
+
+        if(ne != 0 && need_realloc) {
             log_debug("overwrite\n");
             stupid_free_space(zstore->ssd_allocator_ , e , ne);
             lba_to_bitmap_id(ne ,e , bid , &nbid);
         }
-        (void)need_realloc;
+
         struct zstore_extent_t enew[ZSTORE_TX_IOV_MAX];
         uint64_t enew_nr;
-        int rc = stupid_alloc_space(zstore->ssd_allocator_ , blen , enew , &enew_nr );
+        int rc;
+        if(need_realloc) {
+            rc = stupid_alloc_space(zstore->ssd_allocator_ , blen , enew , &enew_nr );
+            if(rc) {
+                log_err("Allocate new space failed\n");
+                return rc;
+            }
+        } else {
+            memcpy(enew,e,sizeof(e));
+            enew_nr = ne;
+        }
         dump_extent(enew,enew_nr); 
         
-        if(rc) {
-            log_err("Allocate new space failed\n");
-            return rc;
-        }
-        lba_to_bitmap_id(enew_nr, enew, bid2, &nbid2);
-
         tx->bios_ = malloc(sizeof(*tx->bios_) * enew_nr);
         int i;
         for (i = 0 ; i < enew_nr ; ++i) {
@@ -779,67 +790,73 @@ _tx_prep_rw_common(void *r)  {
 
         tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
         bool s;
-        //保存SSD Bitmap 的新值
-        for ( i = 0 ; i < nbid ; ++i) {
-            uint64_t pm_ofst = zstore->zsb_->pm_ssd_bitmap_ofst +
-                bid[i] * sizeof(struct stupid_bitmap_entry_t);
-            // log_debug("Add tx log entry: base_ofst:%lu, ")
-            s = pmem_transaction_add(zstore->pmem_,tx->pm_tx_, pm_ofst , NULL, 64 ,
-                &zstore->ssd_allocator_->bs_[bid[i]]);
-            if (!s) {
-                log_err("*ERROR*,Too big transaction\n");
-                // pmem_transaction_free(tx->pm_tx_);
-                pmem_transaction_free(zstore->pmem_, tx->pm_tx_);
-                return INVALID_OP;
-            }
-        }
-        for ( i = 0 ; i < nbid2 ; ++i) {
-            uint64_t pm_ofst = zstore->zsb_->pm_ssd_bitmap_ofst +
-                bid2[i] * sizeof(struct stupid_bitmap_entry_t);
-            s = pmem_transaction_add(zstore->pmem_,tx->pm_tx_, pm_ofst , NULL, 64 ,
-                &zstore->ssd_allocator_->bs_[bid2[i]]);
-            if (!s) {
-                log_err("*ERROR*,Too big transaction\n");
-                pmem_transaction_free(zstore->pmem_, tx->pm_tx_);
-                return INVALID_OP;
-            }
-        }
 
-        //DataIndex Update
-        do {
-            uint64_t data_index_shift = 2;
-            uint64_t dib_addr = object_data_index_block(zstore, oe);
-            uint64_t istart = FLOOR_ALIGN(bofst , 16);
-            uint64_t iend = CEIL_ALIGN(bofst + blen , 16);
-            uint64_t imlen = (iend - istart);
-            uint64_t iofst = bofst - istart;
-            uint64_t itail = (iofst + blen);
-            uint64_t j;
-            uint64_t i = iofst;
-            for ( j = 0 ; j < enew_nr ; ++j) {
-                uint64_t k;
-                for ( k = 0 ; k < enew[j].len_ ; ++k) {
-                    dib[i++] = enew[j].lba_ + k;
+        if(need_realloc) {
+            lba_to_bitmap_id(enew_nr, enew, bid2, &nbid2);
+
+            //保存SSD Bitmap 的新值
+            for ( i = 0 ; i < nbid ; ++i) {
+                uint64_t pm_ofst = zstore->zsb_->pm_ssd_bitmap_ofst +
+                    bid[i] * sizeof(struct stupid_bitmap_entry_t);
+                // log_debug("Add tx log entry: base_ofst:%lu, ")
+                s = pmem_transaction_add(zstore->pmem_,tx->pm_tx_, pm_ofst , NULL, 64 ,
+                    &zstore->ssd_allocator_->bs_[bid[i]]);
+                if (!s) {
+                    log_err("*ERROR*,Too big transaction\n");
+                    // pmem_transaction_free(tx->pm_tx_);
+                    pmem_transaction_free(zstore->pmem_, tx->pm_tx_);
+                    return INVALID_OP;
                 }
             }
-            log_debug("i = %lu , itail = %lu \n" , i , itail);
-            assert(i == itail);
+            for ( i = 0 ; i < nbid2 ; ++i) {
+                uint64_t pm_ofst = zstore->zsb_->pm_ssd_bitmap_ofst +
+                    bid2[i] * sizeof(struct stupid_bitmap_entry_t);
+                s = pmem_transaction_add(zstore->pmem_,tx->pm_tx_, pm_ofst , NULL, 64 ,
+                    &zstore->ssd_allocator_->bs_[bid2[i]]);
+                if (!s) {
+                    log_err("*ERROR*,Too big transaction\n");
+                    pmem_transaction_free(zstore->pmem_, tx->pm_tx_);
+                    return INVALID_OP;
+                }
+            }
 
+            //DataIndex Update
             do {
-                uint64_t i ;
-                log_debug("Data Index Update to:");
-                for ( i = 0  ; i < imlen ; ++i) {
-                    log_raw_debug("0x%x," , dib[i]);
+                uint64_t data_index_shift = 2;
+                uint64_t dib_addr = object_data_index_block(zstore, oe);
+                uint64_t istart = FLOOR_ALIGN(bofst , 16);
+                uint64_t iend = CEIL_ALIGN(bofst + blen , 16);
+                uint64_t imlen = (iend - istart);
+                uint64_t iofst = bofst - istart;
+                uint64_t itail = (iofst + blen);
+                uint64_t j;
+                uint64_t i = iofst;
+                for ( j = 0 ; j < enew_nr ; ++j) {
+                    uint64_t k;
+                    for ( k = 0 ; k < enew[j].len_ ; ++k) {
+                        dib[i++] = enew[j].lba_ + k;
+                    }
                 }
-                log_raw_debug("\n");
-            } while (0);
+                log_debug("i = %lu , itail = %lu \n" , i , itail);
+                assert(i == itail);
 
-            pmem_transaction_add(zstore->pmem_, tx->pm_tx_ , 
-                dib_addr + (istart << data_index_shift) ,
-                NULL, imlen << data_index_shift, dib);
+                do {
+                    uint64_t i ;
+                    log_debug("Data Index Update to:");
+                    for ( i = 0  ; i < imlen ; ++i) {
+                        log_raw_debug("0x%x," , dib[i]);
+                    }
+                    log_raw_debug("\n");
+                } while (0);
 
-        } while(0);
+                pmem_transaction_add(zstore->pmem_, tx->pm_tx_ , 
+                    dib_addr + (istart << data_index_shift) ,
+                    NULL, imlen << data_index_shift, dib);
 
+            } while(0);
+        }
+        
+        
         //oentry 的新值
         uint64_t oe_ofst = zstore->zsb_->pm_otable_ofst + 
             sizeof(*oe) * oid;

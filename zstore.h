@@ -3,6 +3,10 @@
 
 #include "util/common.h"
 
+#define ZSTORE_MOUNT_FLAG_SINGLE_SECTOR_OVERWRITE 0x1
+
+
+
 extern int zstore_mkfs(const char *dev_list[], int flags);
 
 extern int zstore_mount(const char *dev_list[], /* size = 3*/  int flags /**/);
