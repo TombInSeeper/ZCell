@@ -16,6 +16,8 @@ fio --ioengine=libaio --direct=1 --thread --norandommap \
 --numjobs=1 \
 --log_avg_msec=1000\
 --write_bw_log=/run/perf/ext4/ext4_init_seq \
+--write_iops_log=/run/perf/ext4/ext4_init_seq \
+--write_lat_log=/run/perf/ext4/ext4_init_seq \
 --iodepth=128 --loops=2 --group_reporting
 
 sleep 1
@@ -45,7 +47,7 @@ do
 --norandommap --nrfiles=${nrfiles} --size=${totalsize}  --directory=${dir} \
 --filename_format=test.'$'filenum \
 --name=ext4_perf_rand \
---output=/run/perf/ext4/rw_${i}K_${j}qd.log \ 
+--output=/run/perf/ext4/rw_${i}K_${j}qd.log \
 --file_service_type=random \
 --numjobs=1  \
 --log_avg_msec=1000 \
