@@ -47,13 +47,13 @@ do
 --norandommap --nrfiles=${nrfiles} --size=${totalsize}  --directory=${dir} \
 --filename_format=test.'$'filenum \
 --name=ext4_perf_rand \
---output=/run/perf/ext4/rw_${i}K_${j}qd.log \
+--output=/run/perf/ext4/perf_${i}K_${j}qd.log \
 --file_service_type=random \
 --numjobs=1  \
 --log_avg_msec=1000 \
---write_iops_log=/run/perf/ext4/perfw_${i}K_${j}qd \
---write_bw_log=/run/perf/ext4/perfw_${i}K_${j}qd \
---write_lat_log=/run/perf/ext4/perfw_${i}K_${j}qd \
+--write_iops_log=/run/perf/ext4/perf_${i}K_${j}qd \
+--write_bw_log=/run/perf/ext4/perf_${i}K_${j}qd \
+--write_lat_log=/run/perf/ext4/perf_${i}K_${j}qd \
 --rw=randwrite --bs=4k \
 --iodepth=128 --ramp_time=10 --runtime=60 --time_based --group_reporting
         echo "Start $i K randwrite benchmark  in qd $j done"
