@@ -16,7 +16,7 @@ fio --ioengine=libaio --direct=1 --thread --norandommap \
 --numjobs=1 \
 --log_avg_msec=1000\
 --write_bw_log=/run/perf/ext4/ext4_init_seq \
---iodepth=32 --loops=2 --group_reporting
+--iodepth=128 --loops=2 --group_reporting
 
 sleep 1
 
