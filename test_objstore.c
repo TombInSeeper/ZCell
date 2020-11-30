@@ -175,6 +175,8 @@ struct global_context_t {
 
     int obj_perf_time;
 
+    int remount;
+
 };
 
 
@@ -553,24 +555,30 @@ void _load_objstore() {
     const objstore_impl_t *os = g_global_ctx.os;
 
     uint64_t s , e ; 
-    s = now();
-    int rc = os->mkfs(g_global_ctx.devs , 0);
-    assert(rc == SUCCESS);
-    e = now();
-    log_info("mkfs time %lu us \n" , (e - s));
+    int rc;
+    if(! g_global_ctx.remount) {
+        s = now();
+        rc = os->mkfs(g_global_ctx.devs , 0);
+        assert(rc == SUCCESS);
+        e = now();
+        log_info("mkfs time %lu us \n" , (e - s));
+    }
 
     s = now();
     rc = os->mount(g_global_ctx.devs,0);
     assert(rc == SUCCESS);
     e = now();
     log_info("mount time %lu us \n" , (e - s));
-
-    g_global_ctx.os_async_ctx_sz = os->obj_async_op_context_size();
-
     memset(&g_objprep_ctx , 0 , sizeof(g_objprep_ctx));
     g_objprep_ctx.start_tsc = rdtsc();
     g_objprep_ctx.total_obj = g_global_ctx.obj_nr;
-    ObjectPrep_Start(&g_objprep_ctx , 1);
+    g_global_ctx.os_async_ctx_sz = os->obj_async_op_context_size();
+
+    if(g_global_ctx.remount) {
+        _sys_fini();
+    } else {
+        ObjectPrep_Start(&g_objprep_ctx , 1);
+    }
 }
 
 void _sys_init(void *arg) {
@@ -591,7 +599,7 @@ void _sys_init(void *arg) {
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "n:b:q:t:")) != -1) {
+	while ((opt = getopt(argc, argv, "n:b:q:t:r")) != -1) {
 		switch (opt) {
 		case 'n':
 			g_global_ctx.obj_nr = atoi(optarg);
@@ -604,6 +612,9 @@ static void parse_args(int argc , char **argv) {
 			break;
         case 't':
 			g_global_ctx.obj_perf_time = (atoi(optarg));
+			break;
+        case 'r':
+			g_global_ctx.remount = 1;
 			break;
 		default:
 			log_info("Usage: %s [-n number of 4MiB objects] [-b block_size (K) ]  [-t perf_time ] [-q qd ]\n", argv[0]);
