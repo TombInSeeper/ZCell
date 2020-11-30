@@ -58,7 +58,7 @@ do
 --write_bw_log=/run/perf/ext4/perf_${i}K_${j}qd \
 --write_lat_log=/run/perf/ext4/perf_${i}K_${j}qd \
 --rw=randwrite --bs=4k \
---iodepth=128 --ramp_time=10 --runtime=60 --time_based --group_reporting
+--iodepth=$j --ramp_time=10 --runtime=60 --time_based --group_reporting
         echo "Start $i K randwrite benchmark  in qd $j done"
     done
 done
