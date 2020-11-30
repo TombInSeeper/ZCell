@@ -3,6 +3,8 @@ set -x
 
 nrfiles=$1
 totalsize=${2}G
+flag=$3
+
 
 dir=/mnt/ext4
 
@@ -19,6 +21,7 @@ fio --ioengine=libaio --direct=1 --thread --norandommap \
 --write_iops_log=/run/perf/ext4/init_seq \
 --write_lat_log=/run/perf/ext4/init_seq \
 --iodepth=128 --loops=2 --group_reporting
+
 
 sleep 1
 
