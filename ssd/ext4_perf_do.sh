@@ -6,9 +6,9 @@ totalsize=${2}G
 flag=$3
 dir=/mnt/ext4
 
-for i in 4 8 16 32 64 128
+for i in 4 128
 do
-    for j in 1 8 32 128
+    for j in 1 128
     do
         echo "Start $i K randwrite benchmark  in qd $j\n"
         fio --ioengine=libaio --direct=1 --thread \
