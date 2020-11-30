@@ -163,7 +163,7 @@ struct global_context_t {
     char *dma_wbuf;
     char *dma_rbuf;
     
-    uint32_t obj_sz;
+    uint64_t obj_sz;
     uint64_t os_async_ctx_sz;
 
     uint64_t io_sz;
@@ -266,9 +266,34 @@ ASYNC_TASK_DECLARE(perf) {
 
     uint64_t last_peroid_lat_tsc_sum;
 
+    uint64_t perf_stage[64];
 }g_perf_ctx;
 
 
+void perf_ReStart(void *ctx_) {
+
+    struct perf_context_t *ctx = ctx_;
+    uint64_t stage  = ctx->perf_stage;
+
+    memset(ctx, 0 , sizeof(*ctx));
+
+    ctx->tsc_hz = spdk_get_ticks_hz();
+    ctx->time_sec = 30;
+    ctx->start_tsc = rdtsc();
+    ctx->total_tsc = ctx->time_sec * ctx->tsc_hz;
+    ctx->read_radio = 0.0;
+
+    ctx->rand = 1;
+    ctx->max_offset = g_global_ctx.obj_sz * g_global_ctx.obj_nr;
+
+    ctx->last_peroid_start_tsc = rdtsc();
+
+    ctx->qd = (stage % 8) * 8;
+    ctx->io_size = (4 << (stage % 8));
+    uint64_t max_offset;
+    int rand;
+
+}
 void  perf_Then(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
     double t = _tsc2choron(ctx->start_tsc , rdtsc());
@@ -282,7 +307,9 @@ void  perf_Then(void *ctx_) {
     }
     log_info("Use time :%lf s, IO Size= %lf MiB , Bandwidth= %lf MiB/s , IOPS = %lf K \n", 
         t / 1e6 ,  iosz ,   bd , iops );
+    
     _sys_fini();
+
 }
 bool  perf_Terminate(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
@@ -380,6 +407,7 @@ void* perf_OpGenerate(void *ctx_) {
 //填充所有Object
 ASYNC_TASK_DECLARE(ObjectFill) {
     uint64_t start_tsc;
+    // uint64_t last_period_start_tsc;
     uint64_t prep_offset;
     uint64_t submit_offset;
     uint64_t cpl_offset;

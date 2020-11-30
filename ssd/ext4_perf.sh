@@ -11,6 +11,7 @@ fio --ioengine=libaio --direct=1 --thread --norandommap \
 --filename_format=test.'$'jobname.'$'filenum \
 --size=${totalsize} \
 --name=ext4_init_seq \
+--file_service_type=sequential \
 --output=/run/perf/ext4/init_seq.log --rw=write --bs=128k \
 --numjobs=1 \
 --log_avg_msec=1000\
@@ -23,6 +24,7 @@ fio --ioengine=libaio --direct=1 --thread --norandommap \
 --nrfiles=${nrfiles}  --directory=${dir} \
 --filename_format=test.'$'jobname.'$'filenum  \
 --size=${totalsize} --name=ext4_init_rand \
+--file_service_type=random \
 --output=/run/perf/ext4/init_rand.log --rw=randwrite --bs=4k \
 --numjobs=1 \
 --log_avg_msec=1000 \
