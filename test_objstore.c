@@ -424,32 +424,35 @@ void  ObjectFill_Then(void *ctx_) {
     double bd = ( (ctx->total_len >> 20) * 1e6 ) / t ;
     log_info("Use time :%lf s, Bandwidth= %lf MiB/s \n", t / 1e6 ,  bd);
     
-    memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
+    if(g_global_ctx.obj_perf_time) {
+        memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
 
-    g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
-    g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
-    g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
-    g_perf_ctx.start_tsc = rdtsc();
-    g_perf_ctx.read_radio = 0.0;
-    g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
-    g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
-    g_perf_ctx.rand = 1;
-    g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
-    
-    g_perf_ctx.last_peroid_start_tsc = rdtsc();
+        g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
+        g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
+        g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
+        g_perf_ctx.start_tsc = rdtsc();
+        g_perf_ctx.read_radio = 0.0;
+        g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
+        g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
+        g_perf_ctx.rand = 1;
+        g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
+        
+        g_perf_ctx.last_peroid_start_tsc = rdtsc();
 
-    log_info("Start perf: is_write = %d , io size = %lu K , is_rand = %d , qd = %lu \n" ,  
-        g_perf_ctx.read_radio == 0.0,
-        g_perf_ctx.io_size >> 10 ,
-        g_perf_ctx.rand ,
-        g_perf_ctx.qd);
-    
-    srand(time(0));
+        log_info("Start perf: is_write = %d , io size = %lu K , is_rand = %d , qd = %lu \n" ,  
+            g_perf_ctx.read_radio == 0.0,
+            g_perf_ctx.io_size >> 10 ,
+            g_perf_ctx.rand ,
+            g_perf_ctx.qd);
+        
+        srand(time(0));
 
-    log_raw_info("%16s\t%16s\t%16s\t","BD(MiB/s)","IOPS(K)","avg_lat(us)\n");
+        log_raw_info("%16s\t%16s\t%16s\t","BD(MiB/s)","IOPS(K)","avg_lat(us)\n");
 
-    perf_Start(&g_perf_ctx , g_perf_ctx.qd);
-
+        perf_Start(&g_perf_ctx , g_perf_ctx.qd);
+    } else {
+        _sys_fini();
+    }
 }
 bool  ObjectFill_Terminate(void *ctx_) {
     struct ObjectFill_context_t *ctx = ctx_;
