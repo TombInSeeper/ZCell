@@ -17,6 +17,8 @@
  * read bandwidth:2700MB/s
  * write bandwidth: 1080MB/s
  * 
+ * steady state
+ * 
  * 4K read IOPS: 450K
  * 4K write IOPS: 75K
  * 
@@ -25,8 +27,6 @@
  * 
  * 
  */
-
-
 
 #define ERROR_ON(status)\
 if(status) { \

@@ -21,7 +21,8 @@ static const char *g_core_mask = "0x1";
 static int g_store_type = NULLSTORE;
 static int g_idle = 0;
 static const char *dev_list[] = {"Nvme0n1", "/tmp/mempool" ,NULL};
- 
+
+
 static void parse_args(int argc , char **argv) {
     int opt = -1;
 	while ((opt = getopt(argc, argv, "i:p:c:s:d")) != -1) {

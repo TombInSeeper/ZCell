@@ -37,9 +37,18 @@
 union zstore_superblock_t {
     struct {
         uint64_t magic;
-        
+
+        uint32_t features;
+
+        uint64_t ssd_min_alloc_size_shift;
+        uint64_t pm_min_alloc_size_shift;
+
         uint32_t ssd_nr_pages;
+        uint32_t ssd_min_alloc_size;
+
         uint32_t pm_nr_pages;
+        uint32_t pm_min_alloc_size;
+
         //64B aligned paddr ofst
         uint64_t pm_ulog_ofst; //4K~(4K*256)
         uint64_t pm_ssd_bitmap_ofst; // 1 << 20
@@ -53,6 +62,7 @@ union zstore_superblock_t {
         //Size: 64B * 1024 * 1024
         
         uint64_t pm_dy_space_ofst;
+
     };
     uint8_t align[ZSTORE_PAGE_SIZE];
 };
@@ -125,6 +135,7 @@ struct zstore_transacion_t {
 struct zstore_context_t {
     //mount flags
     int mnt_flag_;
+
 
 
     //Data Space
@@ -216,13 +227,15 @@ zstore_bdev_open(struct zstore_context_t *zs, const char *dev)
 }
 
 static void 
-zstore_bdev_close(struct zstore_context_t *zs) {
+zstore_bdev_close(struct zstore_context_t *zs) 
+{
     spdk_put_io_channel(zs->nvme_io_channel_);
     spdk_bdev_close(zs->nvme_bdev_desc_);
 }
 
 static int 
-zstore_pm_file_open(struct zstore_context_t *zs, const char *path, uint64_t *pm_size) {
+zstore_pm_file_open(struct zstore_context_t *zs, const char *path, uint64_t *pm_size) 
+{
     zs->pmem_ = pmem_open(path, spdk_env_get_current_core(), pm_size);
     if(!zs->pmem_) {
         return -1;
@@ -231,12 +244,14 @@ zstore_pm_file_open(struct zstore_context_t *zs, const char *path, uint64_t *pm_
 }
 
 static void
-zstore_pm_file_close(struct zstore_context_t *zs) {
+zstore_pm_file_close(struct zstore_context_t *zs) 
+{
     pmem_close(zs->pmem_);
 }
 
 extern int 
-zstore_mkfs(const char *dev_list[], int flags) {
+zstore_mkfs(const char *dev_list[], int flags) 
+{
 
     int rc = zstore_ctx_init(&zstore);
     assert(rc == 0);
@@ -282,6 +297,11 @@ zstore_mkfs(const char *dev_list[], int flags) {
     zsb->pm_otable_ofst = (1ULL << 20) + ssd_bitmap_sz + pm_bitmap_sz ;    
     zsb->pm_dy_space_ofst = zsb->pm_otable_ofst + (sizeof(union otable_entry_t)) * onode_rsv;
     
+    zsb->ssd_min_alloc_size = 4096;
+    zsb->pm_min_alloc_size = 4096;
+    zsb->ssd_min_alloc_size_shift = 12;
+    zsb->pm_min_alloc_size_shift = 12;
+
     assert(zsb->pm_ssd_bitmap_ofst % 4096 == 0);
     assert(zsb->pm_dy_bitmap_ofst % 4096 == 0);
     assert(zsb->pm_otable_ofst % 4096 == 0);
@@ -318,7 +338,8 @@ zstore_mkfs(const char *dev_list[], int flags) {
 }
 
 extern int 
-zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
+zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) 
+{
     int rc = zstore_ctx_init(&zstore);
     if(rc) {
         log_err("zstore_ctx_init failed\n");
@@ -388,7 +409,8 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/) {
 }
 
 extern int 
-zstore_unmount() {
+zstore_unmount() 
+{
     stupid_allocator_destructor(zstore->pm_allocator_);
     stupid_allocator_destructor(zstore->ssd_allocator_);
     zstore_bdev_close(zstore);
@@ -523,7 +545,8 @@ zstore_bio_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg)
 }
 
 static inline union otable_entry_t *
-onode_entry(struct zstore_context_t *zs, uint64_t oid) {
+onode_entry(struct zstore_context_t *zs, uint64_t oid)
+{
     if(oid < zs->zsb_->onodes_rsv)
         return &zs->otable_[oid];
     else
@@ -531,7 +554,8 @@ onode_entry(struct zstore_context_t *zs, uint64_t oid) {
 }
 
 static inline uint64_t 
-onode_pm_ofst( struct zstore_context_t *zs , uint64_t oid ) {
+onode_pm_ofst( struct zstore_context_t *zs , uint64_t oid ) 
+{
     return zstore->zsb_->pm_otable_ofst + oid * sizeof(union otable_entry_t);
 } 
 
@@ -592,8 +616,8 @@ object_lba_range_get(struct zstore_context_t *zs,
     uint64_t op_ofst , uint64_t op_len)
 {
 
-    uint64_t bofst = op_ofst >> ZSTORE_PAGE_SHIFT;
-    uint64_t blen = op_len >> ZSTORE_PAGE_SHIFT;
+    uint64_t bofst = op_ofst >> zs->zsb_->ssd_min_alloc_size_shift;
+    uint64_t blen = op_len >> zs->zsb_->ssd_min_alloc_size_shift;
     uint64_t dib_addr = object_data_index_block(zs , oe);
     
     //64B alined read/write
@@ -603,8 +627,11 @@ object_lba_range_get(struct zstore_context_t *zs,
     //istart = 0 , iend = 32
     //dib[0][1][2][3][4][5]..[15] | [16][17]..[31]
     //             3-----------------16
+
+
     uint64_t istart = FLOOR_ALIGN(bofst , 16);
-    uint64_t iend = CEIL_ALIGN((bofst + blen ) , 16);
+    uint64_t iend = CEIL_ALIGN((bofst + blen) , 16);
+    
     uint64_t ilen = (iend - istart);
     
     log_debug("Read data index block:(bofst=%lu,blen=%lu,istart=%lu,ilen=%lu)\n", 
@@ -618,13 +645,19 @@ object_lba_range_get(struct zstore_context_t *zs,
     
     do {
         uint64_t i ;
-        log_debug("Data Index Read:");
+        log_debug("Data Index Read , Per Index represents(%lu)K :" , zs->zsb_->ssd_min_alloc_size >> 10 );
         for ( i = 0  ; i < ilen ; ++i) {
             log_raw_debug("0x%x," , dib_[i]);
         }
         log_raw_debug("\n");
     } while (0);
-    object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
+    
+    if(zs->zsb_->ssd_min_alloc_size == ZSTORE_PAGE_SIZE)
+        object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
+    else {
+
+    }
+
 }
 
 
@@ -651,7 +684,8 @@ lba_to_bitmap_id(const uint32_t ne , struct zstore_extent_t *e ,  int *bid , int
 }
 
 static void 
-dump_extent(struct zstore_extent_t *e , uint32_t ne) {
+dump_extent(struct zstore_extent_t *e , uint32_t ne) 
+{
     uint32_t i;
     for (i = 0 ; i < ne ; ++i ) {
         log_debug("[0x%lu~0x%lu]\n", e[i].lba_ , e[i].len_ );        
@@ -659,7 +693,8 @@ dump_extent(struct zstore_extent_t *e , uint32_t ne) {
 }
 
 static int
-_tx_prep_rw_common(void *r)  {
+_tx_prep_rw_common(void *r)  
+{
     uint16_t op = message_get_op(r);
     message_t *m = (message_t*)r;
     struct zstore_transacion_t *tx = ostore_async_ctx(r);   
@@ -855,7 +890,6 @@ _tx_prep_rw_common(void *r)  {
 
             } while(0);
         }
-        
         
         //oentry 的新值
         uint64_t oe_ofst = zstore->zsb_->pm_otable_ofst + 

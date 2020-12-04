@@ -115,7 +115,7 @@ typedef struct async_op_context_t {
     uint16_t state;
     uint16_t err;
     cb_func_t end_cb;
-    uint32_t rsv[1];
+    // uint32_t rsv[1];
 }async_op_context_t;
 
 

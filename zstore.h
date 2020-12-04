@@ -4,8 +4,7 @@
 #include "util/common.h"
 
 #define ZSTORE_MOUNT_FLAG_SINGLE_SECTOR_OVERWRITE 0x1
-
-
+#define ZSTORE_CONSISTENCY_METADATA_ONLY 0x2
 
 extern int zstore_mkfs(const char *dev_list[], int flags);
 
@@ -16,6 +15,5 @@ extern int zstore_unmount();
 extern const int zstore_obj_async_op_context_size();
 
 extern int zstore_obj_async_op_call(void *request_msg_with_op_context, cb_func_t _cb);
-
 
 #endif
