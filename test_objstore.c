@@ -406,6 +406,8 @@ void* perf_OpGenerate(void *ctx_) {
 //void ObjectFill_Start(void *ctx , int dp);
 
 
+
+
 //填充所有Object
 ASYNC_TASK_DECLARE(ObjectFill) {
     uint64_t start_tsc;
@@ -575,7 +577,31 @@ void _load_objstore() {
     g_global_ctx.os_async_ctx_sz = os->obj_async_op_context_size();
 
     if(g_global_ctx.remount) {
-        _sys_fini();
+        // g_perf_ctx.
+        memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
+
+        g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
+        g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
+        g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
+        g_perf_ctx.start_tsc = rdtsc();
+        g_perf_ctx.read_radio = 0.0;
+        g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
+        g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
+        g_perf_ctx.rand = 1;
+        g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
+        
+        g_perf_ctx.last_peroid_start_tsc = rdtsc();
+
+        log_info("Start perf: is_write = %d , io size = %lu K , is_rand = %d , qd = %lu \n" ,  
+            g_perf_ctx.read_radio == 0.0,
+            g_perf_ctx.io_size >> 10 ,
+            g_perf_ctx.rand ,
+            g_perf_ctx.qd);
+        
+        srand(time(0));        
+        
+        perf_Start(&g_perf_ctx , g_perf_ctx.qd);
+
     } else {
         ObjectPrep_Start(&g_objprep_ctx , 1);
     }
