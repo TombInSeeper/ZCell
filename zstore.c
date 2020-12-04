@@ -645,18 +645,15 @@ object_lba_range_get(struct zstore_context_t *zs,
     
     do {
         uint64_t i ;
-        log_debug("Data Index Read , Per Index represents(%lu)K :" , zs->zsb_->ssd_min_alloc_size >> 10 );
+        log_debug("Data Index Read , Per Index represents(%u)K :" , zs->zsb_->ssd_min_alloc_size >> 10 );
         for ( i = 0  ; i < ilen ; ++i) {
             log_raw_debug("0x%x," , dib_[i]);
         }
         log_raw_debug("\n");
     } while (0);
     
-    if(zs->zsb_->ssd_min_alloc_size == ZSTORE_PAGE_SIZE)
-        object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
-    else {
-
-    }
+    // if(zs->zsb_->ssd_min_alloc_size == ZSTORE_PAGE_SIZE)
+    object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
 
 }
 
