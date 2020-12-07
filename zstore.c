@@ -136,8 +136,6 @@ struct zstore_context_t {
     //mount flags
     int mnt_flag_;
 
-
-
     //Data Space
     struct spdk_bdev *nvme_bdev_;
     struct spdk_bdev_desc *nvme_bdev_desc_;
@@ -620,7 +618,7 @@ object_lba_range_get(struct zstore_context_t *zs,
     uint64_t blen = op_len >> zs->zsb_->ssd_min_alloc_size_shift;
     uint64_t dib_addr = object_data_index_block(zs , oe);
     
-    //64B alined read/write
+    //64B alined pmem read/write
     //
     //Data Index Block
     //bofst = 3 , blen = 14
@@ -653,6 +651,10 @@ object_lba_range_get(struct zstore_context_t *zs,
     } while (0);
     
     // if(zs->zsb_->ssd_min_alloc_size == ZSTORE_PAGE_SIZE)
+    
+
+    
+    
     object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
 
 }
@@ -772,7 +774,6 @@ _tx_prep_rw_common(void *r)
             tx->bios_[i].blk_ofst = e[i].lba_;
         }
         tx->bio_outstanding_ = ne;
-    
     } else {
         log_debug("Prepare write context\n");
         if (op_ofst + op_len > (4UL << 20)) {
@@ -809,6 +810,7 @@ _tx_prep_rw_common(void *r)
             memcpy(enew,e,sizeof(e));
             enew_nr = ne;
         }
+        
         dump_extent(enew,enew_nr); 
         
         tx->bios_ = malloc(sizeof(*tx->bios_) * enew_nr);
