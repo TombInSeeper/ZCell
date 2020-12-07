@@ -84,6 +84,7 @@ union otable_entry_t {
 enum IO_TYPE {
     IO_READ = 1,
     IO_WRITE = 2,
+    IO_TRIM = 3,
 };
 
 // struct zstore_data_bio {
@@ -813,14 +814,15 @@ _tx_prep_rw_common(void *r)
         
         dump_extent(enew,enew_nr); 
         
-        tx->bios_ = malloc(sizeof(*tx->bios_) * enew_nr);
+        uint64_t bio_nr = enew_nr;
+        tx->bio_outstanding_ = bio_nr;
+        tx->bios_ = malloc(sizeof(*tx->bios_) * bio_nr);
         int i;
         for (i = 0 ; i < enew_nr ; ++i) {
             tx->bios_[i].io_type = IO_WRITE;
             tx->bios_[i].blk_len = enew[i].len_;
             tx->bios_[i].blk_ofst = enew[i].lba_;
         }
-        tx->bio_outstanding_ = enew_nr;
 
         tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);
         bool s;
@@ -981,7 +983,7 @@ _tx_prep_cre_del_common(void *r)
 
     //2. bitmap
     int i ;
-    for ( i = 0 ; i < ze_nr ; ++i) {
+    for (i = 0 ; i < ze_nr ; ++i) {
         pmem_transaction_add(zs->pmem_ , tx->pm_tx_ ,          
             zs->zsb_->pm_dy_bitmap_ofst + sizeof(struct stupid_bitmap_entry_t)* (ze[i].lba_ >> 9) , 
             NULL,

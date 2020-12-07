@@ -11,6 +11,17 @@
 #include "spdk/util.h"
 
 
+
+enum PerfType {
+    SEQ_READ = 1,
+    SEQ_WRITE = 2,
+    RAND_READ = 3,
+    RAND_WRITE = 4,
+    SEQ_MIX = 5,
+    RAND_MIX = 6,
+};
+
+
 /*
  * 
  * Intel DC p3700
@@ -148,14 +159,10 @@ const message_t fake_read_request_msg = {
     .priv_ctx = NULL 
 };
 
-
-
-
 double _tsc2choron(uint64_t start , uint64_t end) {
     uint64_t hz = spdk_get_ticks_hz();
     return ((end-start)/(double)(hz)) * 1e6;
 }
-
 
 struct global_context_t {
     const objstore_impl_t *os;
@@ -173,9 +180,13 @@ struct global_context_t {
     int obj_fill_dp;
     int obj_perf_dp;
 
+    int obj_perf_type;
+
     int obj_perf_time;
 
     int remount;
+
+    
 
 };
 
@@ -188,7 +199,6 @@ struct op_tracker_t {
     uint64_t submit_done_tsc;
     uint64_t complete_tsc;
 };
-
 
 struct op_tracker_t *_get_op_tracker(void *op) {
     return (struct op_tracker_t *)(((char*)(op))+sizeof(message_t) + g_global_ctx.os_async_ctx_sz + 64);
@@ -590,7 +600,16 @@ void _load_objstore() {
         g_perf_ctx.read_radio = 0.0;
         g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
         g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
-        g_perf_ctx.rand = 1;
+
+        if(g_global_ctx.obj_perf_type == RAND_READ || 
+           g_global_ctx.obj_perf_type == RAND_WRITE ||
+           g_global_ctx.obj_perf_type == RAND_MIX ) 
+        {
+            g_perf_ctx.rand = 1;
+        } else {
+            g_perf_ctx.rand = 0;
+        }
+
         g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
         
         g_perf_ctx.last_peroid_start_tsc = rdtsc();
@@ -628,7 +647,7 @@ void _sys_init(void *arg) {
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "n:b:q:t:r")) != -1) {
+	while ((opt = getopt(argc, argv, "n:b:q:t:ri:")) != -1) {
 		switch (opt) {
 		case 'n':
 			g_global_ctx.obj_nr = atoi(optarg);
@@ -645,8 +664,32 @@ static void parse_args(int argc , char **argv) {
         case 'r':
 			g_global_ctx.remount = 1;
 			break;
+        case 'i':
+			if(!strcmp(optarg,"sw")) {
+                log_info("Seq write perf\n");
+                g_global_ctx.obj_perf_type = SEQ_WRITE;
+            } else if (!strcmp(optarg,"rw")) {
+                log_info("Rand write perf\n");
+                g_global_ctx.obj_perf_type = RAND_WRITE;
+            } else if (!strcmp(optarg,"rr")) {
+                log_info("Rand read perf\n");
+                g_global_ctx.obj_perf_type = RAND_READ;
+            } else if (!strcmp(optarg,"sr")) {
+                log_info("Seq read perf\n");
+                g_global_ctx.obj_perf_type = SEQ_READ;
+            } else if (!strcmp(optarg,"smix")) {
+                log_info("Seq mix perf\n");
+                g_global_ctx.obj_perf_type = SEQ_MIX;
+            } else if (!strcmp(optarg,"rmix")) {
+                log_info("Rand mix perf\n");
+                g_global_ctx.obj_perf_type = RAND_MIX;
+            } else {
+                log_err("Unknown perf type %s \n" , optarg);
+                exit(1);
+            }
+			break;
 		default:
-			log_info("Usage: %s [-n number of 4MiB objects] [-b block_size (K) ]  [-t perf_time ] [-q qd ]\n", argv[0]);
+			log_info("Usage: %s [-n number of 4MiB objects] [-b block_size (K) ]  [-t perf_time ] [-q qd ] [-r (remount)]\n", argv[0]);
 			exit(1);
 		}
 	}
