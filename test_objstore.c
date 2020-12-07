@@ -665,6 +665,7 @@ static void parse_args(int argc , char **argv) {
 			g_global_ctx.remount = 1;
 			break;
         case 'i':
+            log_info("Perf type detect\n");
 			if(!strcmp(optarg,"sw")) {
                 log_info("Seq write perf\n");
                 g_global_ctx.obj_perf_type = SEQ_WRITE;
