@@ -145,7 +145,8 @@ extern bool pmem_transaction_add(struct pmem_t *pmem, union pmem_transaction_t *
     tx->lh.nr_logs++;    
 
     if(tx->lh.align_length > PM_LOG_REGION_SIZE) {
-        log_err("Cannot add more log into this Transaction\n");
+        log_err("Cannot add more log into this Transaction , now align length=%lu\n",
+            tx->lh.align_length);
         return false;
     }
 
