@@ -11,20 +11,29 @@ typedef struct messager_conf_t {
     //【必须填写】，后端网络类型，SOCK_POSIX 或者 SOCK_RDMA
     int sock_type;
     
-    // 【server 类型必须填写】
-    // 对于服务端类型的messager需要指定 ip
-    // char ip[46];
-    const char *ip;
-    
-    // 【server 类型必须填写】
-    // 对于服务端类型的messager需要指定 server
-    int port;
+    union {
+        struct {
+            // 【server 类型必须填写】
+            // 对于服务端类型的messager需要指定 ip
+            // char ip[46];
+            const char *ip;
+            
+            // 【server 类型必须填写】
+            // 对于服务端类型的messager需要指定 server
+            int port;
+        };
+
+        struct {           
+            int shm_id;
+            const char *ring_name_prefix;
+        };
+    };
 
     //【必须填写】
     //msg 参数指向的空间以及内部的 meta buffer 与 data buffer 将在回调执行完成后释放
     //如果要避免释放 meta buffer 和 data buffer 请使用如下方法：
     // 1. 手动将 msg->data_buffer msg->meta_buffer 置 NULL 
-    // 2. 使用 message_move 函数将源消息的正文（所属session,header+meta+data) 转移到目的 message
+    // 2. 使用 message_move 函数将源消息的正文（所属session,header+meta+data) 转移到新的 message
     void (*on_recv_message)(message_t *msg);
     
     //【必须填写】
@@ -91,6 +100,10 @@ typedef struct msgr_client_if_t {
     ///返回一个透明的 session 指针
     void* (*messager_connect)(const char *ip , int port , void *priv_ctx);
 
+    ///返回一个透明的 session 指针
+    void* (*messager_connect2)(const char *ring_name , void *priv_ctx);
+
+
     //获得与一个session关联的前一级上下文
     void* (*messager_get_session_ctx)( void* session);
 
@@ -109,8 +122,6 @@ typedef struct msgr_client_if_t {
 
     int   (*messager_flush_msg_of)(void* session); 
 
-
-
     //把所有发送队列中的消息flush
     //返回值：>=0 成功发送的消息个数
     //返回值：-1 内部错误
@@ -126,6 +137,12 @@ typedef struct msgr_client_if_t {
 } msgr_client_if_t;
 
 extern const msgr_server_if_t *msgr_get_server_impl();
+
+extern const msgr_server_if_t *msgr_get_ipc_server_impl();
+
 extern const msgr_client_if_t *msgr_get_client_impl();
+
+extern const msgr_client_if_t *msgr_get_ipc_client_impl();
+
 
 #endif

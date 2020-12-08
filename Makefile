@@ -91,6 +91,9 @@ client_admin_tool:client_admin_tool.o liboss.o $(MSGR_OBJS)
 test_objstore: test_objstore.o $(OSTORE_OBJS)
 	$(LINK_C)
 
+test_ipc: test_spdk_ipc.o 
+	$(LINK_C)
+
 %.o: %.c %.d
 	$(COMPILE_C)
 

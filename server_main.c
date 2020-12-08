@@ -20,19 +20,20 @@ static int g_base_port = 18000;
 static const char *g_core_mask = "0x1";
 static int g_store_type = NULLSTORE;
 static int g_idle = 0;
-static const char *dev_list[] = {"Nvme0n1", "/tmp/mempool" ,NULL};
+static int g_new = 0;
+static const char *dev_list[] = {"Nvme0n1", "/run/pmem1" ,NULL};
 
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "i:p:c:s:d")) != -1) {
+	while ((opt = getopt(argc, argv, "i:p:c:s:n")) != -1) {
 		switch (opt) {
 		case 'i':
 			g_base_ip = optarg;
 			break;
-        case 'd':
-            g_idle = 1;
-            break;
+        // case 'd':
+        //     g_idle = 1;
+        //     break;
 		case 'p':
 			g_base_port = atoi(optarg);
 			break;
@@ -54,27 +55,30 @@ static void parse_args(int argc , char **argv) {
                 exit(1);
             }
             break;
+        case 'n':
+			g_new = 1;
+			break;
 		default:
-			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-c core_mask] [-s[null|chunk|zeta]]\n", argv[0]);
+			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-c core_mask] [-s[null|chunk|zeta]] [-n new objstore] \n", argv[0]);
 			exit(1);
 		}
 	}
 }
 
 
-struct small_object_t {
-    uint8_t raw[120];
-    SLIST_ENTRY(small_object_t) hook;
-};
+// struct small_object_t {
+//     uint8_t raw[120];
+//     SLIST_ENTRY(small_object_t) hook;
+// };
 
 
-enum RunningLevel {
-    BUSY_MAX,
-    BUSY1,
-    BUSY2,
-    BUSY3,
-    IDLE = 10
-};
+// enum RunningLevel {
+//     BUSY_MAX,
+//     BUSY1,
+//     BUSY2,
+//     BUSY3,
+//     IDLE = 10
+// };
 
 
 typedef struct reactor_ctx_t {
@@ -85,20 +89,21 @@ typedef struct reactor_ctx_t {
     const msgr_server_if_t *msgr_impl;
     const objstore_impl_t  *os_impl;
 
+    // bool idle_enable;
+    // uint64_t idle_poll_start_us;
+    // uint64_t idle_poll_exe_us;
+    // uint64_t rx_last_window;
+    // uint64_t tx_last_window;
+    // uint64_t rx_io_last_window;
+    // uint64_t tx_io_last_window;
+    // struct spdk_poller *idle_poller;
+    // int running_level;
 
-    bool idle_enable;
-    uint64_t idle_poll_start_us;
-    uint64_t idle_poll_exe_us;
-    uint64_t rx_last_window;
-    uint64_t tx_last_window;
-    uint64_t rx_io_last_window;
-    uint64_t tx_io_last_window;
-    struct spdk_poller *idle_poller;
-
-    int running_level;
     volatile bool running;
 } reactor_ctx_t;
+
 static reactor_ctx_t g_reactor_ctxs[NR_REACTOR_MAX];
+
 static inline reactor_ctx_t* reactor_ctx() {
     return &g_reactor_ctxs[spdk_env_get_current_core()];
 }
@@ -115,6 +120,7 @@ static int reactor_reduce_state() {
 static void *alloc_meta_buffer(uint32_t sz) {
     return malloc(sz);
 }
+
 static void free_meta_buffer(void *p) {
     free(p);
 }
@@ -134,6 +140,7 @@ static void *alloc_data_buffer(uint32_t sz) {
     ptr =  spdk_dma_malloc(sz, align, NULL);
     return ptr;
 }
+
 static void free_data_buffer(void *p) {
     // fcache_t *fc = reactor_ctx()->dma_pages;
     // if(fcache_in(fc , p)) {
@@ -334,9 +341,12 @@ static void op_execute(message_t *request) {
 
 static void _on_recv_message(message_t *m) {
     // log_info("Recv a message done , m->meta=%u, m->data=%u\n" , m->header.meta_length ,m->header.data_length);
+    
     log_debug("Recv a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
     message_t _m ;
+    
+    
     /**
      * 承接 original message *m* 中的所有内容
      * 阻止 _on_** 调用后释放 m 内的 meta_buffer 和 data_buffer
@@ -344,9 +354,9 @@ static void _on_recv_message(message_t *m) {
      */
     message_move(&_m, m);
     
-    reactor_ctx()->rx_last_window += message_get_data_len(&_m) +
-        message_get_meta_len(&_m) + sizeof(message_t);
-    reactor_ctx()->rx_io_last_window++;
+    // reactor_ctx()->rx_last_window += message_get_data_len(&_m) +
+    //     message_get_meta_len(&_m) + sizeof(message_t);
+    // reactor_ctx()->rx_io_last_window++;
 
     op_execute(&_m);
 }
@@ -354,79 +364,79 @@ static void _on_recv_message(message_t *m) {
 static void _on_send_message(message_t *m) {
     log_debug("Send a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
      m->header.meta_length ,m->header.data_length);
-    reactor_ctx()->tx_last_window += message_get_data_len(m) +
-        message_get_meta_len(m) + sizeof(message_t);
-    reactor_ctx()->tx_io_last_window++;
+    // reactor_ctx()->tx_last_window += message_get_data_len(m) +
+    //     message_get_meta_len(m) + sizeof(message_t);
+    // reactor_ctx()->tx_io_last_window++;
 }
 
 
 
-static void _idle_reset(void *rctx_) {
-    reactor_ctx_t *rctx = rctx_;
-    rctx->idle_poll_start_us = now();
-    rctx->rx_last_window = 0;
-    rctx->tx_last_window = 0;
-    rctx->rx_io_last_window = 0;
-    rctx->tx_io_last_window = 0;
-}
+// static void _idle_reset(void *rctx_) {
+//     reactor_ctx_t *rctx = rctx_;
+//     rctx->idle_poll_start_us = now();
+//     rctx->rx_last_window = 0;
+//     rctx->tx_last_window = 0;
+//     rctx->rx_io_last_window = 0;
+//     rctx->tx_io_last_window = 0;
+// }
 
-static int _do_idle(void *rctx_) {
-    reactor_ctx_t *rctx = rctx_;
+// static int _do_idle(void *rctx_) {
+//     reactor_ctx_t *rctx = rctx_;
 
-    //1ms
-    static const uint64_t window_10Gbps = 
-        (1250 * 1000 * 1000ULL) / (1000); 
-    //1ms
-    static const uint64_t window_iops = 16; 
+//     //1ms
+//     static const uint64_t window_10Gbps = 
+//         (1250 * 1000 * 1000ULL) / (1000); 
+//     //1ms
+//     static const uint64_t window_iops = 16; 
     
-    uint64_t dx = spdk_max(rctx->tx_last_window , rctx->rx_last_window);
-    uint64_t dx_iops = spdk_max(rctx->tx_io_last_window , rctx->rx_io_last_window);
+//     uint64_t dx = spdk_max(rctx->tx_last_window , rctx->rx_last_window);
+//     uint64_t dx_iops = spdk_max(rctx->tx_io_last_window , rctx->rx_io_last_window);
     
-    log_debug("dx=%lu,dx_iops=%lu\n",dx , dx_iops);
+//     log_debug("dx=%lu,dx_iops=%lu\n",dx , dx_iops);
     
-    if(dx >= window_10Gbps / 2  || dx_iops >= window_iops / 2) {
-        rctx->running_level = BUSY_MAX;
-        return 0;
-    } else if (dx >= window_10Gbps / 4 || dx_iops >= window_iops / 4 ) {
-        rctx->running_level = BUSY1;
-        int i = 10;
-        while(--i)
-            spdk_pause();
-        return 0;
-    } else if (dx >= window_10Gbps / 8 || dx_iops >= window_iops / 8) {
-        rctx->running_level = BUSY2;
-        int i = 10;
-        while(--i)
-            spdk_pause();       
-        return 0;
-    } else if ( dx > 0  || dx_iops > 0 ) {
-        sched_yield();     
-        return 0;
-    } else {
-        rctx->running_level++;
-        if(rctx->running_level == IDLE) {
-            rctx->running_level = 0;
-            usleep(1000);
-            return 0;
-        } else {
-            usleep(100);
-            return 0;
-        }
-    }
-    return 0;
-}
+//     if(dx >= window_10Gbps / 2  || dx_iops >= window_iops / 2) {
+//         rctx->running_level = BUSY_MAX;
+//         return 0;
+//     } else if (dx >= window_10Gbps / 4 || dx_iops >= window_iops / 4 ) {
+//         rctx->running_level = BUSY1;
+//         int i = 10;
+//         while(--i)
+//             spdk_pause();
+//         return 0;
+//     } else if (dx >= window_10Gbps / 8 || dx_iops >= window_iops / 8) {
+//         rctx->running_level = BUSY2;
+//         int i = 10;
+//         while(--i)
+//             spdk_pause();       
+//         return 0;
+//     } else if ( dx > 0  || dx_iops > 0 ) {
+//         sched_yield();     
+//         return 0;
+//     } else {
+//         rctx->running_level++;
+//         if(rctx->running_level == IDLE) {
+//             rctx->running_level = 0;
+//             usleep(1000);
+//             return 0;
+//         } else {
+//             usleep(100);
+//             return 0;
+//         }
+//     }
+//     return 0;
+// }
 
-static int idle_poll(void *rctx_) {
-    reactor_ctx_t *rctx = rctx_;
-    uint64_t now_ = now();
-    uint64_t dur = now_ - rctx->idle_poll_start_us;
-    if(dur >= rctx->idle_poll_exe_us) {
-        _do_idle(rctx_);
-        _idle_reset(rctx_);
-        return 1;
-    }
-    return 0;
-}
+// static int idle_poll(void *rctx_) {
+//     reactor_ctx_t *rctx = rctx_;
+//     uint64_t now_ = now();
+//     uint64_t dur = now_ - rctx->idle_poll_start_us;
+//     if(dur >= rctx->idle_poll_exe_us) {
+//         _do_idle(rctx_);
+//         _idle_reset(rctx_);
+//         return 1;
+//     }
+//     return 0;
+// }
 
 //Stop routine
 int _ostore_stop(const objstore_impl_t *oimpl){
@@ -449,8 +459,8 @@ void _per_reactor_stop(void * ctx , void *err) {
     _ostore_stop(rctx->os_impl);
     
     //...
-    if(rctx->idle_enable)
-        spdk_poller_unregister(&rctx->idle_poller);
+    // if(rctx->idle_enable)
+    //     spdk_poller_unregister(&rctx->idle_poller);
 
     rctx->running = false;
     log_info("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
@@ -489,6 +499,8 @@ int _ostore_boot(const objstore_impl_t *oimpl , int new) {
     rc = oimpl->mount(dev_list,flags);
     return rc;
 }
+
+
 int _msgr_boot(const msgr_server_if_t *smsgr_impl) {
 
     //TODO get msgr global config
@@ -510,17 +522,19 @@ int _msgr_boot(const msgr_server_if_t *smsgr_impl) {
     rc = smsgr_impl->messager_start();
     return rc;
 }
+
+
 void _per_reactor_boot(void * ctx , void *err) {
     (void)err;
     (void)ctx;
     reactor_ctx_t *rctx = reactor_ctx();
 
-    rctx->idle_enable = g_idle;
-    if(rctx->idle_enable) {
-        rctx->idle_poller = spdk_poller_register(idle_poll,rctx, 1000);
-        rctx->idle_poll_start_us = now();
-        rctx->idle_poll_exe_us = 1000;
-    }
+    // rctx->idle_enable = g_idle;
+    // if(rctx->idle_enable) {
+    //     rctx->idle_poller = spdk_poller_register(idle_poll,rctx, 1000);
+    //     rctx->idle_poll_start_us = now();
+    //     rctx->idle_poll_exe_us = 1000;
+    // }
 
     //ObjectStore initialize
     rctx->os_impl = ostore_get_impl(g_store_type);
