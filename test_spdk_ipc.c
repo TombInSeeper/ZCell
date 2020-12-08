@@ -1,6 +1,7 @@
 #include <spdk/env.h>
 #include <spdk/event.h>
 
+#include "util/log.h"
 
 static const char *g_coremask = "0x1";
 
