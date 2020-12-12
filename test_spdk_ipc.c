@@ -1,6 +1,8 @@
 #include <spdk/env.h>
 #include <spdk/event.h>
 
+#include <spdk/bdev.h>
+
 #include "util/log.h"
 
 static const char *g_coremask = "0x1";
@@ -57,6 +59,8 @@ int main( int argc , char **argv) {
     opts.name = "test_ipc";
     opts.reactor_mask = g_coremask;
     opts.shutdown_cb = _sys_fini;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+
 
 
     spdk_app_start(&opts , _sys_init , NULL);
