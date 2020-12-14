@@ -184,9 +184,9 @@ struct global_context_t {
 
     int obj_perf_time;
 
-    int remount;
 
-    
+    int no_fill;
+    int remount;
 
 };
 
@@ -519,17 +519,22 @@ ASYNC_TASK_DECLARE(ObjectPrep) {
     uint64_t end_tsc;
 } g_objprep_ctx;
 void ObjectPrep_Then(void *ctx_) {
+    
     g_objprep_ctx.end_tsc = rdtsc();
     log_info("Prepare %lu objects done, use time %lf us \n" ,
         g_objprep_ctx.total_obj , _tsc2choron(g_objprep_ctx.start_tsc , g_objprep_ctx.end_tsc));
 
 
+    if(!g_global_ctx.no_fill) {
+        memset(&g_objfill_ctx , 0 , sizeof(g_objfill_ctx));
+        g_objfill_ctx.start_tsc = rdtsc();
+        g_objfill_ctx.total_len = g_objprep_ctx.total_obj * g_global_ctx.obj_sz;
+        log_info("Start fill %lu objects, total size=%lu kiB\n" ,g_objprep_ctx.total_obj, g_objfill_ctx.total_len >> 10 );
+        ObjectFill_Start(&g_objfill_ctx , g_global_ctx.obj_fill_dp);
+    } else {
+        _sys_fini();
+    }
 
-    memset(&g_objfill_ctx , 0 , sizeof(g_objfill_ctx));
-    g_objfill_ctx.start_tsc = rdtsc();
-    g_objfill_ctx.total_len = g_objprep_ctx.total_obj * g_global_ctx.obj_sz;
-    log_info("Start fill %lu objects, total size=%lu kiB\n" ,g_objprep_ctx.total_obj, g_objfill_ctx.total_len >> 10 );
-    ObjectFill_Start(&g_objfill_ctx , g_global_ctx.obj_fill_dp);
 }
 bool ObjectPrep_Terminate(void *ctx_) {
     struct ObjectPrep_context_t *ctx = ctx_;
@@ -631,7 +636,6 @@ void _load_objstore() {
 
 void _sys_init(void *arg) {
     (void)arg;
-
     g_global_ctx.dma_rbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     g_global_ctx.dma_wbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     g_global_ctx.obj_sz = 4 << 20;
@@ -647,7 +651,7 @@ void _sys_init(void *arg) {
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "n:b:q:t:ri:")) != -1) {
+	while ((opt = getopt(argc, argv, "n:b:q:t:rfi:")) != -1) {
 		switch (opt) {
 		case 'n':
 			g_global_ctx.obj_nr = atoi(optarg);
@@ -663,6 +667,9 @@ static void parse_args(int argc , char **argv) {
 			break;
         case 'r':
 			g_global_ctx.remount = 1;
+			break;
+        case 'f':
+			g_global_ctx.no_fill = 0;
 			break;
         case 'i':
             log_info("Perf type detect\n");
@@ -703,6 +710,8 @@ int main( int argc , char **argv) {
     opts.config_file = "spdk.conf";
     opts.reactor_mask = "0x1";
     opts.shutdown_cb = _sys_fini;
+    
+    g_global_ctx.no_fill = 1;
 
     parse_args(argc,argv);
 
