@@ -211,11 +211,20 @@ zstore_bdev_open(struct zstore_context_t *zs, const char *dev)
         return -1;
     }
     
+    if (zs->mnt_flag_ & ZSTORE_ENBALE_TRIM) {
+        if(!spdk_bdev_io_type_supported(zs->nvme_bdev_ , SPDK_BDEV_IO_TYPE_UNMAP)) {
+            log_err("The nvme device doesn't support *unmap* operation\n");
+            return -1;
+        }
+    }
+
+
     int rc = spdk_bdev_open(zs->nvme_bdev_, 1 , NULL, NULL, &zs->nvme_bdev_desc_);
     if(rc) {
         log_err("bdev %s open failed\n", dev);
         return rc;
     }
+
 
     zs->nvme_io_channel_ = spdk_bdev_get_io_channel(zs->nvme_bdev_desc_);
     if(!zs->nvme_io_channel_) {
