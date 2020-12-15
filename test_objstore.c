@@ -184,6 +184,7 @@ struct global_context_t {
 
     int obj_perf_time;
 
+    int mount_flag;
 
     int no_fill;
     int remount;
@@ -585,7 +586,10 @@ void _load_objstore() {
     }
 
     s = now();
-    rc = os->mount(g_global_ctx.devs,0);
+
+    int mflag = g_global_ctx.mount_flag;
+
+    rc = os->mount(g_global_ctx.devs, mflag);
     assert(rc == SUCCESS);
     e = now();
     log_info("mount time %lu us \n" , (e - s));
@@ -671,6 +675,9 @@ static void parse_args(int argc , char **argv) {
         case 'f':
 			g_global_ctx.no_fill = 0;
 			break;
+        case 'o':
+			g_global_ctx.mount_flag = atoi(optarg);
+			break;
         case 'i':
             log_info("Perf type detect\n");
 			if(!strcmp(optarg,"sw")) {
@@ -696,8 +703,13 @@ static void parse_args(int argc , char **argv) {
                 exit(1);
             }
 			break;
+        
 		default:
-			log_info("Usage: %s [-n number of 4MiB objects] [-b block_size (K) ]  [-t perf_time ] [-q qd ] [-r (remount)]\n", argv[0]);
+			log_info("Usage: %s [-o mount_flag %s] \
+            [-n number of 4MiB objects] [-b block_size (K) ]  \
+            [-t perf_time ] [-q qd ] [-i[sw|rw|rr|sr]] \
+            [-f(进行预填充)] [-r (remount)]\n", argv[0] ,\
+            "(0x1:单页直接覆盖写，0x2:使用 bdev_unmap)");
 			exit(1);
 		}
 	}
