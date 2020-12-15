@@ -435,13 +435,18 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
         if(tx->bios_[i].io_type == IO_READ) {
             rc = spdk_bdev_read_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
             buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);       
-        }
-        else {
+        } else if (tx->bios_[i].io_type == IO_WRITE) {
             rc = spdk_bdev_write_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
                 buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);
+        } else if (tx->bios_[i].io_type == IO_TRIM){
+            rc = spdk_bdev_unmap_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_,
+                tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);
+        } else {
+            log_err("Unknown io_type=%u\n",tx->bios_[i].io_type);
+            return OSTORE_IO_ERROR; 
         }
         if(rc) {
-            log_err("Submit error\n");
+            log_err("Submit error , io_type=%u\n" , tx->bios_[i].io_type);
             return OSTORE_IO_ERROR;
         }
         buf += ((uint64_t)(tx->bios_[i].blk_len) << ZSTORE_PAGE_SHIFT);
@@ -614,7 +619,6 @@ object_lba_range_get(struct zstore_context_t *zs,
     uint32_t *dib,
     uint64_t op_ofst , uint64_t op_len)
 {
-
     uint64_t bofst = op_ofst >> zs->zsb_->ssd_min_alloc_size_shift;
     uint64_t blen = op_len >> zs->zsb_->ssd_min_alloc_size_shift;
     uint64_t dib_addr = object_data_index_block(zs , oe);
@@ -652,9 +656,6 @@ object_lba_range_get(struct zstore_context_t *zs,
     } while (0);
     
     // if(zs->zsb_->ssd_min_alloc_size == ZSTORE_PAGE_SIZE)
-    
-
-    
     
     object_lba_merge_to(dib_ofst_ , blen, ext_nr , exts , mapped_blen);
 
@@ -769,6 +770,7 @@ _tx_prep_rw_common(void *r)
             return OSTORE_READ_HOLE; 
         }
         tx->bios_ = malloc(sizeof(*tx->bios_) * ne);
+        
         for (i = 0 ; i < ne ; ++i) {
             tx->bios_[i].io_type = IO_READ;
             tx->bios_[i].blk_len = e[i].len_;
@@ -788,9 +790,7 @@ _tx_prep_rw_common(void *r)
         
         bool need_realloc = true;
 
-        if((zstore->mnt_flag_ & ZSTORE_MOUNT_FLAG_SINGLE_SECTOR_OVERWRITE) && (blen == 1)) {
-            need_realloc = false;
-        }
+
 
         if(ne != 0 && need_realloc) {
             log_debug("overwrite\n");
@@ -815,13 +815,30 @@ _tx_prep_rw_common(void *r)
         dump_extent(enew,enew_nr); 
         
         uint64_t bio_nr = enew_nr;
+        if(zstore->mnt_flag_ & ZSTORE_ENBALE_TRIM) {
+            if(ne) {
+                bio_nr += ne;
+            }
+        }
+  
         tx->bio_outstanding_ = bio_nr;
         tx->bios_ = malloc(sizeof(*tx->bios_) * bio_nr);
         int i;
+
         for (i = 0 ; i < enew_nr ; ++i) {
             tx->bios_[i].io_type = IO_WRITE;
             tx->bios_[i].blk_len = enew[i].len_;
             tx->bios_[i].blk_ofst = enew[i].lba_;
+        }
+
+        if(zstore->mnt_flag_ & ZSTORE_ENBALE_TRIM) {
+            if(ne) {
+                for ( ; i < enew_nr + ne ; ++i) {
+                    tx->bios_[i].io_type = IO_TRIM;
+                    tx->bios_[i].blk_len = e[i].len_;
+                    tx->bios_[i].blk_ofst = e[i].lba_;
+                }
+            }
         }
 
         tx->pm_tx_ = pmem_transaction_alloc(zstore->pmem_);

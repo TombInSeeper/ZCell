@@ -3,8 +3,8 @@
 
 #include "util/common.h"
 
-#define ZSTORE_MOUNT_FLAG_SINGLE_SECTOR_OVERWRITE 0x1
-#define ZSTORE_CONSISTENCY_METADATA_ONLY 0x2
+#define ZSTORE_OVERWRITE 0x1
+#define ZSTORE_ENBALE_TRIM 0x2
 
 extern int zstore_mkfs(const char *dev_list[], int flags);
 
