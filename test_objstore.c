@@ -655,7 +655,7 @@ void _sys_init(void *arg) {
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "n:b:q:t:rfi:")) != -1) {
+	while ((opt = getopt(argc, argv, "o:n:b:q:t:rfi:")) != -1) {
 		switch (opt) {
 		case 'n':
 			g_global_ctx.obj_nr = atoi(optarg);
