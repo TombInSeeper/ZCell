@@ -251,6 +251,8 @@ void _submit_op(void *op , cb_func_t cb) {
 //第三阶段：执行Perf测试
 //TimeBased
 
+
+
 ASYNC_TASK_DECLARE(perf) {
 
     int time_based;
@@ -283,6 +285,9 @@ ASYNC_TASK_DECLARE(perf) {
     uint64_t last_peroid_rio_cpl;
 
     uint64_t last_peroid_lat_tsc_sum;
+
+    //
+    int verify;
 
 }g_perf_ctx;
 
@@ -395,6 +400,7 @@ void  perf_OpComplete(void *op) {
         ctx->rw_wio_cpl++;
         ctx->last_peroid_wio_cpl++;
     }
+
     spdk_free(message_get_data_buffer(op));
 
     struct op_tracker_t *opt =  _get_op_tracker(op);
@@ -495,8 +501,9 @@ void* perf_OpGenerate(void *ctx_) {
         opc->len = ctx->io_size;
         opc->flags = 0;
 
-        generate_blocks(r->data_buffer , opc->oid , opc->ofst , opc->len);
 
+        //if(ctx->verify)
+        generate_blocks(r->data_buffer , opc->oid , opc->ofst , opc->len);
 
         struct op_tracker_t *opt = _get_op_tracker(op);
         opt->start_tsc = rdtsc();
