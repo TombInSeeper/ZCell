@@ -756,8 +756,8 @@ void _load_objstore() {
 
 void _sys_init(void *arg) {
     (void)arg;
-    g_global_ctx.dma_rbuf = spdk_dma_zmalloc(256 * 1024 * 1024, 0x1000, NULL);
-    g_global_ctx.dma_wbuf = spdk_dma_zmalloc(256 * 1024 * 1024, 0x1000,NULL);
+    g_global_ctx.dma_rbuf = spdk_dma_zmalloc(4 * 1024 * 1024, 0x1000, NULL);
+    g_global_ctx.dma_wbuf = spdk_dma_zmalloc(4 * 1024 * 1024, 0x1000,NULL);
     g_global_ctx.obj_sz = OBJECT_SIZE_BYTES;
     g_global_ctx.obj_create_dp = 1;
 
