@@ -396,12 +396,12 @@ void* perf_OpGenerate(void *ctx_) {
         op_read_t *opc = message_get_meta_buffer(op);
         if(!ctx->rand) {
             uint64_t prep_offset;
-            prep_offset = (ctx->rw_wio_prep * ctx->io_size) % ctx->max_offset;
+            prep_offset = (ctx->rw_rio_prep * ctx->io_size) % ctx->max_offset;
             opc->oid = (prep_offset >> OBJECT_SIZE_SHIFT);
-            opc->ofst = (prep_offset & (OBJECT_SIZE_BYTES -1));
+            opc->ofst = (prep_offset % (OBJECT_SIZE_BYTES));
         } else {
             opc->oid = rand() % g_global_ctx.obj_nr;
-            opc->ofst = (rand() % 1024) << 12;
+            opc->ofst = (rand() % (OBJECT_SIZE_BYTES / (ctx->io_size))) * (ctx->io_size);
         }
 
         opc->len = ctx->io_size;
@@ -416,11 +416,12 @@ void* perf_OpGenerate(void *ctx_) {
             uint64_t prep_offset;
             prep_offset = (ctx->rw_wio_prep * ctx->io_size) % ctx->max_offset;
             opc->oid = (prep_offset >> OBJECT_SIZE_SHIFT);
-            opc->ofst = (prep_offset & (OBJECT_SIZE_BYTES -1));
+            opc->ofst = (prep_offset % (OBJECT_SIZE_BYTES));
         } else {
             opc->oid = rand() % g_global_ctx.obj_nr;
-            opc->ofst = (rand() % 1024) << 12;
+            opc->ofst = (rand() % (OBJECT_SIZE_BYTES / (ctx->io_size))) * (ctx->io_size);
         }
+        
         opc->len = ctx->io_size;
         opc->flags = 0;
         struct op_tracker_t *opt = _get_op_tracker(op);
@@ -669,10 +670,9 @@ void _sys_init(void *arg) {
     (void)arg;
     g_global_ctx.dma_rbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     g_global_ctx.dma_wbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
-    g_global_ctx.obj_sz = 4 << 20;
+    g_global_ctx.obj_sz = OBJECT_SIZE_BYTES;
     g_global_ctx.obj_create_dp = 1;
-    // g_global_ctx.obj_fill_dp = 32;
-    // g_global_ctx.obj_perf_dp = 128;
+
 
     g_global_ctx.devs[0] = "Nvme0n1";
     g_global_ctx.devs[1] = "/run/pmem0";
@@ -746,7 +746,10 @@ int main( int argc , char **argv) {
     opts.reactor_mask = "0x1";
     opts.shutdown_cb = _sys_fini;
     
+    memset(&g_global_ctx , 0 , sizeof(g_global_ctx));
+
     parse_args(argc,argv);
+
     spdk_app_start(&opts , _sys_init , NULL);
  
     spdk_app_fini();
