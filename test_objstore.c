@@ -317,8 +317,8 @@ static bool verfiy_blocks(const void *rbuf , uint64_t oid , uint64_t ofst, uint6
                 log_info("Read:(object_id,object_ct)=(%lu,%lu) , Expected :(object_id,object_ct)=(%lu,%lu) " ,
                     dp->object_id , dp->object_ct , 
                     d.object_id , d.object_ct); 
-                assert(dp->object_ct != d.object_ct);
-                assert (dp->object_id != d.object_id);
+                assert(dp->object_ct == d.object_ct);
+                assert (dp->object_id == d.object_id);
             }
         }
     } while(0);
