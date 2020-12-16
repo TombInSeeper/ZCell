@@ -189,6 +189,8 @@ struct global_context_t {
     int rand;
     int read_radio;
     
+    int verify;
+
     const char *perf_name;
 
 };
@@ -286,6 +288,62 @@ ASYNC_TASK_DECLARE(perf) {
 
 
 
+static bool verfiy_blocks(const void *rbuf , uint64_t oid , uint64_t ofst, uint64_t len) {
+    do {
+        uint64_t i;
+        typedef struct dumm_t {
+            uint64_t object_id;
+            uint64_t object_ct;
+        } dumm_t;
+        assert(sizeof(dumm_t) == 16);
+        //Fill
+        for ( i = 0 ; i < len; i += 0x1000) {
+            char *p = (char *)(rbuf) + i * 0x1000;
+            uint64_t j;
+            for ( j = 0 ; j < 1 ; ++j) {
+                char *q = p + j * 16;
+                dumm_t d = {
+                    .object_id = oid,
+                    .object_ct = (i + ofst) / 0x1000
+                };
+                dumm_t *dp = q;
+                log_debug("Read:(object_id,object_ct)=(%lu,%lu) , Expected :(object_id,object_ct)=(%lu,%lu) " ,
+                    dp->object_id , dp->object_ct , 
+                    d.object_id , d.object_ct); 
+                assert(dp->object_ct == d.object_ct);
+                assert(dp->object_id == d.object_id);
+            }
+        }
+    } while(0);
+    
+    return true;
+}
+
+static void generate_blocks(void *wbuf , uint64_t oid , uint64_t ofst, uint64_t len)
+{
+    do {
+        uint64_t i;
+        typedef struct dumm_t {
+            uint64_t object_id;
+            uint64_t object_ct;
+        } dumm_t;
+        assert(sizeof(dumm_t) == 16);
+        //Fill
+        for ( i = 0 ; i < len; i += 0x1000) {
+            char *p = (char *)(wbuf) + i * 0x1000;
+            uint64_t j;
+            for ( j = 0 ; j < 1 ; ++j) {
+                char *q = p + j * 16;
+                dumm_t d = {
+                    .object_id = oid,
+                    .object_ct = (i + ofst) / 0x1000
+                };
+                memcpy(q , &d, 16);
+            }
+        }
+    } while(0);
+}
+
 void  perf_Then(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
     double t = _tsc2choron(ctx->start_tsc , rdtsc());
@@ -328,10 +386,14 @@ void  perf_OpComplete(void *op) {
     
     if(message_get_op(op) == msg_oss_op_read) {
         ctx->rw_rio_cpl++;
+        void *rbuf = message_get_data_buffer(op);
+        op_read_t *op = message_get_meta_buffer(op);
+        verfiy_blocks(rbuf, op->oid , op->ofst , op->len);
     } else {
         ctx->rw_wio_cpl++;
     }
-    
+    spdk_free(message_get_data_buffer(op));
+
     struct op_tracker_t *opt =  _get_op_tracker(op);
     opt->complete_tsc = rdtsc();
     ctx->rw_last_cpl_tsc =  opt->complete_tsc;
@@ -341,7 +403,7 @@ void  perf_OpComplete(void *op) {
     
     _free_op_common(op);
 
-    //100ms
+    //1000ms
     if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > (ctx->tsc_hz)) {
         double wiops = ctx->last_peroid_wio_cpl / 1000.0;
         double riops = ctx->last_peroid_rio_cpl / 1000.0;
@@ -387,9 +449,9 @@ void* perf_OpGenerate(void *ctx_) {
     message_t *r = op;
     r->priv_ctx = ctx_;
     if(is_read) {
-        r->data_buffer = g_global_ctx.dma_rbuf;     
+        r->data_buffer = spdk_dma_zmalloc(ctx->io_size, 0x1000, NULL);     
     } else {
-        r->data_buffer = g_global_ctx.dma_wbuf;
+        r->data_buffer = spdk_dma_zmalloc(ctx->io_size, 0x1000, NULL);     
     }
 
     if(is_read) {
@@ -422,15 +484,23 @@ void* perf_OpGenerate(void *ctx_) {
             opc->ofst = (rand() % (OBJECT_SIZE_BYTES / (ctx->io_size))) * (ctx->io_size);
         }
 
+        //objectN
+        //[4K][4k][4k]...[4K]
+        //<N,0> 0-15 字节
+        //<N,0> 16-31 字节
+        //<N,0> 4080-4095
         opc->len = ctx->io_size;
         opc->flags = 0;
+
+        generate_blocks(r->data_buffer , opc->oid , opc->ofst , opc->len);
+
+
         struct op_tracker_t *opt = _get_op_tracker(op);
         opt->start_tsc = rdtsc();
+
+
         ctx->rw_wio_prep++;
     }
-
-
-
 
     return op;
 }
