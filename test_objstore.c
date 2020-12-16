@@ -10,8 +10,8 @@
 #include "spdk/env.h"
 #include "spdk/util.h"
 
-
-
+#define OBJECT_SIZE_BYTES (4ull << 20 )
+#define OBJECT_SIZE_SHIFT 22
 
 /*
  * 
@@ -251,10 +251,15 @@ void _submit_op(void *op , cb_func_t cb) {
 
 ASYNC_TASK_DECLARE(perf) {
 
+    int time_based;
     uint64_t tsc_hz;
     uint64_t time_sec;
     uint64_t start_tsc;
     uint64_t total_tsc;
+
+    int size_based;
+    uint64_t total_size;
+
     uint64_t read_radio;
     uint64_t qd;
     uint64_t io_size;
@@ -298,12 +303,25 @@ void  perf_Then(void *ctx_) {
 }
 bool  perf_Terminate(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
-    return (ctx->rw_last_cpl_tsc >= (ctx->start_tsc + ctx->total_tsc)) 
-        && ctx->rw_wio_submit == ctx->rw_wio_cpl;
+
+    if(ctx->size_based) {
+        return (ctx->rw_rio_cpl + ctx->rw_wio_cpl) * ctx->io_size >= ctx->total_size; 
+    } else {
+        return (ctx->rw_last_cpl_tsc >= (ctx->start_tsc + ctx->total_tsc)) 
+            && ctx->rw_wio_submit == ctx->rw_wio_cpl
+            && ctx->rw_rio_submit == ctx->rw_rio_cpl;
+    }
+
+
 }
 bool  perf_StopSubmit(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
-    return ctx->rw_last_cpl_tsc >= (ctx->start_tsc + ctx->total_tsc);
+
+    if(ctx->size_based) {
+        return (ctx->rw_rio_submit + ctx->rw_wio_submit) * ctx->io_size >= ctx->total_size; 
+    } else {
+        return ctx->rw_last_cpl_tsc >= (ctx->start_tsc + ctx->total_tsc);
+    }
 }
 void  perf_OpComplete(void *op) {
     struct perf_context_t *ctx = ASYNC_TASK_CTX_OP(op);
@@ -376,16 +394,17 @@ void* perf_OpGenerate(void *ctx_) {
     }
 
     if(is_read) {
-       op_read_t *opc = message_get_meta_buffer(op);
+        op_read_t *opc = message_get_meta_buffer(op);
         if(!ctx->rand) {
             uint64_t prep_offset;
             prep_offset = (ctx->rw_wio_prep * ctx->io_size) % ctx->max_offset;
-            opc->oid = (prep_offset >> 22);
-            opc->ofst = (prep_offset & ((4ul << 20) -1));
+            opc->oid = (prep_offset >> OBJECT_SIZE_SHIFT);
+            opc->ofst = (prep_offset & (OBJECT_SIZE_BYTES -1));
         } else {
             opc->oid = rand() % g_global_ctx.obj_nr;
             opc->ofst = (rand() % 1024) << 12;
         }
+
         opc->len = ctx->io_size;
         opc->flags = 0;
         struct op_tracker_t *opt = _get_op_tracker(op);
@@ -397,8 +416,8 @@ void* perf_OpGenerate(void *ctx_) {
         if(!ctx->rand) {
             uint64_t prep_offset;
             prep_offset = (ctx->rw_wio_prep * ctx->io_size) % ctx->max_offset;
-            opc->oid = (prep_offset >> 22);
-            opc->ofst = (prep_offset & ((4ul << 20) -1));
+            opc->oid = (prep_offset >> OBJECT_SIZE_SHIFT);
+            opc->ofst = (prep_offset & (OBJECT_SIZE_BYTES -1));
         } else {
             opc->oid = rand() % g_global_ctx.obj_nr;
             opc->ofst = (rand() % 1024) << 12;
@@ -609,9 +628,20 @@ void _load_objstore() {
         memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
 
         g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
+
+
+
         g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
-        g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
-        g_perf_ctx.start_tsc = rdtsc();
+        
+        if(g_perf_ctx.time_sec == 0) {
+            g_perf_ctx.size_based = 1;
+            g_perf_ctx.total_size == g_global_ctx.obj_nr * OBJECT_SIZE_BYTES;  
+        } else {
+            g_perf_ctx.time_based = 1;
+            g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
+            g_perf_ctx.start_tsc = rdtsc();
+        }
+
         g_perf_ctx.read_radio = g_global_ctx.read_radio;
         g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
         g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
@@ -632,7 +662,8 @@ void _load_objstore() {
             g_perf_ctx.io_size >> 10 ,
             g_perf_ctx.rand ,
             g_perf_ctx.qd); 
-        srand(time(0));        
+        srand(time(0));     
+
         perf_Start(&g_perf_ctx , g_perf_ctx.qd);
     } ;
 }
