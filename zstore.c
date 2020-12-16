@@ -450,6 +450,9 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
         if(tx->bios_[i].io_type == IO_READ) {
             rc = spdk_bdev_read_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
             buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);       
+
+            // spdk_bdev_block
+
         } else if (tx->bios_[i].io_type == IO_WRITE) {
             rc = spdk_bdev_write_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
                 buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);

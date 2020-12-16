@@ -339,7 +339,7 @@ static void generate_blocks(void *wbuf , uint64_t oid , uint64_t ofst, uint64_t 
         for ( i = 0 ; i < len; i += 0x1000) {
             char *p = (char *)(wbuf) + i;
             uint64_t j;
-            for ( j = 0 ; j < 1 ; ++j) {
+            for ( j = 0 ; j < 4 ; ++j) {
                 char *q = p + j * 16;
                 dumm_t d = {
                     .object_id = oid,
