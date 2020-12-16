@@ -702,7 +702,8 @@ static void parse_args(int argc , char **argv) {
 			break; 
         case 'M' :
             g_global_ctx.read_radio = atoi(optarg);
-            break;       
+            break; 
+        case 'h':      
 		default:
             usage(argv[0]);
 			exit(1);
