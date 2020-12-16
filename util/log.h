@@ -24,6 +24,7 @@
         if((level) <= DEBUG_LEVEL) {\
             printf("%s:%d:[%d](%s):" , __FILE__, __LINE__, (level), __func__ );\
             printf(__VA_ARGS__);\
+            fflush(stdout);\
         }\
     } while (0) 
     
