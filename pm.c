@@ -57,7 +57,7 @@ extern struct pmem_t *pmem_open(const char *path, uint64_t cpu,  uint64_t *pmem_
 
  
     int is_pmem;
-    p->map_base = pmem_map_file(path, fsize , 0 , 0 , NULL, &is_pmem);
+    p->map_base = pmem_map_file(path, fsize , 0 , 0666 , NULL, &is_pmem);
     assert(p->map_base);
     if(!is_pmem) {
         log_info("\n");\
