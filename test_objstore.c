@@ -12,15 +12,6 @@
 
 
 
-enum PerfType {
-    SEQ_READ = 1,
-    SEQ_WRITE = 2,
-    RAND_READ = 3,
-    RAND_WRITE = 4,
-    SEQ_MIX = 5,
-    RAND_MIX = 6,
-};
-
 
 /*
  * 
@@ -35,6 +26,18 @@ enum PerfType {
  * 
  * read lat : 120us
  * write lat : 30us
+ * =================================
+ * Intel DC p4800X
+ * read bandwidth:2400MB/s
+ * write bandwidth: 2400MB/s
+ * 
+ * steady state
+ * 
+ * 4K read IOPS: 600K
+ * 4K write IOPS: 600K
+ * 
+ * read lat : 10us
+ * write lat : 10us
  * 
  * 
  */
@@ -172,22 +175,21 @@ struct global_context_t {
     
     uint64_t obj_sz;
     uint64_t os_async_ctx_sz;
-
     uint64_t io_sz;
 
     int obj_nr;
     int obj_create_dp;
-    int obj_fill_dp;
     int obj_perf_dp;
 
-    int obj_perf_type;
+    int mkfs;
 
     int obj_perf_time;
-
     int mount_flag;
 
-    int no_fill;
-    int remount;
+    int rand;
+    int read_radio;
+    
+    const char *perf_name;
 
 };
 
@@ -246,18 +248,14 @@ void _submit_op(void *op , cb_func_t cb) {
 
 //第三阶段：执行Perf测试
 //TimeBased
-//1. 纯顺序写(128K)
-//2. 纯随机写(4K)
-//3. 纯顺序读(128K)
-//4. 纯随机读(4K)
-//5. 读写混合(4K)
+
 ASYNC_TASK_DECLARE(perf) {
 
     uint64_t tsc_hz;
     uint64_t time_sec;
     uint64_t start_tsc;
     uint64_t total_tsc;
-    double   read_radio;
+    uint64_t read_radio;
     uint64_t qd;
     uint64_t io_size;
     uint64_t max_offset;
@@ -283,46 +281,21 @@ ASYNC_TASK_DECLARE(perf) {
 }g_perf_ctx;
 
 
-void perf_ReStart(void *ctx_) {
 
-    struct perf_context_t *ctx = ctx_;
-    uint64_t stage  = ctx->perf_stage;
-
-    memset(ctx, 0 , sizeof(*ctx));
-
-    ctx->tsc_hz = spdk_get_ticks_hz();
-    ctx->time_sec = 30;
-    ctx->start_tsc = rdtsc();
-    ctx->total_tsc = ctx->time_sec * ctx->tsc_hz;
-    ctx->read_radio = 0.0;
-
-    ctx->rand = 1;
-    ctx->max_offset = g_global_ctx.obj_sz * g_global_ctx.obj_nr;
-
-    ctx->last_peroid_start_tsc = rdtsc();
-
-    ctx->qd = (stage % 8) * 8;
-    ctx->io_size = (4 << (stage % 8));
-    uint64_t max_offset;
-    int rand;
-
-}
 void  perf_Then(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
     double t = _tsc2choron(ctx->start_tsc , rdtsc());
-    double iosz = ((ctx->rw_wio_cpl * ctx->io_size) / ((1UL << 20) * 1.0));
+    double iosz = (((ctx->rw_wio_cpl + ctx->rw_rio_cpl) * ctx->io_size) / ((1UL << 20) * 1.0));
     double bd = ( iosz * 1e6 ) / t ;
-    double iops = (ctx->rw_wio_cpl / t) * 1e3;
+    double iops = ((ctx->rw_wio_cpl + ctx->rw_rio_cpl) / t) * 1e3;
     if(ctx->rand) {
         log_info("Random test ,io-size=%lu K\n", ctx->io_size >> 10);
     } else {
         log_info("Seq test ,io-size=%lu K\n", ctx->io_size >> 10);
     }
     log_info("Use time :%lf s, IO Size= %lf MiB , Bandwidth= %lf MiB/s , IOPS = %lf K \n", 
-        t / 1e6 ,  iosz ,   bd , iops );
-    
+        t / 1e6 ,  iosz ,   bd , iops );  
     _sys_fini();
-
 }
 bool  perf_Terminate(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
@@ -335,10 +308,13 @@ bool  perf_StopSubmit(void *ctx_) {
 }
 void  perf_OpComplete(void *op) {
     struct perf_context_t *ctx = ASYNC_TASK_CTX_OP(op);
-    ctx->rw_wio_cpl++;
-    // ctx->last_peroid_rio_cpl++;
-    ctx->last_peroid_wio_cpl++;
-
+    
+    if(message_get_op(op) == msg_oss_op_read) {
+        ctx->rw_rio_cpl++;
+    } else {
+        ctx->rw_wio_cpl++;
+    }
+    
     struct op_tracker_t *opt =  _get_op_tracker(op);
     opt->complete_tsc = rdtsc();
     ctx->rw_last_cpl_tsc =  opt->complete_tsc;
@@ -348,26 +324,24 @@ void  perf_OpComplete(void *op) {
     
     _free_op_common(op);
 
-    // 1s
-    if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > ctx->tsc_hz) {
-
-        double iops = ctx->last_peroid_wio_cpl / 1000.0;
-        double bd = (ctx->last_peroid_wio_cpl * ctx->io_size) / (1024*1024.0);
+    //100ms
+    if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > (ctx->tsc_hz / 10 )) {
+        double wiops = ctx->last_peroid_wio_cpl / 1000.0;
+        double riops = ctx->last_peroid_rio_cpl / 1000.0;
+        double wbd = (ctx->last_peroid_wio_cpl * ctx->io_size) / (1024*1024.0);
+        double rbd = (ctx->last_peroid_rio_cpl * ctx->io_size) / (1024*1024.0);       
         double avg_lat = (double)ctx->last_peroid_lat_tsc_sum / ctx->last_peroid_wio_cpl; 
         avg_lat /= (ctx->tsc_hz / 1e6);
-
-        log_raw_info("%16lf\t%16lf\t%16lf\n",bd , iops , avg_lat);
-
+        log_raw_info("%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\n", wbd , wiops , rbd , riops, avg_lat);
         ctx->last_peroid_start_tsc = rdtsc();
         ctx->last_peroid_lat_tsc_sum = 0;
         ctx->last_peroid_rio_cpl = 0;
         ctx->last_peroid_wio_cpl = 0;
     }
-
-    
 }
 int   perf_SubmitOp(void *op , cb_func_t cb) {
     struct perf_context_t *ctx = ASYNC_TASK_CTX_OP(op);
+    
     if(message_get_op(op) == msg_oss_op_read) {
         ctx->rw_rio_submit++;
     } else {
@@ -383,34 +357,63 @@ void* perf_OpGenerate(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
     const objstore_impl_t *os = g_global_ctx.os;
     void *op;
+
+
     bool is_read = false;
     
     if(is_read) {
-        ERROR_ON(1);
+        // ERROR_ON(1);
+        op = _alloc_op_common(msg_oss_op_read, os->obj_async_op_context_size());    
     } else {
         op = _alloc_op_common(msg_oss_op_write, os->obj_async_op_context_size());    
     }
     
     message_t *r = op;
     r->priv_ctx = ctx_;
-    r->data_buffer = g_global_ctx.dma_wbuf;
-    op_write_t *opc = message_get_meta_buffer(op);
-    if(!ctx->rand) {
-        uint64_t prep_offset;
-        prep_offset = (ctx->rw_wio_prep * ctx->io_size) % ctx->max_offset;
-        opc->oid = (prep_offset >> 22);
-        opc->ofst = (prep_offset & ((4ul << 20) -1));
+    if(is_read) {
+        r->data_buffer = g_global_ctx.dma_rbuf;     
     } else {
-        opc->oid = rand() % g_global_ctx.obj_nr;
-        opc->ofst = (rand() % 1024) << 12;
+        r->data_buffer = g_global_ctx.dma_wbuf;
     }
-    opc->len = ctx->io_size;
-    opc->flags = 0;
 
-    struct op_tracker_t *opt = _get_op_tracker(op);
-    opt->start_tsc = rdtsc();
+    if(is_read) {
+       op_read_t *opc = message_get_meta_buffer(op);
+        if(!ctx->rand) {
+            uint64_t prep_offset;
+            prep_offset = (ctx->rw_wio_prep * ctx->io_size) % ctx->max_offset;
+            opc->oid = (prep_offset >> 22);
+            opc->ofst = (prep_offset & ((4ul << 20) -1));
+        } else {
+            opc->oid = rand() % g_global_ctx.obj_nr;
+            opc->ofst = (rand() % 1024) << 12;
+        }
+        opc->len = ctx->io_size;
+        opc->flags = 0;
+        struct op_tracker_t *opt = _get_op_tracker(op);
+        opt->start_tsc = rdtsc();
+        ctx->rw_rio_prep++;
 
-    ctx->rw_wio_prep++;
+    } else {
+        op_write_t *opc = message_get_meta_buffer(op);
+        if(!ctx->rand) {
+            uint64_t prep_offset;
+            prep_offset = (ctx->rw_wio_prep * ctx->io_size) % ctx->max_offset;
+            opc->oid = (prep_offset >> 22);
+            opc->ofst = (prep_offset & ((4ul << 20) -1));
+        } else {
+            opc->oid = rand() % g_global_ctx.obj_nr;
+            opc->ofst = (rand() % 1024) << 12;
+        }
+        opc->len = ctx->io_size;
+        opc->flags = 0;
+        struct op_tracker_t *opt = _get_op_tracker(op);
+        opt->start_tsc = rdtsc();
+        ctx->rw_wio_prep++;
+    }
+
+
+
+
     return op;
 }
 //void ObjectFill_Continue(void *op , int s);
@@ -419,95 +422,95 @@ void* perf_OpGenerate(void *ctx_) {
 
 
 
-//填充所有Object
-ASYNC_TASK_DECLARE(ObjectFill) {
-    uint64_t start_tsc;
-    // uint64_t last_period_start_tsc;
-    uint64_t prep_offset;
-    uint64_t submit_offset;
-    uint64_t cpl_offset;
-    uint64_t total_len;
-    uint64_t end_tsc;
-}g_objfill_ctx;
-void  ObjectFill_Then(void *ctx_) {
-    struct ObjectFill_context_t *ctx = ctx_;
-    double t = _tsc2choron(ctx->start_tsc , rdtsc());
-    double bd = ( (ctx->total_len >> 20) * 1e6 ) / t ;
-    log_info("Use time :%lf s, Bandwidth= %lf MiB/s \n", t / 1e6 ,  bd);
+// //填充所有Object
+// ASYNC_TASK_DECLARE(ObjectFill) {
+//     uint64_t start_tsc;
+//     // uint64_t last_period_start_tsc;
+//     uint64_t prep_offset;
+//     uint64_t submit_offset;
+//     uint64_t cpl_offset;
+//     uint64_t total_len;
+//     uint64_t end_tsc;
+// }g_objfill_ctx;
+// void  ObjectFill_Then(void *ctx_) {
+//     struct ObjectFill_context_t *ctx = ctx_;
+//     double t = _tsc2choron(ctx->start_tsc , rdtsc());
+//     double bd = ( (ctx->total_len >> 20) * 1e6 ) / t ;
+//     log_info("Use time :%lf s, Bandwidth= %lf MiB/s \n", t / 1e6 ,  bd);
     
-    if(g_global_ctx.obj_perf_time) {
-        memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
+//     if(g_global_ctx.obj_perf_time) {
+//         memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
 
-        g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
-        g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
-        g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
-        g_perf_ctx.start_tsc = rdtsc();
-        g_perf_ctx.read_radio = 0.0;
-        g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
-        g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
-        g_perf_ctx.rand = 1;
-        g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
+//         g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
+//         g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
+//         g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
+//         g_perf_ctx.start_tsc = rdtsc();
+//         g_perf_ctx.read_radio = 0.0;
+//         g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
+//         g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
+//         g_perf_ctx.rand = 1;
+//         g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
         
-        g_perf_ctx.last_peroid_start_tsc = rdtsc();
+//         g_perf_ctx.last_peroid_start_tsc = rdtsc();
 
-        log_info("Start perf: is_write = %d , io size = %lu K , is_rand = %d , qd = %lu \n" ,  
-            g_perf_ctx.read_radio == 0.0,
-            g_perf_ctx.io_size >> 10 ,
-            g_perf_ctx.rand ,
-            g_perf_ctx.qd);
+//         log_info("Start perf: is_write = %d , io size = %lu K , is_rand = %d , qd = %lu \n" ,  
+//             g_perf_ctx.read_radio == 0.0,
+//             g_perf_ctx.io_size >> 10 ,
+//             g_perf_ctx.rand ,
+//             g_perf_ctx.qd);
         
-        srand(time(0));
+//         srand(time(0));
 
-        log_raw_info("%16s\t%16s\t%16s\t","BD(MiB/s)","IOPS(K)","avg_lat(us)\n");
+//         log_raw_info("%16s\t%16s\t%16s\t","BD(MiB/s)","IOPS(K)","avg_lat(us)\n");
 
-        perf_Start(&g_perf_ctx , g_perf_ctx.qd);
-    } else {
-        _sys_fini();
-    }
-}
-bool  ObjectFill_Terminate(void *ctx_) {
-    struct ObjectFill_context_t *ctx = ctx_;
-    return ctx->total_len == ctx->cpl_offset;
-}
-bool  ObjectFill_StopSubmit(void *ctx_) {
-    struct ObjectFill_context_t *ctx = ctx_;
-    return ctx->total_len == ctx->submit_offset;
-}
-void  ObjectFill_OpComplete(void *op) {
-    struct ObjectFill_context_t *ctx = ASYNC_TASK_CTX_OP(op);
-    ctx->cpl_offset += (128 * 1024);
+//         perf_Start(&g_perf_ctx , g_perf_ctx.qd);
+//     } else {
+//         _sys_fini();
+//     }
+// }
+// bool  ObjectFill_Terminate(void *ctx_) {
+//     struct ObjectFill_context_t *ctx = ctx_;
+//     return ctx->total_len == ctx->cpl_offset;
+// }
+// bool  ObjectFill_StopSubmit(void *ctx_) {
+//     struct ObjectFill_context_t *ctx = ctx_;
+//     return ctx->total_len == ctx->submit_offset;
+// }
+// void  ObjectFill_OpComplete(void *op) {
+//     struct ObjectFill_context_t *ctx = ASYNC_TASK_CTX_OP(op);
+//     ctx->cpl_offset += (128 * 1024);
   
-    if(ctx->cpl_offset % (1 << 30) == 0) {
-        double t = _tsc2choron(ctx->start_tsc , rdtsc());
-        double bd = ( (ctx->cpl_offset >> 20) * 1e6 ) / t ;
-        log_info("Use time :%lf s, Bandwidth= %lf MiB/s \n", t / 1e6 ,  bd);
-    }
+//     if(ctx->cpl_offset % (1 << 30) == 0) {
+//         double t = _tsc2choron(ctx->start_tsc , rdtsc());
+//         double bd = ( (ctx->cpl_offset >> 20) * 1e6 ) / t ;
+//         log_info("Use time :%lf s, Bandwidth= %lf MiB/s \n", t / 1e6 ,  bd);
+//     }
 
-    _free_op_common(op);
-}
-int   ObjectFill_SubmitOp(void *op , cb_func_t cb) {
-    struct ObjectFill_context_t *ctx = ASYNC_TASK_CTX_OP(op);
-    _submit_op(op  , cb);
-    ctx->submit_offset += (128 * 1024);
-    return 0;
-}
-void* ObjectFill_OpGenerate(void *ctx_) {
-    struct ObjectFill_context_t *ctx = ctx_;
-    const objstore_impl_t *os = g_global_ctx.os;
-    void *op = _alloc_op_common(msg_oss_op_write, os->obj_async_op_context_size());    
-    message_t *r = op;
-    r->priv_ctx = ctx_;
-    r->data_buffer = g_global_ctx.dma_wbuf;
-    op_write_t *opc = message_get_meta_buffer(op);
-    opc->oid = (ctx->prep_offset >> 22);
-    opc->ofst = (ctx->prep_offset & ((4ul << 20)-1));
-    opc->len = 128 << 10;
-    opc->flags = 0;
-    ctx->prep_offset += (128 << 10);
-    return op;
-}
-//void ObjectFill_Continue(void *op , int s);
-//void ObjectFill_Start(void *ctx , int dp);
+//     _free_op_common(op);
+// }
+// int   ObjectFill_SubmitOp(void *op , cb_func_t cb) {
+//     struct ObjectFill_context_t *ctx = ASYNC_TASK_CTX_OP(op);
+//     _submit_op(op  , cb);
+//     ctx->submit_offset += (128 * 1024);
+//     return 0;
+// }
+// void* ObjectFill_OpGenerate(void *ctx_) {
+//     struct ObjectFill_context_t *ctx = ctx_;
+//     const objstore_impl_t *os = g_global_ctx.os;
+//     void *op = _alloc_op_common(msg_oss_op_write, os->obj_async_op_context_size());    
+//     message_t *r = op;
+//     r->priv_ctx = ctx_;
+//     r->data_buffer = g_global_ctx.dma_wbuf;
+//     op_write_t *opc = message_get_meta_buffer(op);
+//     opc->oid = (ctx->prep_offset >> 22);
+//     opc->ofst = (ctx->prep_offset & ((4ul << 20)-1));
+//     opc->len = 128 << 10;
+//     opc->flags = 0;
+//     ctx->prep_offset += (128 << 10);
+//     return op;
+// }
+// //void ObjectFill_Continue(void *op , int s);
+// //void ObjectFill_Start(void *ctx , int dp);
 
 
 //创建指定个数的Object
@@ -526,15 +529,18 @@ void ObjectPrep_Then(void *ctx_) {
         g_objprep_ctx.total_obj , _tsc2choron(g_objprep_ctx.start_tsc , g_objprep_ctx.end_tsc));
 
 
-    if(!g_global_ctx.no_fill) {
-        memset(&g_objfill_ctx , 0 , sizeof(g_objfill_ctx));
-        g_objfill_ctx.start_tsc = rdtsc();
-        g_objfill_ctx.total_len = g_objprep_ctx.total_obj * g_global_ctx.obj_sz;
-        log_info("Start fill %lu objects, total size=%lu kiB\n" ,g_objprep_ctx.total_obj, g_objfill_ctx.total_len >> 10 );
-        ObjectFill_Start(&g_objfill_ctx , g_global_ctx.obj_fill_dp);
-    } else {
-        _sys_fini();
-    }
+    // if(!g_global_ctx.no_fill) {
+    //     memset(&g_objfill_ctx , 0 , sizeof(g_objfill_ctx));
+    //     g_objfill_ctx.start_tsc = rdtsc();
+    //     g_objfill_ctx.total_len = g_objprep_ctx.total_obj * g_global_ctx.obj_sz;
+    //     log_info("Start fill %lu objects, total size=%lu kiB\n" ,g_objprep_ctx.total_obj, g_objfill_ctx.total_len >> 10 );
+    //     ObjectFill_Start(&g_objfill_ctx , g_global_ctx.obj_fill_dp);
+    // } else {
+    
+    _sys_fini();
+    
+    
+    // }
 
 }
 bool ObjectPrep_Terminate(void *ctx_) {
@@ -577,28 +583,29 @@ void _load_objstore() {
 
     uint64_t s , e ; 
     int rc;
-    if(! g_global_ctx.remount) {
+    if(g_global_ctx.mkfs) {
         s = now();
         rc = os->mkfs(g_global_ctx.devs , 0);
         assert(rc == SUCCESS);
         e = now();
         log_info("mkfs time %lu us \n" , (e - s));
-    }
+    } 
 
     s = now();
-
     int mflag = g_global_ctx.mount_flag;
-
     rc = os->mount(g_global_ctx.devs, mflag);
     assert(rc == SUCCESS);
     e = now();
     log_info("mount time %lu us \n" , (e - s));
-    memset(&g_objprep_ctx , 0 , sizeof(g_objprep_ctx));
-    g_objprep_ctx.start_tsc = rdtsc();
-    g_objprep_ctx.total_obj = g_global_ctx.obj_nr;
-    g_global_ctx.os_async_ctx_sz = os->obj_async_op_context_size();
 
-    if(g_global_ctx.remount) {
+    if(g_global_ctx.mkfs) {
+        memset(&g_objprep_ctx , 0 , sizeof(g_objprep_ctx));
+        g_objprep_ctx.start_tsc = rdtsc();
+        g_objprep_ctx.total_obj = g_global_ctx.obj_nr;
+        g_global_ctx.os_async_ctx_sz = os->obj_async_op_context_size();
+        ObjectPrep_Start(&g_objprep_ctx , 1);
+        return;
+    } else {
         // g_perf_ctx.
         memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
 
@@ -606,14 +613,11 @@ void _load_objstore() {
         g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
         g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
         g_perf_ctx.start_tsc = rdtsc();
-        g_perf_ctx.read_radio = 0.0;
+        g_perf_ctx.read_radio = g_global_ctx.read_radio;
         g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
         g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
 
-        if(g_global_ctx.obj_perf_type == RAND_READ || 
-           g_global_ctx.obj_perf_type == RAND_WRITE ||
-           g_global_ctx.obj_perf_type == RAND_MIX ) 
-        {
+        if(g_global_ctx.rand ) {
             g_perf_ctx.rand = 1;
         } else {
             g_perf_ctx.rand = 0;
@@ -623,19 +627,15 @@ void _load_objstore() {
         
         g_perf_ctx.last_peroid_start_tsc = rdtsc();
 
-        log_info("Start perf: is_write = %d , io size = %lu K , is_rand = %d , qd = %lu \n" ,  
-            g_perf_ctx.read_radio == 0.0,
+        log_info("Start perf: r/w = %lu/lu , io size=%luK , is_rand=%d , qd = %lu \n" ,  
+            g_perf_ctx.read_radio,
+            100 -  g_perf_ctx.read_radio,
             g_perf_ctx.io_size >> 10 ,
             g_perf_ctx.rand ,
-            g_perf_ctx.qd);
-        
+            g_perf_ctx.qd); 
         srand(time(0));        
-        
         perf_Start(&g_perf_ctx , g_perf_ctx.qd);
-
-    } else {
-        ObjectPrep_Start(&g_objprep_ctx , 1);
-    }
+    } ;
 }
 
 void _sys_init(void *arg) {
@@ -644,7 +644,7 @@ void _sys_init(void *arg) {
     g_global_ctx.dma_wbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
     g_global_ctx.obj_sz = 4 << 20;
     g_global_ctx.obj_create_dp = 1;
-    g_global_ctx.obj_fill_dp = 32;
+    // g_global_ctx.obj_fill_dp = 32;
     // g_global_ctx.obj_perf_dp = 128;
 
     g_global_ctx.devs[0] = "Nvme0n1";
@@ -653,12 +653,30 @@ void _sys_init(void *arg) {
     _load_objstore();
 }
 
+
+static void usage( const char *exename)
+{
+    log_raw_info("Usage: %s [option]\n" , exename); 
+    log_raw_info("-m N (mkfs and prepare N objects)]\n");
+    log_raw_info("-n N (objects in use)]\n");
+    log_raw_info("-o mount_flag (1:单页直接覆盖写，2:使用 bdev_unmap)\n");
+    log_raw_info("-q qd\n");
+    log_raw_info("-b block_size(K)\n");
+    log_raw_info("-t perf time\n");
+    log_raw_info("-i rand | seq\n");
+    log_raw_info("-M read radio(0~100) \n");
+    log_raw_info("-x perf task name\n");
+}
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "o:n:b:q:t:rfi:")) != -1) {
+	while ((opt = getopt(argc, argv, "hm:n:o:q:b:t:i:M:x:")) != -1) {
 		switch (opt) {
 		case 'n':
 			g_global_ctx.obj_nr = atoi(optarg);
+			break;
+        case 'm':
+			g_global_ctx.obj_nr = atoi(optarg);
+            g_global_ctx.mkfs = 1;
 			break;
         case 'b':
 			g_global_ctx.io_sz = (atoi(optarg)) << 10;
@@ -669,47 +687,24 @@ static void parse_args(int argc , char **argv) {
         case 't':
 			g_global_ctx.obj_perf_time = (atoi(optarg));
 			break;
-        case 'r':
-			g_global_ctx.remount = 1;
-			break;
-        case 'f':
-			g_global_ctx.no_fill = 0;
-			break;
         case 'o':
 			g_global_ctx.mount_flag = atoi(optarg);
 			break;
-        case 'i':
-            log_info("Perf type detect\n");
-			if(!strcmp(optarg,"sw")) {
-                log_info("Seq write perf\n");
-                g_global_ctx.obj_perf_type = SEQ_WRITE;
-            } else if (!strcmp(optarg,"rw")) {
-                log_info("Rand write perf\n");
-                g_global_ctx.obj_perf_type = RAND_WRITE;
-            } else if (!strcmp(optarg,"rr")) {
-                log_info("Rand read perf\n");
-                g_global_ctx.obj_perf_type = RAND_READ;
-            } else if (!strcmp(optarg,"sr")) {
-                log_info("Seq read perf\n");
-                g_global_ctx.obj_perf_type = SEQ_READ;
-            } else if (!strcmp(optarg,"smix")) {
-                log_info("Seq mix perf\n");
-                g_global_ctx.obj_perf_type = SEQ_MIX;
-            } else if (!strcmp(optarg,"rmix")) {
-                log_info("Rand mix perf\n");
-                g_global_ctx.obj_perf_type = RAND_MIX;
-            } else {
-                log_err("Unknown perf type %s \n" , optarg);
-                exit(1);
-            }
+        case 'x':
+			g_global_ctx.perf_name = (optarg);
 			break;
-        
+        case 'i':
+			if(!strcmp(optarg,"rand")) {
+                g_global_ctx. rand = 1;
+            } else {
+                g_global_ctx. rand = 0;
+            }
+			break; 
+        case 'M' :
+            g_global_ctx.read_radio = atoi(optarg);
+            break;       
 		default:
-			log_info("Usage: %s [-o mount_flag %s] \
-            [-n number of 4MiB objects] [-b block_size (K) ]  \
-            [-t perf_time ] [-q qd ] [-i[sw|rw|rr|sr]] \
-            [-f(进行预填充)] [-r (remount)]\n", argv[0] ,\
-            "(0x1:单页直接覆盖写，0x2:使用 bdev_unmap)");
+            usage(argv[0]);
 			exit(1);
 		}
 	}
@@ -723,10 +718,7 @@ int main( int argc , char **argv) {
     opts.reactor_mask = "0x1";
     opts.shutdown_cb = _sys_fini;
     
-    g_global_ctx.no_fill = 1;
-
     parse_args(argc,argv);
-
     spdk_app_start(&opts , _sys_init , NULL);
  
     spdk_app_fini();
