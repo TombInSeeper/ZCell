@@ -639,9 +639,8 @@ void _load_objstore() {
         } else {
             g_perf_ctx.time_based = 1;
             g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
-            g_perf_ctx.start_tsc = rdtsc();
         }
-
+        g_perf_ctx.start_tsc = rdtsc();
         g_perf_ctx.read_radio = g_global_ctx.read_radio;
         g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
         g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
