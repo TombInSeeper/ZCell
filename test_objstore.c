@@ -386,11 +386,13 @@ void  perf_OpComplete(void *op) {
     
     if(message_get_op(op) == msg_oss_op_read) {
         ctx->rw_rio_cpl++;
+        ctx->last_peroid_rio_cpl++;
         void *rbuf = message_get_data_buffer(op);
         op_read_t *op = message_get_meta_buffer(op);
         verfiy_blocks(rbuf, op->oid , op->ofst , op->len);
     } else {
         ctx->rw_wio_cpl++;
+        ctx->last_peroid_wio_cpl++;
     }
     spdk_free(message_get_data_buffer(op));
 
@@ -712,12 +714,9 @@ void _load_objstore() {
         g_perf_ctx.read_radio = g_global_ctx.read_radio;
         g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
         g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
+        
+        g_perf_ctx.rand = g_global_ctx.rand;
 
-        if(g_global_ctx.rand) {
-            g_perf_ctx.rand = 1;
-        } else {
-            g_perf_ctx.rand = 0;
-        }
 
         g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
         
