@@ -65,6 +65,7 @@ extern struct pmem_t *pmem_open(const char *path, uint64_t cpu,  uint64_t *pmem_
         log_info("\n");
     }
 
+    *pmem_size = fsize;
     //Per cpu
     p->log_region_ofst = 4096 + cpu * PM_LOG_REGION_SIZE;
     
