@@ -40,24 +40,24 @@ extern struct pmem_t *pmem_open(const char *path, uint64_t cpu,  uint64_t *pmem_
         return NULL;
     }
 
-    struct stat st_;
-    int rc = stat(path,&st_);
-    if(rc) {
-        free(p);
-        log_err("Cannot get stat of %s, errs: %s" , path , strerror(errno));
-        return NULL;
-    }
-    uint64_t fsize = st_.st_size;
+    // struct stat st_;
+    // int rc = stat(path,&st_);
+    // if(rc) {
+    //     free(p);
+    //     log_err("Cannot get stat of %s, errs: %s" , path , strerror(errno));
+    //     return NULL;
+    // }
+    // uint64_t fsize = st_.st_size;
     
-    if(fsize & ((1 << 20) - 1 )) {
-        log_err("Pmem file must be aligned to 2MiB\n");
-        free(p);
-        return NULL;
-    }
+    // if(fsize & ((1 << 20) - 1 )) {
+    //     log_err("Pmem file must be aligned to 2MiB\n");
+    //     free(p);
+    //     return NULL;
+    // }
 
- 
+    size_t fsize = 4ull << 30;
     int is_pmem;
-    p->map_base = pmem_map_file(path, fsize , 0 , 0666 , NULL, &is_pmem);
+    p->map_base = pmem_map_file(path, fsize , PMEM_FILE_CREATE , 0666 , NULL, &is_pmem);
     assert(p->map_base);
     if(!is_pmem) {
         log_info("\n");\
