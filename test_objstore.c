@@ -314,7 +314,7 @@ static bool verfiy_blocks(const void *rbuf , uint64_t oid , uint64_t ofst, uint6
                     .object_ct = (i + ofst) / 0x1000
                 };
                 dumm_t *dp = q;
-                log_info("Read:(object_id,object_ct)=(%lu,%lu) , Expected :(object_id,object_ct)=(%lu,%lu)\n " ,
+                log_debug("Read:(object_id,object_ct)=(%lu,%lu) , Expected :(object_id,object_ct)=(%lu,%lu)\n " ,
                     dp->object_id , dp->object_ct , 
                     d.object_id , d.object_ct); 
                 assert(dp->object_ct == d.object_ct);
@@ -397,7 +397,8 @@ void  perf_OpComplete(void *op) {
         void *rbuf = message_get_data_buffer(op);
         op_read_t *opr = message_get_meta_buffer(op);
         log_debug("ReadOp:oid=%lu,ofst=%lu,len=%lu\n",opr->oid,opr->ofst,opr->len);
-        verfiy_blocks(rbuf, opr->oid , opr->ofst , opr->len);
+        if(ctx->verify)
+            verfiy_blocks(rbuf, opr->oid , opr->ofst , opr->len);
     } else {
         ctx->rw_wio_cpl++;
         ctx->last_peroid_wio_cpl++;
@@ -504,8 +505,8 @@ void* perf_OpGenerate(void *ctx_) {
         opc->flags = 0;
 
 
-        //if(ctx->verify)
-        generate_blocks(r->data_buffer , opc->oid , opc->ofst , opc->len);
+        if(ctx->verify)
+            generate_blocks(r->data_buffer , opc->oid , opc->ofst , opc->len);
 
         struct op_tracker_t *opt = _get_op_tracker(op);
         opt->start_tsc = rdtsc();
@@ -726,7 +727,7 @@ void _load_objstore() {
         g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
         
         g_perf_ctx.rand = g_global_ctx.rand;
-
+        g_perf_ctx.verify = g_global_ctx.verify;
 
         g_perf_ctx.max_offset = (uint64_t)g_global_ctx.obj_sz * g_global_ctx.obj_nr;
         
@@ -777,7 +778,7 @@ static void usage( const char *exename)
 }
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "hm:n:o:q:b:t:i:M:x:w:")) != -1) {
+	while ((opt = getopt(argc, argv, "hm:n:o:q:b:t:i:M:x:w:v")) != -1) {
 		switch (opt) {
 		case 'n':
 			g_global_ctx.obj_nr = atoi(optarg);
@@ -814,6 +815,9 @@ static void parse_args(int argc , char **argv) {
         case 'M' :
             g_global_ctx.read_radio = atoi(optarg);
             break; 
+        case 'v' :
+            g_global_ctx.verify = 1;
+            break;
         case 'h':      
 		default:
             usage(argv[0]);

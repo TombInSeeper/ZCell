@@ -133,7 +133,7 @@ struct zstore_transacion_t {
     union pmem_transaction_t *pm_tx_;
     tailq_entry(zstore_transacion_t) zstore_tx_lhook_;
 
-} __attribute__((aligned(64)));
+};
 
 struct zstore_context_t {
     //mount flags
@@ -1093,7 +1093,7 @@ zstore_tx_enqueue(struct zstore_transacion_t *tx) {
 
 extern const int 
 zstore_obj_async_op_context_size() {
-    return sizeof(struct zstore_transacion_t) < 128 ? 128 : sizeof(struct zstore_transacion_t) ;
+    return sizeof(struct zstore_transacion_t) ;
 }
 
 extern int 
