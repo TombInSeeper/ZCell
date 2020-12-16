@@ -403,8 +403,8 @@ void  perf_OpComplete(void *op) {
         ctx->rw_wio_cpl++;
         ctx->last_peroid_wio_cpl++;
     }
-
-    spdk_free(message_get_data_buffer(op));
+    if(ctx->verify)
+        spdk_free(message_get_data_buffer(op));
 
     struct op_tracker_t *opt =  _get_op_tracker(op);
     opt->complete_tsc = rdtsc();
