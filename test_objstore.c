@@ -209,7 +209,7 @@ struct op_tracker_t *_get_op_tracker(void *op) {
 
 void *_alloc_op_common(uint16_t op_type, uint64_t actx_sz) {
     // static int seq = 0;
-    void *p = calloc(1, sizeof(message_t) + actx_sz + 128);
+    void *p = calloc(1, sizeof(message_t) + actx_sz + 64 + 64);
     switch (op_type) {
     case msg_oss_op_create:
         memcpy(p, &fake_create_request_msg, sizeof(fake_create_request_msg));
@@ -626,6 +626,7 @@ void _load_objstore() {
     } else {
         // g_perf_ctx.
         memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
+        g_global_ctx.os_async_ctx_sz = os->obj_async_op_context_size();
 
         g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
         g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
