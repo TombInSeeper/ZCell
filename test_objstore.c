@@ -191,6 +191,8 @@ struct global_context_t {
     
     int verify;
 
+    int fill_patt;
+
     const char *perf_name;
 
 };
@@ -771,13 +773,17 @@ static void usage( const char *exename)
     log_raw_info("-i rand | seq\n");
     log_raw_info("-M read radio(0~100) \n");
     log_raw_info("-x perf task name\n");
+    log_raw_info("-w fill byte\n");
 }
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "hm:n:o:q:b:t:i:M:x:")) != -1) {
+	while ((opt = getopt(argc, argv, "hm:n:o:q:b:t:i:M:x:w:")) != -1) {
 		switch (opt) {
 		case 'n':
 			g_global_ctx.obj_nr = atoi(optarg);
+			break;
+        case 'm':
+			g_global_ctx.fill_patt = atoi(optarg);
 			break;
         case 'm':
 			g_global_ctx.obj_nr = atoi(optarg);
