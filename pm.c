@@ -205,6 +205,7 @@ extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t
         pl = (void*)((char*)pl + sizeof(struct pm_log_entry_t) + pl->length);
     }
 
+
     return true;
 }
 

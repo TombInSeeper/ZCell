@@ -46,6 +46,8 @@ static inline const char *errcode_str(int s) {
             return "OSTORE_WRITE_OUT_MAX_SIZE";
         case OSTORE_READ_EOF:
             return "OSTORE_READ_EOF";
+        case OSTORE_READ_HOLE:
+            return "OSTORE_READ_EOF";
         case OSTORE_IO_ERROR:
             return "OSTORE_IO_ERROR";
         case OSTORE_INTERNAL_UNKNOWN_ERRORR:

@@ -660,7 +660,7 @@ object_lba_range_get(struct zstore_context_t *zs,
     do {
         uint64_t i ;
         log_debug("Data Index Read , Per Index represents(%u)K :" , zs->zsb_->ssd_min_alloc_size >> 10 );
-        for ( i = 0  ; i < ilen ; ++i) {
+        for (i = 0  ; i < ilen ; ++i) {
             log_raw_debug("0x%x," , dib_[i]);
         }
         log_raw_debug("\n");
@@ -748,6 +748,8 @@ _tx_prep_rw_common(void *r)
         log_err("oid=%lu\n",oid);
         return OSTORE_NO_NODE;
     }
+
+
     // if(op == msg_oss_op_read) 
     uint32_t  mapped_blen = 0;
 
@@ -776,6 +778,7 @@ _tx_prep_rw_common(void *r)
     if(op == msg_oss_op_read) {
 
         if(ne == 0 || blen != mapped_blen) {
+            log_err("ne = %u , blen = %u , mapped_blen = %u \n" , ne , blen , mapped_blen);
             return OSTORE_READ_HOLE; 
         } else {
             uint32_t i;
