@@ -627,7 +627,7 @@ void _load_objstore() {
         
         g_perf_ctx.last_peroid_start_tsc = rdtsc();
 
-        log_info("Start perf: r/w = %lu/lu , io size=%luK , is_rand=%d , qd = %lu \n" ,  
+        log_info("Start perf: r/w = %lu/%lu , io size=%luK , is_rand=%d , qd = %lu \n" ,  
             g_perf_ctx.read_radio,
             100 -  g_perf_ctx.read_radio,
             g_perf_ctx.io_size >> 10 ,

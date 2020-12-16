@@ -772,20 +772,22 @@ _tx_prep_rw_common(void *r)
     tx->data_buffer = data_buf;
     
     if(op == msg_oss_op_read) {
-        uint32_t i;
-        tx->tx_type_ = TX_RDONLY;
-        tx->state_ = DATA_IO;
+
         if(ne == 0 || blen != mapped_blen) {
             return OSTORE_READ_HOLE; 
+        } else {
+            uint32_t i;
+            tx->tx_type_ = TX_RDONLY;
+            tx->state_ = DATA_IO;
+            tx->bios_ = malloc(sizeof(*tx->bios_) * ne);   
+            for (i = 0 ; i < ne ; ++i) {
+                tx->bios_[i].io_type = IO_READ;
+                tx->bios_[i].blk_len = e[i].len_;
+                tx->bios_[i].blk_ofst = e[i].lba_;
+            }
+            tx->bio_outstanding_ = ne;
         }
-        tx->bios_ = malloc(sizeof(*tx->bios_) * ne);
-        
-        for (i = 0 ; i < ne ; ++i) {
-            tx->bios_[i].io_type = IO_READ;
-            tx->bios_[i].blk_len = e[i].len_;
-            tx->bios_[i].blk_ofst = e[i].lba_;
-        }
-        tx->bio_outstanding_ = ne;
+
     } else {
         log_debug("Prepare write context\n");
         if (op_ofst + op_len > (4UL << 20)) {
