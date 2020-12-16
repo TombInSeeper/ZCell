@@ -388,9 +388,9 @@ void  perf_OpComplete(void *op) {
         ctx->rw_rio_cpl++;
         ctx->last_peroid_rio_cpl++;
         void *rbuf = message_get_data_buffer(op);
-        op_read_t *op = message_get_meta_buffer(op);
-        log_debug("ReadOp:oid=%lu,ofst=%lu,len=%lu\n",op->oid,op->ofst,op->len);
-        verfiy_blocks(rbuf, op->oid , op->ofst , op->len);
+        op_read_t *opr = message_get_meta_buffer(op);
+        log_debug("ReadOp:oid=%lu,ofst=%lu,len=%lu\n",opr->oid,opr->ofst,opr->len);
+        verfiy_blocks(rbuf, opr->oid , opr->ofst , opr->len);
     } else {
         ctx->rw_wio_cpl++;
         ctx->last_peroid_wio_cpl++;
