@@ -209,7 +209,7 @@ struct op_tracker_t *_get_op_tracker(void *op) {
 
 void *_alloc_op_common(uint16_t op_type, uint64_t actx_sz) {
     // static int seq = 0;
-    void *p = calloc(1, sizeof(message_t) + actx_sz + 64 + 64);
+    void *p = calloc(1, sizeof(message_t) + actx_sz + 128);
     switch (op_type) {
     case msg_oss_op_create:
         memcpy(p, &fake_create_request_msg, sizeof(fake_create_request_msg));
@@ -421,7 +421,7 @@ void* perf_OpGenerate(void *ctx_) {
             opc->oid = rand() % g_global_ctx.obj_nr;
             opc->ofst = (rand() % (OBJECT_SIZE_BYTES / (ctx->io_size))) * (ctx->io_size);
         }
-        
+
         opc->len = ctx->io_size;
         opc->flags = 0;
         struct op_tracker_t *opt = _get_op_tracker(op);
