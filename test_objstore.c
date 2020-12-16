@@ -460,11 +460,18 @@ void* perf_OpGenerate(void *ctx_) {
     
     message_t *r = op;
     r->priv_ctx = ctx_;
-    if(is_read) {
+
+    if(ctx->verify) {
         r->data_buffer = spdk_dma_zmalloc(ctx->io_size, 0x1000, NULL);     
     } else {
-        r->data_buffer = spdk_dma_zmalloc(ctx->io_size, 0x1000, NULL);     
+        if(is_read) {
+            r->data_buffer = g_global_ctx.dma_rbuf;
+        } else {
+            r->data_buffer = g_global_ctx.dma_wbuf;
+            // r->data_buffer = spdk_dma_zmalloc(ctx->io_size, 0x1000, NULL);     
+        }
     }
+
 
     if(is_read) {
         op_read_t *opc = message_get_meta_buffer(op);
@@ -749,8 +756,8 @@ void _load_objstore() {
 
 void _sys_init(void *arg) {
     (void)arg;
-    g_global_ctx.dma_rbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
-    g_global_ctx.dma_wbuf = spdk_dma_zmalloc(0x1000 * 1024, 0x1000, NULL);
+    g_global_ctx.dma_rbuf = spdk_dma_zmalloc(256 * 1024 * 1024, 0x1000, NULL);
+    g_global_ctx.dma_wbuf = spdk_dma_zmalloc(256 * 1024 * 1024, 0x1000,NULL);
     g_global_ctx.obj_sz = OBJECT_SIZE_BYTES;
     g_global_ctx.obj_create_dp = 1;
 
