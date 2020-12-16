@@ -342,7 +342,7 @@ void  perf_OpComplete(void *op) {
     _free_op_common(op);
 
     //100ms
-    if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > (ctx->tsc_hz / 10 )) {
+    if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > (ctx->tsc_hz / 5 )) {
         double wiops = ctx->last_peroid_wio_cpl / 1000.0;
         double riops = ctx->last_peroid_rio_cpl / 1000.0;
         double wbd = (ctx->last_peroid_wio_cpl * ctx->io_size) / (1024*1024.0);
@@ -374,7 +374,6 @@ void* perf_OpGenerate(void *ctx_) {
     struct perf_context_t *ctx = ctx_;
     const objstore_impl_t *os = g_global_ctx.os;
     void *op;
-
 
     bool is_read = false;
     
@@ -661,6 +660,8 @@ void _load_objstore() {
             g_perf_ctx.io_size >> 10 ,
             g_perf_ctx.rand ,
             g_perf_ctx.qd); 
+        log_raw_info("%10s\t%10s\t%10s\t%10s\t%10s\n", "wbd" , "wiops" , "rbd" , "riops", "avg_lat");
+        
         srand(time(0));     
 
         perf_Start(&g_perf_ctx , g_perf_ctx.qd);
