@@ -277,7 +277,6 @@ ASYNC_TASK_DECLARE(perf) {
 
     uint64_t last_peroid_lat_tsc_sum;
 
-    uint64_t perf_stage[64];
 }g_perf_ctx;
 
 
