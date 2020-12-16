@@ -314,7 +314,7 @@ static bool verfiy_blocks(const void *rbuf , uint64_t oid , uint64_t ofst, uint6
                     .object_ct = (i + ofst) / 0x1000
                 };
                 dumm_t *dp = q;
-                log_info("Read:(object_id,object_ct)=(%lu,%lu) , Expected :(object_id,object_ct)=(%lu,%lu) " ,
+                log_info("Read:(object_id,object_ct)=(%lu,%lu) , Expected :(object_id,object_ct)=(%lu,%lu)\n " ,
                     dp->object_id , dp->object_ct , 
                     d.object_id , d.object_ct); 
                 assert(dp->object_ct == d.object_ct);
