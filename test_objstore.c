@@ -635,7 +635,7 @@ void _load_objstore() {
         
         if(g_perf_ctx.time_sec == 0) {
             g_perf_ctx.size_based = 1;
-            g_perf_ctx.total_size == g_global_ctx.obj_nr * OBJECT_SIZE_BYTES;  
+            g_perf_ctx.total_size = g_global_ctx.obj_nr * OBJECT_SIZE_BYTES;  
         } else {
             g_perf_ctx.time_based = 1;
             g_perf_ctx.total_tsc = g_perf_ctx.time_sec * g_perf_ctx.tsc_hz;
