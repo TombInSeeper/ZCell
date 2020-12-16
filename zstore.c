@@ -638,17 +638,8 @@ object_lba_range_get(struct zstore_context_t *zs,
     uint64_t blen = op_len >> zs->zsb_->ssd_min_alloc_size_shift;
     uint64_t dib_addr = object_data_index_block(zs , oe);
     
-    //64B alined pmem read/write
-    //
-    //Data Index Block
-    //bofst = 3 , blen = 14
-    //istart = 0 , iend = 32
-    //dib[0][1][2][3][4][5]..[15] | [16][17]..[31]
-    //             3-----------------16
-
-
-    uint64_t istart = FLOOR_ALIGN(bofst , 16);
-    uint64_t iend = CEIL_ALIGN((bofst + blen) , 16);
+    uint64_t istart = FLOOR_ALIGN(bofst , 1);
+    uint64_t iend = CEIL_ALIGN((bofst + blen) , 1);
     
     uint64_t ilen = (iend - istart);
     
@@ -821,6 +812,7 @@ _tx_prep_rw_common(void *r)
         struct zstore_extent_t enew[ZSTORE_TX_IOV_MAX];
         uint64_t enew_nr;
         int rc;
+
         if(need_realloc) {
             rc = stupid_alloc_space(zstore->ssd_allocator_ , blen , enew , &enew_nr );
             if(rc) {
@@ -897,8 +889,8 @@ _tx_prep_rw_common(void *r)
             do {
                 uint64_t data_index_shift = 2;
                 uint64_t dib_addr = object_data_index_block(zstore, oe);
-                uint64_t istart = FLOOR_ALIGN(bofst , 16);
-                uint64_t iend = CEIL_ALIGN(bofst + blen , 16);
+                uint64_t istart = FLOOR_ALIGN(bofst , 1);
+                uint64_t iend = CEIL_ALIGN(bofst + blen , 1);
                 uint64_t imlen = (iend - istart);
                 uint64_t iofst = bofst - istart;
                 uint64_t itail = (iofst + blen);

@@ -9,7 +9,7 @@
 #include "util/common.h"
 #include "util/assert.h"
 
-#define PM_LOG_REGION_SIZE 4096
+#define PM_LOG_REGION_SIZE 8192
 
 struct pmem_t {    
     void *map_base;
@@ -55,16 +55,16 @@ extern struct pmem_t *pmem_open(const char *path, uint64_t cpu,  uint64_t *pmem_
         return NULL;
     }
 
-    if(pmem_size) {
-        *pmem_size = fsize;
+ 
+    int is_pmem;
+    p->map_base = pmem_map_file(path, 0 , 0 , 0 , NULL, &is_pmem);
+    assert(p->map_base);
+    if(!is_pmem) {
+        log_info("\n");\
+        log_info("Using **DRAM** as PMEM\n");
+        log_info("\n");
     }
 
-
-    int fd = open(path, O_RDWR);
-    void* dest = mmap(NULL, fsize, PROT_READ | PROT_WRITE, MAP_SHARED /*| MAP_POPULATE*/, fd, 0);
-    close(fd);
-    p->map_base = dest;
-    
     //Per cpu
     p->log_region_ofst = 4096 + cpu * PM_LOG_REGION_SIZE;
     
@@ -78,7 +78,12 @@ extern void pmem_read(struct pmem_t *pmem, void *dest, uint64_t offset , size_t 
 
 extern void pmem_write(struct pmem_t *pmem, int sync, const void* src, uint64_t offset, size_t length){
     void *dst = pmem->map_base + offset;
-    nvmem_memcpy(sync,dst,src,length);
+    // nvmem_memcpy(sync,dst,src,length);
+    if(sync) {
+        pmem_memcpy_persist(dst,  src , length);
+    } else {
+        pmem_memcpy_nodrain(dst,  src , length);
+    }
 }
 
 extern void pmem_recovery(struct pmem_t *pmem) {
@@ -172,7 +177,7 @@ extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t
 
     //Step1. 
     //.....
-    pmem_write(pmem,1, tx->le, 
+    pmem_write(pmem, 1 , tx->le, 
         pmem->log_region_ofst + sizeof(union pm_log_header_t),
         tx->lh.align_length);
     
@@ -187,7 +192,9 @@ extern bool pmem_transaction_apply(struct pmem_t *pmem, union pmem_transaction_t
         pmem_write(pmem,0, pl->value, pl->ofst, pl->length);
         pl = (void*)((char*)pl + sizeof(struct pm_log_entry_t) + pl->length);
     }
-    _mm_sfence();
+    
+    pmem_drain();
+
 
     uint32_t nr_logs = tx->lh.nr_logs;
 

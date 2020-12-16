@@ -2,6 +2,7 @@
 #define PMEM_H
 
 
+#include <libpmem.h>
 #include <emmintrin.h>
 #include <stddef.h>
 #include <stdint.h>
