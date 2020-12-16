@@ -439,7 +439,7 @@ void* perf_OpGenerate(void *ctx_) {
     const objstore_impl_t *os = g_global_ctx.os;
     void *op;
 
-    bool is_read = false;
+    bool is_read = rand() % 100 < ctx->read_radio;
     
     if(is_read) {
         // ERROR_ON(1);
