@@ -782,7 +782,7 @@ static void parse_args(int argc , char **argv) {
 		case 'n':
 			g_global_ctx.obj_nr = atoi(optarg);
 			break;
-        case 'm':
+        case 'w':
 			g_global_ctx.fill_patt = atoi(optarg);
 			break;
         case 'm':
