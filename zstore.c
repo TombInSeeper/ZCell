@@ -281,6 +281,10 @@ zstore_mkfs(const char *dev_list[], int flags)
     assert(blk_sz == 4096);
 
     uint64_t nblks = spdk_bdev_get_num_blocks(zstore->nvme_bdev_);
+    
+    //hack
+    nblks = (1024 * 32);
+    
     // uint64_t nblks_ = FLOOR_ALIGN(nblks, 4096 * 8);
     // log_info("SSD Block number = %lu , floor_align 32768 to %lu\n", nblks , nblks_);
     // assert (nblks == nblks_);
