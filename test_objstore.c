@@ -342,7 +342,7 @@ void  perf_OpComplete(void *op) {
     _free_op_common(op);
 
     //100ms
-    if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > (ctx->tsc_hz / 5 )) {
+    if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > (ctx->tsc_hz)) {
         double wiops = ctx->last_peroid_wio_cpl / 1000.0;
         double riops = ctx->last_peroid_rio_cpl / 1000.0;
         double wbd = (ctx->last_peroid_wio_cpl * ctx->io_size) / (1024*1024.0);
@@ -627,9 +627,6 @@ void _load_objstore() {
         memset(&g_perf_ctx , 0 , sizeof(g_perf_ctx));
 
         g_perf_ctx.tsc_hz = spdk_get_ticks_hz();
-
-
-
         g_perf_ctx.time_sec = g_global_ctx.obj_perf_time;
         
         if(g_perf_ctx.time_sec == 0) {
@@ -644,7 +641,7 @@ void _load_objstore() {
         g_perf_ctx.io_size = (g_global_ctx.io_sz); // 4K
         g_perf_ctx.qd = g_global_ctx.obj_perf_dp;
 
-        if(g_global_ctx.rand ) {
+        if(g_global_ctx.rand) {
             g_perf_ctx.rand = 1;
         } else {
             g_perf_ctx.rand = 0;
