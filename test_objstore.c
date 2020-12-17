@@ -290,6 +290,7 @@ ASYNC_TASK_DECLARE(perf) {
 
     //
     int verify;
+    int read_verify;
 
 }g_perf_ctx;
 
@@ -397,7 +398,7 @@ void  perf_OpComplete(void *op) {
         void *rbuf = message_get_data_buffer(op);
         op_read_t *opr = message_get_meta_buffer(op);
         log_debug("ReadOp:oid=%lu,ofst=%lu,len=%lu\n",opr->oid,opr->ofst,opr->len);
-        if(ctx->verify)
+        if(ctx->verify && ctx->read_radio == 100)
             verfiy_blocks(rbuf, opr->oid , opr->ofst , opr->len);
     } else {
         ctx->rw_wio_cpl++;
