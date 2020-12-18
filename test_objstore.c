@@ -370,8 +370,8 @@ void  perf_Then(void *ctx_) {
     } else {
         log_info("Seq test ,io-size=%lu K\n", ctx->io_size >> 10);
     }
-    log_info("Use time :%lf s, IO Size= %lf MiB , Bandwidth= %lf MiB/s , IOPS = %lf K  ,avg_lat = %lf us \n", 
-        t / 1e6 ,  iosz ,   bd , iops ,avg_lat  );  
+    log_info("Use time :%lf s, IO Size= %lf MiB , Bandwidth= %lf MiB/s , IOPS = %lf K  \n", 
+        t / 1e6 ,  iosz ,   bd , iops  );  
     _sys_fini();
 }
 bool  perf_Terminate(void *ctx_) {
