@@ -125,7 +125,7 @@ struct zstore_transacion_t {
     void *user_cb_arg_;
 
     uint16_t bio_outstanding_;
-    uint16_t bio_outstanding_const_;
+    // uint16_t bio_outstanding_const_;
     char *data_buffer;
     struct {
         uint32_t  io_type;
@@ -162,7 +162,7 @@ struct zstore_context_t {
 
     uint64_t tid_max_;
 
-    uint64_t bdev_nvme_cmd_slots_;
+    // uint64_t bdev_nvme_cmd_slots_;
 
     //Transaction 
     uint32_t tx_outstanding_;
@@ -427,8 +427,8 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/)
     // spdk_poller_register()
 
 
-    zstore->bdev_nvme_cmd_slots_ = ZSTORE_BDEV_MAX_REQUEST;
-    log_info("Bdev_nvme_cmd_slots_\n",zstore ->bdev_nvme_cmd_slots_);
+    // zstore->bdev_nvme_cmd_slots_ = ZSTORE_BDEV_MAX_REQUEST;
+    // log_info("Bdev_nvme_cmd_slots_\n",zstore ->bdev_nvme_cmd_slots_);
 
     return 0;
 }
@@ -940,9 +940,9 @@ _tx_prep_rw_common(void *r)
             oe , sizeof(*oe) , oe );
     }
     
-    if(tx->bio_outstanding_) {
-        tx->bio_outstanding_const_ = tx->bio_outstanding_;
-    }
+    // if(tx->bio_outstanding_) {
+    //     tx->bio_outstanding_const_ = tx->bio_outstanding_;
+    // }
     
     return 0;
 }
