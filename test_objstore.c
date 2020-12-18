@@ -281,6 +281,9 @@ ASYNC_TASK_DECLARE(perf) {
     uint64_t rw_wio_cpl;
     uint64_t rw_last_cpl_tsc;
 
+
+    double   perf_lat_sum;
+
     uint64_t peroid_tsc;
     uint64_t last_peroid_start_tsc;
     uint64_t last_peroid_wio_cpl;
@@ -358,13 +361,17 @@ void  perf_Then(void *ctx_) {
     double iosz = (((ctx->rw_wio_cpl + ctx->rw_rio_cpl) * ctx->io_size) / ((1UL << 20) * 1.0));
     double bd = ( iosz * 1e6 ) / t ;
     double iops = ((ctx->rw_wio_cpl + ctx->rw_rio_cpl) / t) * 1e3;
+    
+    double avg_lat = (double)ctx->perf_lat_sum / (ctx->rw_wio_cpl + ctx->rw_rio_cpl); 
+    avg_lat /= (ctx->tsc_hz / 1e6);
+        
     if(ctx->rand) {
         log_info("Random test ,io-size=%lu K\n", ctx->io_size >> 10);
     } else {
         log_info("Seq test ,io-size=%lu K\n", ctx->io_size >> 10);
     }
-    log_info("Use time :%lf s, IO Size= %lf MiB , Bandwidth= %lf MiB/s , IOPS = %lf K \n", 
-        t / 1e6 ,  iosz ,   bd , iops );  
+    log_info("Use time :%lf s, IO Size= %lf MiB , Bandwidth= %lf MiB/s , IOPS = %lf K  ,avg_lat = %lf us \n", 
+        t / 1e6 ,  iosz ,   bd , iops ,avg_lat  );  
     _sys_fini();
 }
 bool  perf_Terminate(void *ctx_) {
@@ -432,6 +439,9 @@ void  perf_OpComplete(void *op) {
         // double rbd = (ctx->last_peroid_rio_cpl * ctx->io_size * 1.0) / (1024*1024.0);       
         double avg_lat = (double)ctx->last_peroid_lat_tsc_sum / (ctx->last_peroid_wio_cpl + ctx->last_peroid_rio_cpl); 
         avg_lat /= (ctx->tsc_hz / 1e6);
+        
+        ctx->perf_lat_sum += (double)ctx->last_peroid_lat_tsc_sum;
+        
         log_raw_info("%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\n", wbd / (1ull<<20), wiops / (1000) , rbd / (1ull<<20), riops / (1000), avg_lat);
         ctx->last_peroid_start_tsc = rdtsc();
         ctx->last_peroid_lat_tsc_sum = 0;
