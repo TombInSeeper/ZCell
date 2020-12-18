@@ -21,6 +21,10 @@
 #define ZSTORE_TX_IOV_MAX 32
 #define ZSTORE_IO_UNIT_MAX (128UL * 1024)
 #define ZSTORE_MAGIC 0x1997070519980218
+#define ZSTORE_OBJ_MAX_SIZE_BYTES (4ULL << 20)
+
+#define ZSTORE_BDEV_MAX_REQUEST (1024)
+
 
 #define container_of(ptr,type,member) SPDK_CONTAINEROF(ptr,type,member)
 
@@ -120,7 +124,8 @@ struct zstore_transacion_t {
     cb_func_t user_cb_;
     void *user_cb_arg_;
 
-    uint32_t bio_outstanding_;
+    uint16_t bio_outstanding_;
+    uint16_t bio_outstanding_const_;
     char *data_buffer;
     struct {
         uint32_t  io_type;
@@ -156,6 +161,8 @@ struct zstore_context_t {
     union otable_entry_t *otable_;
 
     uint64_t tid_max_;
+
+    uint64_t bdev_nvme_cmd_slots_;
 
     //Transaction 
     uint32_t tx_outstanding_;
@@ -419,6 +426,10 @@ zstore_mount(const char *dev_list[], /* size = 2*/  int flags /**/)
     // log_info("Transaction poller boot\n");
     // spdk_poller_register()
 
+
+    zstore->bdev_nvme_cmd_slots_ = ZSTORE_BDEV_MAX_REQUEST;
+    log_info("Bdev_nvme_cmd_slots_\n",zstore ->bdev_nvme_cmd_slots_);
+
     return 0;
 }
 
@@ -443,16 +454,13 @@ zstore_tx_data_bio(struct zstore_transacion_t *tx)
     uint32_t i;
     uint32_t n = tx->bio_outstanding_;
     char *buf = tx->data_buffer;
-    for ( i = 0 ; i < n ; ++i) {
+    for (i = 0 ; i < n ; ++i) {
         int rc;
-        log_debug("Tx=%lu, bio[%u]={%u,%u}\n", tx->tid_, i,
+        log_debug("Tx=%lu, bio[%u]={%u,%u}, Tring to submit to devices \n", tx->tid_, i,
             tx->bios_[i].blk_ofst , tx->bios_[i].blk_len);
         if(tx->bios_[i].io_type == IO_READ) {
             rc = spdk_bdev_read_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
-            buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);       
-
-            // spdk_bdev_block
-
+            buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);              // spdk_bdev_block
         } else if (tx->bios_[i].io_type == IO_WRITE) {
             rc = spdk_bdev_write_blocks(zs->nvme_bdev_desc_, zs->nvme_io_channel_ ,
                 buf , tx->bios_[i].blk_ofst , tx->bios_[i].blk_len, zstore_bio_cb , tx);
@@ -931,6 +939,11 @@ _tx_prep_rw_common(void *r)
         pmem_transaction_add(zstore->pmem_, tx->pm_tx_, oe_ofst ,
             oe , sizeof(*oe) , oe );
     }
+    
+    if(tx->bio_outstanding_) {
+        tx->bio_outstanding_const_ = tx->bio_outstanding_;
+    }
+    
     return 0;
 }
 

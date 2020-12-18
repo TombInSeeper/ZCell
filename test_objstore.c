@@ -10,7 +10,7 @@
 #include "spdk/env.h"
 #include "spdk/util.h"
 
-#define OBJECT_SIZE_BYTES (4ull << 20 )
+#define OBJECT_SIZE_BYTES (4ull<<20)
 #define OBJECT_SIZE_SHIFT 22
 
 /*
@@ -308,7 +308,7 @@ static bool verfiy_blocks(const void *rbuf , uint64_t oid , uint64_t ofst, uint6
         for ( i = 0 ; i < len; i += 0x1000) {
             char *p = (char *)(rbuf) + i;
             uint64_t j;
-            for ( j = 0 ; j < 1 ; ++j) {
+            for ( j = 0 ; j < 256 ; ++j) {
                 char *q = p + j * 16;
                 dumm_t d = {
                     .object_id = oid,
@@ -340,7 +340,7 @@ static void generate_blocks(void *wbuf , uint64_t oid , uint64_t ofst, uint64_t 
         for ( i = 0 ; i < len; i += 0x1000) {
             char *p = (char *)(wbuf) + i;
             uint64_t j;
-            for ( j = 0 ; j < 4 ; ++j) {
+            for ( j = 0 ; j < 256 ; ++j) {
                 char *q = p + j * 16;
                 dumm_t d = {
                     .object_id = oid,
@@ -420,8 +420,8 @@ void  perf_OpComplete(void *op) {
     if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > (ctx->tsc_hz)) {
         double wiops = ctx->last_peroid_wio_cpl / 1000.0;
         double riops = ctx->last_peroid_rio_cpl / 1000.0;
-        double wbd = (ctx->last_peroid_wio_cpl * ctx->io_size) / (1024*1024.0);
-        double rbd = (ctx->last_peroid_rio_cpl * ctx->io_size) / (1024*1024.0);       
+        double wbd = (ctx->last_peroid_wio_cpl * ctx->io_size * 1.0) / (1024*1024.0);
+        double rbd = (ctx->last_peroid_rio_cpl * ctx->io_size * 1.0) / (1024*1024.0);       
         double avg_lat = (double)ctx->last_peroid_lat_tsc_sum / (ctx->last_peroid_wio_cpl + ctx->last_peroid_rio_cpl); 
         avg_lat /= (ctx->tsc_hz / 1e6);
         log_raw_info("%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\n", wbd , wiops , rbd , riops, avg_lat);
