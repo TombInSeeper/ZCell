@@ -432,7 +432,7 @@ void  perf_OpComplete(void *op) {
         // double rbd = (ctx->last_peroid_rio_cpl * ctx->io_size * 1.0) / (1024*1024.0);       
         double avg_lat = (double)ctx->last_peroid_lat_tsc_sum / (ctx->last_peroid_wio_cpl + ctx->last_peroid_rio_cpl); 
         avg_lat /= (ctx->tsc_hz / 1e6);
-        log_raw_info("%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\n", wbd , wiops , rbd , riops, avg_lat);
+        log_raw_info("%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\n", wbd / (1ull<<20), wiops / (1000) , rbd / (1ull<<20), riops / (1000), avg_lat);
         ctx->last_peroid_start_tsc = rdtsc();
         ctx->last_peroid_lat_tsc_sum = 0;
         ctx->last_peroid_rio_cpl = 0;
