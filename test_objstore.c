@@ -416,12 +416,20 @@ void  perf_OpComplete(void *op) {
     
     _free_op_common(op);
 
+    uint64_t tsc_from_last_peroid = ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc;
+
     //1000ms
-    if(ctx->rw_last_cpl_tsc - ctx->last_peroid_start_tsc > (ctx->tsc_hz)) {
-        double wiops = ctx->last_peroid_wio_cpl / 1000.0;
-        double riops = ctx->last_peroid_rio_cpl / 1000.0;
-        double wbd = (ctx->last_peroid_wio_cpl * ctx->io_size * 1.0) / (1024*1024.0);
-        double rbd = (ctx->last_peroid_rio_cpl * ctx->io_size * 1.0) / (1024*1024.0);       
+    if(tsc_from_last_peroid >= (ctx->tsc_hz)) {
+        
+        double time_sec = tsc_from_last_peroid / ctx->tsc_hz;
+
+        double wiops = ctx->last_peroid_wio_cpl / time_sec;
+        double riops = ctx->last_peroid_rio_cpl / time_sec;
+        double wbd = wiops * ctx->io_size;
+        double rbd = riops * ctx->io_size;
+       
+        // double wbd = (ctx->last_peroid_wio_cpl * ctx->io_size * 1.0) / (1024*1024.0);
+        // double rbd = (ctx->last_peroid_rio_cpl * ctx->io_size * 1.0) / (1024*1024.0);       
         double avg_lat = (double)ctx->last_peroid_lat_tsc_sum / (ctx->last_peroid_wio_cpl + ctx->last_peroid_rio_cpl); 
         avg_lat /= (ctx->tsc_hz / 1e6);
         log_raw_info("%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\t%8.2lf\n", wbd , wiops , rbd , riops, avg_lat);
