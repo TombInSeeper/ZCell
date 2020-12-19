@@ -70,7 +70,7 @@ BIN_TGT=server client_msgr_tool client_admin_tool
 all: $(BIN_TGT) 
 
 test: $(TEST_BIN)
-	echo $(DPDK_LINK_CFLAGS)
+
 # test_messager_server:test_messager_server.o $(MSGR_OBJS)
 # 	$(LINK_C)
 
@@ -94,6 +94,8 @@ client_admin_tool:client_admin_tool.o liboss.o $(MSGR_OBJS)
 # 	$(LINK_C)
 
 test_objstore: test_objstore.o $(OSTORE_OBJS)
+	echo "CFLAGS of DPDK"
+	echo $(DPDK_LINK_CFLAGS)
 	$(LINK_C)
 
 test_ipc: test_spdk_ipc.o 
