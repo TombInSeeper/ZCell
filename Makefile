@@ -14,7 +14,7 @@ endif
 
 PMDK_LINK_CFLAGS=-lpmem
 DPDK_LINK_CFLAGS2=`pkg-config --libs -cflags libdpdk`
-DPDK_LINK_CFLAGS=-I/home/wuyue/spdk/dpdk/build/include -include rte_config.h -march=native -Wl,--as-needed -L/home/wuyue/spdk/dpdk/build/lib \
+DPDK_LINK_CFLAGS=-I/home/wuyue/spdk/dpdk/build/include -include rte_config.h -march=native -L/home/wuyue/spdk/dpdk/build/lib \
  -lrte_vhost -lrte_security -lrte_reorder -lrte_power -lrte_cryptodev -lrte_compressdev -lrte_timer -lrte_hash -lrte_cmdline -lrte_pci -lrte_ethdev -lrte_meter -lrte_net -lrte_mbuf -lrte_mempool -lrte_rcu -lrte_ring -lrte_eal -lrte_telemetry -lrte_kvargs 
 
 SPDK_PATH_PREFIX=/home/wuyue
