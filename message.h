@@ -55,11 +55,15 @@ typedef struct message_t {
     message_state_object_t state; 
     msg_hdr_t header;
     char *meta_buffer;
-    char *data_buffer;    
-    void *priv_ctx;  //指针：属于哪个 session
+    char *data_buffer;
+    union {
+        void *priv_ctx;  //指针：属于哪个 session
+        uint64_t user_data_;
+    };
 } message_t;
 
 #define message_get_ctx(m) ((((message_t*)(m))->priv_ctx))
+#define message_get_user_data(m) ((((message_t*)(m))->user_data_))
 #define message_get_seq(m) (le64_to_cpu((((message_t*)(m))->header.seq)))
 #define message_get_op(m) (le16_to_cpu((((message_t*)(m))->header.type)))
 #define message_get_status(m) (le16_to_cpu((((message_t*)(m))->header.status)))

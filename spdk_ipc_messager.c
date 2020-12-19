@@ -9,6 +9,7 @@
 #include "messager.h"
 
 
+
 #define READ_EVENT_MAX 64
 #define RECV_BUF_SZ (4 << 20)
 #define SEND_BUF_SZ (4 << 20)
@@ -733,7 +734,7 @@ static void*_cli_messager_connect(const char *ip , int port, void *sess_priv_ctx
 
 static void*_cli_messager_connect2(const char *ring_name , void *sess_priv_ctx ) {
 
-    
+
 
 }
 
