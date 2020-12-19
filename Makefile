@@ -18,6 +18,7 @@ DPDK_LINK_CFLAGS=`pkg-config --libs --cflags libdpdk`
 SPDK_PATH_PREFIX=/home/wuyue
 SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
 SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
+	$(DPDK_LINK_CFLAGS) \
 	-lspdk_json -lspdk_jsonrpc  -lspdk_rpc \
 	-lspdk_bdev_malloc  -lspdk_bdev_null \
 	-lspdk_bdev_nvme\
@@ -30,7 +31,7 @@ SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspd
 	-lspdk_log -lspdk_trace -lspdk_util  -lspdk_conf\
 	-lspdk_vmd \
 	-L$(SPDK_PATH_PREFIX)/spdk/isa-l/.libs -lisal \
-	-Wl,--no-whole-archive  -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
+	-Wl,--no-whole-archive -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
 
 # PMDK_LINK_CFLAGS=-lpmem2
 
@@ -54,7 +55,7 @@ COMPILE_C=\
 # Link $(OBJS) and $(LIBS) into $@ (app)
 	# $(Q)echo "  LINK [$(ver)] $@" && 
 LINK_C=\
-	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(DPDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
+	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
 
 
 MSGR_OBJS = messager.o net.o net_posix.o
