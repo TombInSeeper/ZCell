@@ -32,7 +32,7 @@ SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib \
 	-lspdk_ftl\
 	-lspdk_log -lspdk_trace -lspdk_util  -lspdk_conf\
 	-lspdk_vmd \
-	-lspdk_accel -lspdk_accel_ioat \
+	-lspdk_accel -lspdk_accel_ioat -lspdk_event_accel \
 	-L$(SPDK_PATH_PREFIX)/spdk/isa-l/.libs -lisal \
 	$(DPDK_LINK_CFLAGS) \
 	-Wl,--no-whole-archive \
