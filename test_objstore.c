@@ -856,7 +856,7 @@ int main( int argc , char **argv) {
     struct spdk_app_opts opts;
     spdk_app_opts_init(&opts);
     opts.name = "test_objectstore";
-    opts.config_file = "spdk.conf";
+    opts.json_config_file = "spdk.json";
     opts.reactor_mask = "0x1";
     opts.shutdown_cb = _sys_fini;
     
