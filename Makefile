@@ -34,8 +34,8 @@ SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib \
 	-lspdk_vmd \
 	-lspdk_accel -lspdk_accel_ioat \
 	-L$(SPDK_PATH_PREFIX)/spdk/isa-l/.libs -lisal \
-	-Wl,--no-whole-archive \
 	$(DPDK_LINK_CFLAGS) \
+	-Wl,--no-whole-archive \
 	-lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
 
 # PMDK_LINK_CFLAGS=-lpmem2
