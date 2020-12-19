@@ -5,38 +5,30 @@ Q=@
 
 ver=release
 ifeq ($(ver), debug)
-CFLAGS=-D_GNU_SOURCE -Wall -std=gnu99 -fno-strict-aliasing  -g -O0 
+CFLAGS=-D_GNU_SOURCE -Wall -std=gnu11 -fno-strict-aliasing  -g -O0 
 else
-CFLAGS=-D_GNU_SOURCE -DWY_NDEBUG -Wall -std=gnu99 -O3 -march=native -fno-strict-aliasing 
+CFLAGS=-D_GNU_SOURCE -DWY_NDEBUG -Wall -std=gnu11 -O3 -march=native -fno-strict-aliasing 
 endif
 
 
 
-PMDK_LINK_CFLAGS=-lpmem
-DPDK_LINK_CFLAGS2=`pkg-config --libs -cflags libdpdk`
-DPDK_LINK_CFLAGS=-I/home/wuyue/spdk/dpdk/build/include -include rte_config.h -march=native -L/home/wuyue/spdk/dpdk/build/lib \
- -lrte_vhost -lrte_security -lrte_reorder -lrte_power -lrte_cryptodev -lrte_compressdev -lrte_timer -lrte_hash -lrte_cmdline -lrte_pci -lrte_ethdev -lrte_meter -lrte_net -lrte_mbuf -lrte_mempool -lrte_rcu -lrte_ring -lrte_eal -lrte_telemetry -lrte_kvargs 
-
 SPDK_PATH_PREFIX=/home/wuyue
 SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
-SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib \
-	-lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
-	-lspdk_json -lspdk_jsonrpc  -lspdk_rpc \
-	-lspdk_bdev_malloc  -lspdk_bdev_null \
+SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
+	-L$(SPDK_PATH_PREFIX)/spdk/dpdk/build/lib -ldpdk  \
+	-lspdk_json -lspdk_jsonrpc -lspdk_log_rpc  -lspdk_app_rpc  -lspdk_rpc \
+	-lspdk_bdev_malloc  -lspdk_bdev_rpc -lspdk_bdev_null \
 	-lspdk_bdev_nvme\
 	-lspdk_bdev\
-	-lspdk_event_bdev  -lspdk_event_net -lspdk_event_vmd -lspdk_event \
+	-lspdk_event_bdev -lspdk_event_copy -lspdk_event_net -lspdk_event_vmd -lspdk_event \
 	-lspdk_thread -lspdk_sock_posix -lspdk_sock -lspdk_notify\
 	-lspdk_net\
 	-lspdk_nvme\
 	-lspdk_ftl\
-	-lspdk_log -lspdk_trace -lspdk_util  -lspdk_conf\
+	-lspdk_log -lspdk_trace -lspdk_util -lspdk_copy -lspdk_conf\
 	-lspdk_vmd \
-	-lspdk_accel -lspdk_accel_ioat -lspdk_event_accel \
 	-L$(SPDK_PATH_PREFIX)/spdk/isa-l/.libs -lisal \
-	$(DPDK_LINK_CFLAGS) \
-	-Wl,--no-whole-archive \
-	-lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
+	-Wl,--no-whole-archive  -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
 
 # PMDK_LINK_CFLAGS=-lpmem2
 
@@ -58,8 +50,8 @@ COMPILE_C=\
 	mv -f $*.d.tmp $*.d && touch -c $@
 
 # Link $(OBJS) and $(LIBS) into $@ (app)
-	# $(Q)echo "  LINK [$(ver)] $@" && 
 LINK_C=\
+	$(Q)echo "  LINK [$(ver)] $@"; \
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
 
 
@@ -115,8 +107,3 @@ test_ipc: test_spdk_ipc.o
 
 clean:
 	@rm -rf $(BIN_TGT) *.o core* *.d
-
-
-
-
-
