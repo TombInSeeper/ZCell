@@ -18,7 +18,7 @@ DPDK_LINK_CFLAGS= `pkg-config libdpdk --libs --cflags`
 SPDK_PATH_PREFIX=/home/wuyue
 SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
 SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
-	`pkg-config libdpdk --libs --cflags`  \
+	$(DPDK_LINK_CFLAGS)  \
 	-lspdk_json -lspdk_jsonrpc  -lspdk_rpc \
 	-lspdk_bdev_malloc  -lspdk_bdev_null \
 	-lspdk_bdev_nvme\
@@ -70,7 +70,7 @@ BIN_TGT=server client_msgr_tool client_admin_tool
 all: $(BIN_TGT) 
 
 test: $(TEST_BIN)
-
+	echo $(DPDK_LINK_CFLAGS)
 # test_messager_server:test_messager_server.o $(MSGR_OBJS)
 # 	$(LINK_C)
 
