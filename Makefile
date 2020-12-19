@@ -20,7 +20,7 @@ SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
 SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
 	`pkg-config libdpdk --libs --cflags`  \
 	-lspdk_json -lspdk_jsonrpc  \
-	-lspdk_bdev_malloc  -lspdk_bdev_rpc -lspdk_bdev_null \
+	-lspdk_bdev_malloc -lspdk_bdev_null \
 	-lspdk_bdev_nvme\
 	-lspdk_bdev\
 	-lspdk_event_bdev  -lspdk_event_net -lspdk_event_vmd -lspdk_event \
