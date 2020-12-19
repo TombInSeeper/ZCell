@@ -52,8 +52,8 @@ COMPILE_C=\
 	mv -f $*.d.tmp $*.d && touch -c $@
 
 # Link $(OBJS) and $(LIBS) into $@ (app)
+	# $(Q)echo "  LINK [$(ver)] $@" && 
 LINK_C=\
-	$(Q)echo "  LINK [$(ver)] $@" && \
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(DPDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
 
 
