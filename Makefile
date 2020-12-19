@@ -12,8 +12,8 @@ endif
 
 
 
-PMDK_LINK_CFLAGS= -lpmem
-DPDK_LINK_CFLAGS= `pkg-config libdpdk --libs --cflags`
+PMDK_LINK_CFLAGS=-lpmem
+DPDK_LINK_CFLAGS=`pkg-config --libs --cflags libdpdk`
 
 SPDK_PATH_PREFIX=/home/wuyue
 SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
