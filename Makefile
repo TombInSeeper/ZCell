@@ -13,12 +13,14 @@ endif
 
 
 PMDK_LINK_CFLAGS=-lpmem
+DPDK_LINK_CFLAGS2=`pkg-config --libs -cflags libdpdk`
 DPDK_LINK_CFLAGS=-I/home/wuyue/spdk/dpdk/build/include -include rte_config.h -march=native -Wl,--as-needed -L/home/wuyue/spdk/dpdk/build/lib \
  -lrte_vhost -lrte_security -lrte_reorder -lrte_power -lrte_cryptodev -lrte_compressdev -lrte_timer -lrte_hash -lrte_cmdline -lrte_pci -lrte_ethdev -lrte_meter -lrte_net -lrte_mbuf -lrte_mempool -lrte_rcu -lrte_ring -lrte_eal -lrte_telemetry -lrte_kvargs 
 
 SPDK_PATH_PREFIX=/home/wuyue
 SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
-SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
+SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib \
+	-lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
 	-lspdk_json -lspdk_jsonrpc  -lspdk_rpc \
 	-lspdk_bdev_malloc  -lspdk_bdev_null \
 	-lspdk_bdev_nvme\
@@ -30,9 +32,10 @@ SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspd
 	-lspdk_ftl\
 	-lspdk_log -lspdk_trace -lspdk_util  -lspdk_conf\
 	-lspdk_vmd \
+	-lspdk_accel -lspdk_accel_ioat \
 	-L$(SPDK_PATH_PREFIX)/spdk/isa-l/.libs -lisal \
 	-Wl,--no-whole-archive \
-	$(DPDK_LINK_CFLAGS) \
+	$(DPDK_LINK_CFLAGS2) \
 	-lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
 
 # PMDK_LINK_CFLAGS=-lpmem2
