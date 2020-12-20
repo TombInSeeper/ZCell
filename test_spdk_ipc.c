@@ -73,6 +73,11 @@ void _zcell_init()
 
 void _sys_init(void *arg) {
     (void)arg;
+    if(g_is_primary) {
+        _zcell_init();
+    } else {
+        _tgt_init();
+    }
 }
 
 static void parse_args(int argc , char **argv) {
