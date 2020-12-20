@@ -59,7 +59,7 @@ MSGR_OBJS = messager.o net.o net_posix.o
 OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o  zstore.o pm.o
 
 
-TEST_BIN= test_objstore
+TEST_BIN= test_objstore test_ipc
 BIN_TGT=server client_msgr_tool client_admin_tool  
 
 .PHONY: all clean test
