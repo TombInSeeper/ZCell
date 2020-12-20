@@ -108,9 +108,11 @@ int main(int argc , char **argv) {
 
     if(g_is_primary) {
         opts.reactor_mask = g_zcell_process_coremask;
+        opts.rpc_addr = "/var/tmp/spdk_zcell.sock";
         opts.name = "zcell";
     } else {
         opts.reactor_mask = g_tgt_process_coremask;
+        opts.rpc_addr = "/var/tmp/spdk_tgt.sock";
         opts.name = "spdk-tgt";
     }
     opts.shutdown_cb = _sys_fini;
