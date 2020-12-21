@@ -94,6 +94,7 @@ int _zcell_recv_poll(void *foo)
 void _zcell_init_continue(void *arg1 , void *arg2);
 
 void _zcell_reactor_common_init()
+
 {
     // while (*(volatile int *)&g_zcell_master_init_done == 0)
     //         ;
@@ -115,7 +116,7 @@ void _zcell_reactor_master_init()
         // _mm_mfence();
     } 
 }
-void _zcell_reactor_init_continue(void *arg1 , void *arg2)
+void _zcell_init_continue(void *arg1 , void *arg2)
 {
     static int n = 0;
     ++n;
