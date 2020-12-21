@@ -39,11 +39,11 @@ typedef struct objstore_interface_t {
 
     /**
      * 调用者在 message->meta_buffer 中传递操作码和参数
-     * 见 operation.h ，message->data_buffer 指向 DMA safe 的缓冲区
+     * 见 operation.h ，
+     * message->data_buffer 指向 DMA safe 的缓冲区
      * 调用者务必按照如下方式分配请求本身需要的连续内存
      * p = malloc(sizeof(message_t) + obj_async_op_context_size());
-     * 或者
-     * 以保证 op_ctx 的内存紧连着 message_t 的内存 
+     * 以保证 obj_async_op_context 的内存紧连着 message 的内存 
      * 返回值：0 代表异步操作提交成功，否则代表操作提交失败
      * 回调函数：status_code 为 0 代表执行成功，否则代表执行失败
      * 错误码见：util/errcode.h

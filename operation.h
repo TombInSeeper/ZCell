@@ -4,8 +4,9 @@
 #include "util/common.h"
 
 
-
-//Operation 从消息的 meta_buffer 中解码出来
+//Operation 从
+//1.消息的 meta_buffer 中解码出来
+//2.IPC 请求结构中解码出来
 typedef struct op_create_t {
     _le64 oid;
 } _packed op_create_t;

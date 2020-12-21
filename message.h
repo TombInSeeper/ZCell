@@ -37,11 +37,21 @@ typedef struct msg_hdr_t {
     _le64 seq; //Seq number in one session
     _le16 type; //Operation Type of this message
     _le16 status; //Response Status Code, for "response"
-    _le16 prio; //For request
+    _le16 prio;  //For request
     _le16 meta_length; //MAX 64K
-    _le32 data_length;
+    _le32 data_length; //Max 4GB
     _le32 crc_meta; 
-    _le32 rsv[2]; // reserve for some special using 
+    union {
+        struct {
+            _le32 from;//请求发起者的ID
+            _le16 opid;
+        } _net_transport_rsv;
+        struct {
+            _le32 from; //请求发起者的ID
+            _le16 opid;
+        } _ipc_transport_rsv;
+        _le32 rsv[2]; // reserve for some special using 
+    }; 
 } _packed msg_hdr_t;
 
 
@@ -53,13 +63,16 @@ typedef struct message_state_object_t {
 
 typedef struct message_t {
     message_state_object_t state; 
-    msg_hdr_t header;
-    char *meta_buffer;
-    char *data_buffer;
+
+    msg_hdr_t header; //被传输的内容
+    char *meta_buffer; //被传输的内容
+    char *data_buffer; //被传输的内容
+
     union {
-        void *priv_ctx;  //指针：属于哪个 session
-        uint64_t user_data_;
+        void *priv_ctx;  //被 network_messager使用，记录属于哪个 session
+        uint32_t tgt_id; //被 ipc_messager 使用
     };
+
 } message_t;
 
 #define message_get_ctx(m) ((((message_t*)(m))->priv_ctx))
