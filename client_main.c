@@ -427,7 +427,7 @@ void _sys_init(void *arg) {
     tls_io_ctx_init(0);
     log_debug("liboss env init done\n");
 
-    ac->ioch = get_io_channel_with_local(1 ,256);
+    ac->ioch = get_io_channel_with_local(0 ,256);
 
     if(!ac->ioch) {
         log_info("Cannot establish channel with Core[%u] \n", 1);

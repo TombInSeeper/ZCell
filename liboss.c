@@ -300,6 +300,7 @@ extern io_channel *get_io_channel_with_local(uint32_t core, int max_qd) {
     io_channel *ch = io_channel_new(max_qd, max_qd);
     ch->session_type = LOCAL;
     ch->msgr_ = lc->ipc_msgr;
+    log_debug("Connect  with CORE [%u]\n", core);
     ch->session_ = lc->ipc_msgr->messager_connect2(core , ch);
     if (!ch->session_) {
         log_err("Connect Failed with CORE [%u]\n", core);
