@@ -137,6 +137,50 @@ static void ipc_msgr_data_buffer_free( void *dptr) {
 }
 
 
+static void* ipc_msgr_meta_buffer_alloc(uint32_t sz) {
+    void *ptr;
+    ptr =  spdk_malloc(sz, 0, NULL , SPDK_ENV_SOCKET_ID_ANY , 
+        SPDK_MALLOC_SHARE);
+    // log_debug("[spdk_dma_malloc] \n");
+    log_debug("[spdk_malloc] %p\n", ptr);
+    return ptr;
+}
+
+static void ipc_msgr_meta_buffer_free(void *p) {
+    log_debug("[spdk_free] %p\n", p);
+    spdk_free(p);
+}
+
+static void* ipc_msgr_data_buffer_alloc(uint32_t sz) {
+    
+    // static __thread tls_data_buf[4 << 20];
+    
+    void *ptr;
+    if(sz <= 0x1000) {
+        // log_debug("[fixed_cahce] \n");
+        // ptr =  fcache_get(reactor_ctx()->dma_pages); 
+        sz = 0x1000;
+    }
+    // uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
+    ptr =  spdk_malloc(sz, 0x1000, NULL , SPDK_ENV_SOCKET_ID_ANY , 
+        SPDK_MALLOC_DMA | SPDK_MALLOC_SHARE);
+    // log_debug("[spdk_dma_malloc] \n");
+    log_debug("[spdk_malloc] %p\n", ptr);
+    
+    return ptr;
+}
+
+static void ipc_msgr_data_buffer_free(void *p) {
+    // fcache_t *fc = reactor_ctx()->dma_pages;
+    // if(fcache_in(fc , p)) {
+        // log_debug("[fixed_cahce] \n");
+        // fcache_put(fc, p);
+    // } else {
+    log_debug("[spdk_free] %p\n", p);
+    spdk_free(p);
+    // }
+}
+
 
 static void* msgr_meta_buffer_alloc(uint32_t sz) {
     return malloc(sz);

@@ -18,21 +18,16 @@
 typedef message_t msg;
 
 static void* default_alloc_meta_buffer(uint32_t sz){
-    log_debug("Messager Internal alloc message meta buffer\n");
-    return spdk_malloc(sz , 0 , NULL , SPDK_ENV_SOCKET_ID_ANY , SPDK_MALLOC_SHARE);
+    assert("必须手动指定分配函数" == NULL);
 }
 static void default_free_meta_buffer( void *mptr) {
-    log_debug("Messager Internal free message meta buffer\n");
-    spdk_free(mptr);
+    assert("必须手动指定分配函数" == NULL);
 }
 static void* default_alloc_data_buffer(uint32_t sz) {
-    log_debug("Messager Internal alloc message data buffer\n");
-    return spdk_malloc(sz , 0 , NULL , SPDK_ENV_SOCKET_ID_ANY , 
-        SPDK_MALLOC_SHARE | SPDK_MALLOC_DMA);
+    assert("必须手动指定分配函数" == NULL);
 }
 static void default_free_data_buffer( void *dptr) {
-    log_debug("Messager Internal free message data buffer \n");
-    spdk_free(dptr);
+    assert("必须手动指定分配函数" == NULL);
 }
 
 
@@ -49,6 +44,8 @@ static inline msg *msg_alloc() {
     msg* m = spdk_malloc(sizeof(msg) , 0 , NULL, SPDK_ENV_SOCKET_ID_ANY , 
         SPDK_MALLOC_SHARE);
     memset(m , 0 , sizeof(*m));
+    log_debug("spdk_malloc msg:%p\n" , m);
+
     return m;
 }
 
@@ -56,6 +53,7 @@ static inline msg *msg_alloc() {
 
 
 static inline void msg_free(msg* m) {
+    log_debug("spdk_free msg:%p\n" , m);
     spdk_free(m);
 }
 

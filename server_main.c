@@ -154,14 +154,14 @@ static void free_data_buffer(void *p) {
 static void* alloc_meta_buffer(uint32_t sz) {
     void *ptr;
     ptr =  spdk_malloc(sz, 0, NULL , SPDK_ENV_SOCKET_ID_ANY , 
-        SPDK_MALLOC_DMA);
+        SPDK_MALLOC_SHARE);
     // log_debug("[spdk_dma_malloc] \n");
     log_debug("[spdk_malloc] 0x%p\n", ptr);
     return ptr;
 }
 
 static void free_meta_buffer(void *p) {
-    log_debug("[spdk_free] 0x%p\n", p);
+    log_debug("[spdk_free] %p\n", p);
     spdk_free(p);
 }
 
