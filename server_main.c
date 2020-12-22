@@ -278,7 +278,7 @@ static bool oss_op_valid(message_t *request) {
 //Step2: prepare response structure reusing request 
 // 复用 request 结构填充成 response 结构
 static int  oss_op_refill_request_with_reponse(message_t *request) {
-    int op = le16_to_cpu(request->header.type);
+    int op = message_get_op(request);
     int rc = 0;
     switch (op) {
         case msg_oss_op_stat: {
@@ -393,7 +393,6 @@ static void _on_recv_message(message_t *m) {
 
     op_execute(&_m);
 }
-
 
 static void _on_send_message(message_t *m) {
     log_debug("Send a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,

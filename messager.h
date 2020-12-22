@@ -5,7 +5,6 @@
 #include "util/chrono.h"
 
 
-
 typedef struct messager_conf_t {
 
     union {

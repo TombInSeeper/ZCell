@@ -102,18 +102,7 @@ static inline liboss_ctx_t* tls_liboss_ctx() {
     return &liboss_ctx;
 }
 
-static inline op_ctx_t *_get_assi_op_from_msg(message_t *_m) {
-    liboss_ctx_t *lc = tls_liboss_ctx();
-    void *sess = _m->priv_ctx;
-    io_channel *ch;
-    
-    if(_m->header._ipc_rsv.magic) {
-        ch = lc->ipc_msgr->messager_get_session_ctx(sess);
-    } else {
-        ch = lc->net_msgr->messager_get_session_ctx(sess);
-    }
-
-   
+static inline op_ctx_t *_get_assi_op_from_msg(io_channel *ch, message_t *_m) {
     //找到是哪个 op
     uint32_t id = message_get_rsv(_m, 0); //
     return &ch->op_ctxs_[id];
@@ -174,7 +163,7 @@ static void net_msgr_on_recv_msg(message_t *msg) {
 
     ch = lc->net_msgr->messager_get_session_ctx(sess);
 
-    op_ctx_t *op = _get_assi_op_from_msg(msg);
+    op_ctx_t *op = _get_assi_op_from_msg(ch, msg);
     assert(op->reqeust_and_response.header.seq == msg->header.seq);
     assert(op->reqeust_and_response.header.type == msg->header.type);
 
@@ -212,7 +201,7 @@ static void ipc_msgr_on_recv_msg(message_t *msg) {
     void *sess = msg->priv_ctx;
     io_channel *ch = lc->ipc_msgr->messager_get_session_ctx(sess);
 
-    op_ctx_t *op = _get_assi_op_from_msg(msg);
+    op_ctx_t *op = _get_assi_op_from_msg(ch, msg);
     assert(op->reqeust_and_response.header.seq == msg->header.seq);
     assert(op->reqeust_and_response.header.type == msg->header.type);
 
@@ -361,15 +350,18 @@ static int _io_prepare_op_common(io_channel *ch,  int16_t op_type ,uint32_t meta
     if(!op) {
         return -ENOMEM;
     }
+
+    if(meta_size > 255) {
+        _free_op(ch , op);
+        return -EINVAL;
+    }
+
     msg_hdr_t _hdr = {
         .seq = cpu_to_le64(ch->seq_++),
-        .type = cpu_to_le16(op_type),
+        .type = (_u8)(op_type),
         .status = 0,
-        .prio = cpu_to_le16(8),
-        .meta_length = cpu_to_le16(meta_size),
-        .data_length = cpu_to_le32(data_length),
-        .crc_meta = 0,        
-        
+        .meta_length = (_u8)(meta_size),
+        .data_length = cpu_to_le32(data_length),        
         /**
          * This is an ugly trick
          */

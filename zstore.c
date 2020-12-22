@@ -713,7 +713,7 @@ dump_extent(struct zstore_extent_t *e , uint32_t ne)
 static int
 _tx_prep_rw_common(void *r)  
 {
-    uint16_t op = message_get_op(r);
+    int op = message_get_op(r);
     message_t *m = (message_t*)r;
     struct zstore_transacion_t *tx = ostore_async_ctx(r);   
     uint64_t oid, op_ofst, op_len , op_flags;
@@ -1045,7 +1045,7 @@ zstore_tx_prepare(void *request , cb_func_t user_cb,
 
     assert (tx == ostore_async_ctx(request));
 
-    uint16_t op = message_get_op(request);
+    int op = message_get_op(request);
     //填充通用字段
     tx->user_cb_ = user_cb;
     tx->user_cb_arg_ = request;

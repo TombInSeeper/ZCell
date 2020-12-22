@@ -10,7 +10,6 @@
 enum message_type {
     msg_hdr = 0,
     msg_ping = 1, 
-    msg_handshake = 2,
     msg_oss_op_min = 10,
     msg_oss_op_stat = 11,
     msg_oss_op_create = 12,
@@ -36,21 +35,12 @@ enum message_type {
 */
 typedef struct msg_hdr_t {
     _le64 seq;          //Seq number in one session
-    _le16 type;         //Operation Type of this message
-    _le16 status;       //Response Status Code, for "response"
-    _le16 prio;         //For request
-    _le16 meta_length;  //MAX 64K
+    _u8   type;         //Operation Type of this message
+    _u8   status;       //Response Status Code, for "response"
+    _u8   pad0;
+    _u8   meta_length;  //MAX 255 字节
     _le32 data_length;  //Max 4GB
-    _le32 crc_meta; 
-    union {
-        struct {
-            // _u8 from; 
-            // _u8 to;
-            _u8 magic;
-            // _u8 rsv;
-        }_ipc_rsv;
-    }; 
-    _le32 rsv[1]; // reserve for some special using 
+    _le32 rsv[2]; // reserve for some special using 
 } _packed msg_hdr_t;
 
 
@@ -74,13 +64,12 @@ typedef struct message_t {
 } message_t;
 
 #define message_get_ctx(m) ((((message_t*)(m))->priv_ctx))
-#define message_get_user_data(m) ((((message_t*)(m))->user_data_))
 #define message_get_seq(m) (le64_to_cpu((((message_t*)(m))->header.seq)))
-#define message_get_op(m) (le16_to_cpu((((message_t*)(m))->header.type)))
-#define message_get_status(m) (le16_to_cpu((((message_t*)(m))->header.status)))
-#define message_get_prio(m) (le16_to_cpu((((message_t*)(m))->header.prio)))
-#define message_get_meta_crc(m) (le32_to_cpu((((message_t*)(m))->header.crc_meta)))
-#define message_get_meta_len(m) (le16_to_cpu((((message_t*)(m))->header.meta_length)))
+#define message_get_op(m) (((((message_t*)(m))->header.type)))
+#define message_get_status(m) (((((message_t*)(m))->header.status)))
+// #define message_get_prio(m) (le16_to_cpu((((message_t*)(m))->header.prio)))
+// #define message_get_meta_crc(m) (le32_to_cpu((((message_t*)(m))->header.crc_meta)))
+#define message_get_meta_len(m) (((((message_t*)(m))->header.meta_length)))
 #define message_get_data_len(m) (le32_to_cpu((((message_t*)(m))->header.data_length)))
 #define message_get_rsv(m,i) (le32_to_cpu((((message_t*)(m))->header.rsv[(i)])))
 #define message_get_meta_buffer(m) ((void*)((((message_t*)(m))->meta_buffer)))
