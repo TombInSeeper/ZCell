@@ -17,11 +17,11 @@
 
 typedef message_t msg;
 
-static inline  void* default_alloc_meta_buffer(size_t sz){
+static void* default_alloc_meta_buffer(size_t sz){
     log_debug("Messager Internal alloc message meta buffer\n");
     return spdk_malloc(sz , 0 , NULL , SPDK_ENV_SOCKET_ID_ANY , SPDK_MALLOC_SHARE);
 }
-static inline void default_free_meta_buffer( void *mptr) {
+static void default_free_meta_buffer( void *mptr) {
     log_debug("Messager Internal free message meta buffer\n");
     spdk_free(mptr);
 }
@@ -93,7 +93,7 @@ static inline messager_t* get_local_msgr() {
 
 static int message_send(const message_t  *m)  
 {
-    messager_t *msgr = get_local_msgr();
+    // messager_t *msgr = get_local_msgr();
 
     struct session_t *s = m->priv_ctx;
     
@@ -200,11 +200,8 @@ static void _messager_destructor(bool is_server) {
     messager_t *msgr = get_local_msgr();
     if(!msgr->is_running) 
         return;
-
-    spdk_poller_unregister(msgr->ring_poller);
-
+    spdk_poller_unregister(&msgr->ring_poller);
     msgr->is_running = 0;
-
 }
 
 static int _srv_messager_constructor(messager_conf_t *conf) {
@@ -269,7 +266,6 @@ static void _cli_messager_close (void * _s) {
         log_warn("Fuck\n");
     }
     free(sess);
-    return NULL;
 }
 
 static int _cli_messager_sendmsg(const message_t *_msg) {
@@ -312,12 +308,16 @@ static __thread msgr_server_if_t msgr_ipc_server_impl = {
     .messager_last_busy_ticks = NULL,
 };
 
-
 static __thread msgr_client_if_t msgr_ipc_client_impl = {
     .messager_init = _cli_messager_constructor,
     .messager_fini = _cli_messager_destructor,
+    .messager_connect = _cli_messager_connect,
+    .messager_close = _cli_messager_close,
     .messager_sendmsg = _cli_messager_sendmsg,
+    .messager_flush= _cli_messager_flush,
     .messager_wait_msg = _cli_messager_wait_msg,
+    .messager_wait_msg_of = _cli_messager_wait_msg_of,
+    .messager_flush_msg_of = _cli_messager_flush_msg_of,
     .messager_get_session_ctx = _cli_messager_get_session_ctx,
 };
 
