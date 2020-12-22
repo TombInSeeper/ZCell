@@ -43,7 +43,7 @@ struct io_channel {
     void *session_;
     
     int session_type;
-    void *msgr_;
+    const void *msgr_;
 
     uint32_t queue_depth_;
     uint32_t reap_depth_;
@@ -247,7 +247,7 @@ static int _do_msgr_init() {
     assert(rc == 0);
 
     lc->ipc_msgr = msgr_get_ipc_client_impl();
-    messager_conf_t msgr_conf = {
+    messager_conf_t msgr_conf2 = {
         .on_recv_message = ipc_msgr_on_recv_msg,
         .on_send_message = ipc_msgr_on_send_msg,
         .data_buffer_alloc = ipc_msgr_data_buffer_alloc,
@@ -255,7 +255,7 @@ static int _do_msgr_init() {
         .meta_buffer_alloc = ipc_msgr_meta_buffer_alloc,
         .meta_buffer_free = ipc_msgr_meta_buffer_free,
     };
-    int rc = lc->ipc_msgr->messager_init(&msgr_conf);
+    rc = lc->ipc_msgr->messager_init(&msgr_conf2);
     assert(rc == 0);
 
 
