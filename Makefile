@@ -55,12 +55,12 @@ LINK_C=\
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
 
 
-MSGR_OBJS = messager.o net.o net_posix.o
+MSGR_OBJS = messager.o net.o net_posix.o spdk_ipc_messager.o
 OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o  zstore.o pm.o
 
 
 TEST_BIN= test_objstore test_ipc
-BIN_TGT=server client_msgr_tool client_admin_tool  
+BIN_TGT=server 
 
 .PHONY: all clean test
 	

@@ -10,6 +10,7 @@
 enum message_type {
     msg_hdr = 0,
     msg_ping = 1, 
+    msg_handshake = 2,
     msg_oss_op_min = 10,
     msg_oss_op_stat = 11,
     msg_oss_op_create = 12,
@@ -25,7 +26,7 @@ enum message_type {
 /**
  *  
  * 
- * request 请求格式：
+ * request 格式：
  * hdr + meta_buffer (meta_buffer 存放具体的 rpc 参数) + data_buffer (如果有数据要传输，比如写操作)
  * 
  * response 格式：
@@ -34,24 +35,21 @@ enum message_type {
  * 
 */
 typedef struct msg_hdr_t {
-    _le64 seq; //Seq number in one session
-    _le16 type; //Operation Type of this message
-    _le16 status; //Response Status Code, for "response"
-    _le16 prio;  //For request
-    _le16 meta_length; //MAX 64K
-    _le32 data_length; //Max 4GB
+    _le64 seq;          //Seq number in one session
+    _le16 type;         //Operation Type of this message
+    _le16 status;       //Response Status Code, for "response"
+    _le16 prio;         //For request
+    _le16 meta_length;  //MAX 64K
+    _le32 data_length;  //Max 4GB
     _le32 crc_meta; 
     union {
         struct {
-            _le32 from;//请求发起者的ID
-            _le16 opid;
-        } _net_transport_rsv;
-        struct {
-            _le32 from; //请求发起者的ID
-            _le16 opid;
-        } _ipc_transport_rsv;
-        _le32 rsv[2]; // reserve for some special using 
+            _u8 from; 
+            _u8 to;
+            _le16 pad;
+        }_ipc_rsv;
     }; 
+    _le32 rsv[1]; // reserve for some special using 
 } _packed msg_hdr_t;
 
 
@@ -69,10 +67,9 @@ typedef struct message_t {
     char *data_buffer; //被传输的内容
 
     union {
-        void *priv_ctx;  //被 network_messager使用，记录属于哪个 session
-        uint32_t tgt_id; //被 ipc_messager 使用
+        void *priv_ctx;  //被 network_server 使用，记录属于哪个 socket session
+        // 被 ipc_client 使用，记录前一级别的上下文
     };
-
 } message_t;
 
 #define message_get_ctx(m) ((((message_t*)(m))->priv_ctx))

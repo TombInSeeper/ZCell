@@ -9,37 +9,47 @@
 #include "util/fixed_cache.h"
 #include "util/errcode.h"
 
+
+#include "spdk_ipc_config.h"
 #include "messager.h"
 #include "objectstore.h"
 
 
-#define NR_REACTOR_MAX 256
+#define NR_REACTOR_MAX NR_CORE_MAX
 
+
+static int g_ipc_msgr = 0;
+static int g_net_msgr = 0;
 static const char *g_base_ip = "0.0.0.0";
 static int g_base_port = 18000;
-static const char *g_core_mask = "0x1";
+// static const char *g_zcell_core_mask = "0x1";
+// static const char *g_tgt_core_mask = "0x2";
 static int g_store_type = NULLSTORE;
-static int g_idle = 0;
+// static int g_idle = 0;
 static int g_new = 0;
-static const char *dev_list[] = {"Nvme0n1", "/run/pmem1" ,NULL};
+static const char *dev_list[] = {"Nvme0n1", "/run/pmem0" ,NULL};
 
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "i:p:c:s:n")) != -1) {
+	while ((opt = getopt(argc, argv, "i:p:INc:C:s:n")) != -1) {
 		switch (opt) {
 		case 'i':
 			g_base_ip = optarg;
 			break;
-        // case 'd':
-        //     g_idle = 1;
-        //     break;
+        case 'I':
+            g_ipc_msgr = 1;
+        case 'N':
+            g_net_msgr = 1;
 		case 'p':
 			g_base_port = atoi(optarg);
 			break;
-        case 'c':
-			g_core_mask = (optarg);
-			break;
+        // case 'c':
+		// 	g_tgt_core_mask = (optarg);
+		// 	break;
+        // case 'C':
+		// 	g_zcell_core_mask = (optarg);
+		// 	break;
         case 's':
             if(!strcmp(optarg,"null")){
                 log_info("Ostore type is nullstore \n");
@@ -59,36 +69,28 @@ static void parse_args(int argc , char **argv) {
 			g_new = 1;
 			break;
 		default:
-			fprintf(stderr, "Usage: %s [-i ip] [-p port] [-c core_mask] [-s[null|chunk|zeta]] [-n new objstore] \n", argv[0]);
+			fprintf(stderr, "Usage: %s [-i ip] [-p port]  [-s[null|chunk|zeta]] [-n new objstore] \n", argv[0]);
 			exit(1);
 		}
 	}
 }
 
 
-// struct small_object_t {
-//     uint8_t raw[120];
-//     SLIST_ENTRY(small_object_t) hook;
-// };
-
-
-// enum RunningLevel {
-//     BUSY_MAX,
-//     BUSY1,
-//     BUSY2,
-//     BUSY3,
-//     IDLE = 10
-// };
-
 
 typedef struct reactor_ctx_t {
+    
     int reactor_id;
-    const char *ip;
-    int port;
+    
+    struct {
+        const char *ip;
+        int port;
+    };
 
     const msgr_server_if_t *msgr_impl;
+    //
+    const msgr_server_if_t *ipc_msgr_impl;
+    //
     const objstore_impl_t  *os_impl;
-
     // bool idle_enable;
     // uint64_t idle_poll_start_us;
     // uint64_t idle_poll_exe_us;
@@ -117,15 +119,7 @@ static int reactor_reduce_state() {
 }
 
 
-static void *alloc_meta_buffer(uint32_t sz) {
-    return malloc(sz);
-}
-
-static void free_meta_buffer(void *p) {
-    free(p);
-}
-
-static void *alloc_data_buffer(uint32_t sz) {
+static void* alloc_data_buffer(uint32_t sz) {
     
     // static __thread tls_data_buf[4 << 20];
     
@@ -135,35 +129,57 @@ static void *alloc_data_buffer(uint32_t sz) {
         // ptr =  fcache_get(reactor_ctx()->dma_pages); 
         sz = 0x1000;
     }
-    log_debug("[spdk_dma_malloc] \n");
-    uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
-    ptr =  spdk_dma_malloc(sz, align, NULL);
+    // uint32_t align = (sz % 0x1000 == 0 )? 0x1000 : 0;
+    ptr =  spdk_malloc(sz, 0x1000, NULL , SPDK_ENV_SOCKET_ID_ANY , 
+        SPDK_MALLOC_DMA | SPDK_MALLOC_SHARE);
+    // log_debug("[spdk_dma_malloc] \n");
+    log_debug("[spdk_malloc] 0x%p\n", ptr);
+    
     return ptr;
 }
-
+ 
 static void free_data_buffer(void *p) {
     // fcache_t *fc = reactor_ctx()->dma_pages;
     // if(fcache_in(fc , p)) {
         // log_debug("[fixed_cahce] \n");
         // fcache_put(fc, p);
     // } else {
-    log_debug("[spdk_dma_free] \n");
-    spdk_dma_free(p);
+    log_debug("[spdk_free] 0x%p\n", p);
+    spdk_free(p);
     // }
 }
 
+static void* alloc_meta_buffer(uint32_t sz) {
+    void *ptr;
+    ptr =  spdk_malloc(sz, 0, NULL , SPDK_ENV_SOCKET_ID_ANY , 
+        SPDK_MALLOC_DMA);
+    // log_debug("[spdk_dma_malloc] \n");
+    log_debug("[spdk_malloc] 0x%p\n", ptr);
+    return ptr;
+}
 
+static void free_meta_buffer(void *p) {
+    log_debug("[spdk_free] 0x%p\n", p);
+    spdk_free(p);
+}
+
+static inline void msg_free_resource(message_t *m) {
+    if(m->header.meta_length == 0 && m->meta_buffer) {
+        free_meta_buffer(m->meta_buffer);
+        m->meta_buffer = NULL;
+    }
+    if(m->header.data_length == 0 && m->data_buffer) {
+        free_data_buffer(m->data_buffer);
+        m->data_buffer = NULL;
+    }
+}
 /**
  * 复用 request 结构生成 response
  * 这里我们对 request 的 meta_buffer 和 data_buffer 的处理方式是 lazy 的：
  * 只要将 header 的 meta_length 和 data_length 长度置 0， 
  * 那么 messager 发送时就不会发送 meta_buffer 和 data_buffer 的内容，：
- * request message 析构时，meta_buffer 和 data_buffer 如果是非空指针，会被自动被释放
- * 
- * meta_buffer : glibc free (后续可能也加上用户重载函数)
- * data_buffer : .. 用户重载的函数
- * 
- * 
+ * response message 的 meta_buffer 和 data_buffer 
+ * 如果是非空指针，并且对应的头部长度是0，会被发送函数自动被释放
  */
 static inline void _response_with_reusing_request(message_t *request, uint16_t status_code) {
     request->header.status = cpu_to_le16(status_code);
@@ -172,12 +188,23 @@ static inline void _response_with_reusing_request(message_t *request, uint16_t s
         request->header.status,
         request->header.meta_length,
         request->header.data_length);
+
+    //释放原request的资源
+    if(request->meta_buffer && request->header.meta_length == 0)
+        free_meta_buffer(request->meta_buffer);
+    if(request->data_buffer && request->header.data_length == 0)
+        free_data_buffer(request->data_buffer);
+
     reactor_ctx()->msgr_impl->messager_sendmsg(request);
 }
 
 static inline void _response_broken_op(message_t *request, uint16_t status_code) {
     request->header.data_length = 0;
     request->header.meta_length = 0;
+    if(request->meta_buffer)
+        free_meta_buffer(request->meta_buffer);
+    if(request->data_buffer)
+        free_data_buffer(request->data_buffer);
     _response_with_reusing_request(request, status_code);
 }
 
@@ -188,6 +215,7 @@ static void _do_op_unknown(message_t *request) {
 
 static void oss_op_cb(void *ctx, int status_code) {
     message_t *request = ctx;
+
     if(status_code != OSTORE_EXECUTE_OK) {
         _response_broken_op(request,status_code);
         free(request);
@@ -196,7 +224,6 @@ static void oss_op_cb(void *ctx, int status_code) {
     _response_with_reusing_request(request, status_code);
     free(request);
 }
-
 
 //Step1:Check
 static bool oss_op_valid(message_t *request) {
@@ -235,7 +262,7 @@ static bool oss_op_valid(message_t *request) {
         case msg_oss_op_read:{
             rc = (le32_to_cpu(request->header.data_length) == 0) && 
             (le16_to_cpu(request->header.meta_length) > 0 ) && 
-            (request->data_buffer == NULL) && 
+            (request->data_buffer == NULL) &&
             (request->meta_buffer != NULL);       
         }
             /* code */
@@ -275,7 +302,13 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
             op_read_t *op = (op_read_t *)request->meta_buffer;
             request->header.meta_length = 0;             
             request->header.data_length = op->len; 
-            request->data_buffer = alloc_data_buffer(le32_to_cpu(op->len));           
+            if(op->read_buffer_zero_copy_addr) {
+                //IPC Call
+                request->data_buffer = (void*)((uintptr_t)(op->read_buffer_zero_copy_addr));
+            } else {
+                //RPC Call
+                request->data_buffer = alloc_data_buffer(le32_to_cpu(op->len));           
+            }
         }
             /* code */
             break;        
@@ -284,8 +317,6 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
     }
     return rc;
 }
-
-
 
 /** 
  * 由于是异步操作，所以需要复制 request 内容到全局
@@ -348,7 +379,7 @@ static void _on_recv_message(message_t *m) {
     
     
     /**
-     * 承接 original message *m* 中的所有内容
+     * 承接源 message *m* 中的所有内容
      * 阻止 _on_** 调用后释放 m 内的 meta_buffer 和 data_buffer
      * 尽管这个操作看起来有些奇怪
      */
@@ -360,6 +391,7 @@ static void _on_recv_message(message_t *m) {
 
     op_execute(&_m);
 }
+
 
 static void _on_send_message(message_t *m) {
     log_debug("Send a message done , m->id=%lu, m->meta=%u, m->data=%u\n" , m->header.seq,
@@ -444,8 +476,11 @@ int _ostore_stop(const objstore_impl_t *oimpl){
     return rc;
 }
 int _msgr_stop(const msgr_server_if_t *smsgr_impl) {
-    smsgr_impl->messager_stop();
-    smsgr_impl->messager_fini();
+    if(smsgr_impl) {
+        smsgr_impl->messager_stop();
+        smsgr_impl->messager_fini();
+    }
+
     return 0;
 }
 void _per_reactor_stop(void * ctx , void *err) {
@@ -455,6 +490,7 @@ void _per_reactor_stop(void * ctx , void *err) {
     log_info("Stopping server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
     
     _msgr_stop(rctx->msgr_impl);
+    _msgr_stop(rctx->ipc_msgr_impl);
 
     _ostore_stop(rctx->os_impl);
     
@@ -463,6 +499,7 @@ void _per_reactor_stop(void * ctx , void *err) {
     //     spdk_poller_unregister(&rctx->idle_poller);
 
     rctx->running = false;
+    _mm_mfence();
     log_info("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
     return;
 }
@@ -500,7 +537,6 @@ int _ostore_boot(const objstore_impl_t *oimpl , int new) {
     return rc;
 }
 
-
 int _msgr_boot(const msgr_server_if_t *smsgr_impl) {
 
     //TODO get msgr global config
@@ -513,16 +549,18 @@ int _msgr_boot(const msgr_server_if_t *smsgr_impl) {
         .on_recv_message = _on_recv_message,
         .on_send_message = _on_send_message,
         .data_buffer_alloc = alloc_data_buffer,
-        .data_buffer_free = free_data_buffer
+        .data_buffer_free = free_data_buffer,
+        .meta_buffer_alloc = alloc_meta_buffer,
+        .meta_buffer_free = free_data_buffer
     };
     int rc = smsgr_impl->messager_init(&conf);
     if(rc) {
         return rc;
     }
+
     rc = smsgr_impl->messager_start();
     return rc;
 }
-
 
 void _per_reactor_boot(void * ctx , void *err) {
     (void)err;
@@ -541,19 +579,76 @@ void _per_reactor_boot(void * ctx , void *err) {
     _ostore_boot(rctx->os_impl,true);
     log_info("Booting object store, type =[%d]....done\n", g_store_type);
 
-
+    if(!g_ipc_msgr && !g_net_msgr) {
+        log_warn("No messager init\n");
+    }
     //Msgr initialize
-    rctx->msgr_impl = msgr_get_server_impl();
-    _msgr_boot(rctx->msgr_impl);
+    if(g_ipc_msgr) {
+        rctx->ipc_msgr_impl = msgr_get_ipc_server_impl();
+    }
+    if(g_net_msgr) {
+        rctx->msgr_impl = msgr_get_server_impl();
+    }
+    
+    if(g_net_msgr) {
+        _msgr_boot(rctx->msgr_impl);
+    }
+    if(g_ipc_msgr) {
+        _msgr_boot(rctx->ipc_msgr_impl);
+    }
+
     log_info("Booting messager ....done\n");
 
     rctx->running = true;
+    _mm_mfence();
+
     // spdk_thread_get
     log_info("Booting server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
 }
+
+static void _zcell_config_init() {
+
+    void *cfg = spdk_memzone_reserve_aligned(ZCELL_IPC_CONFIG_NAME, sizeof(struct zcell_ipc_config_t) ,SPDK_ENV_SOCKET_ID_ANY , 0 , 0);
+    assert(cfg);
+    memset(cfg , 0 , sizeof(struct zcell_ipc_config_t));
+    
+    struct zcell_ipc_config_t *zic = cfg;
+
+
+    zic->tgt_nr = 1;
+    zic->tgt_cores[0] = 1;
+
+    zic->zcell_nr = 1;
+    zic->zcell_cores[0] = 0;
+
+    //Hardcode
+    uint32_t i , j;
+    for (i = 0 ; i < zic->tgt_nr ; ++i) {
+        for (j = 0 ; j < zic->zcell_nr ; ++j) {
+            uint32_t from = zic->tgt_cores[i];
+            uint32_t to = zic->zcell_cores[j];
+            log_info("Create ring from %u to %u \n" , from , to);
+            zic->rings[from][to] = spdk_ring_create(SPDK_RING_TYPE_SP_SC, 512 , SPDK_ENV_SOCKET_ID_ANY);
+            log_info("Create ring from %u to %u \n" , to , from);
+            zic->rings[to][from] = spdk_ring_create(SPDK_RING_TYPE_SP_SC, 512 , SPDK_ENV_SOCKET_ID_ANY);
+            assert(zic->rings[from][to]);
+            assert(zic->rings[to][from]);
+        }
+    }
+    return;
+}
+
 void _sys_init(void *arg) {
     (void)arg;
     int i;
+    if(g_ipc_msgr) {
+        if(spdk_env_get_current_core() == spdk_env_get_first_core()) {
+            _zcell_config_init();
+            log_info("IPC rings created done\n");
+        }
+    }
+
+
     //prepare per reactor context
     SPDK_ENV_FOREACH_CORE(i) {
         reactor_ctx_t myctx = {
@@ -587,10 +682,10 @@ void _sys_init(void *arg) {
 int spdk_app_run() {
     struct spdk_app_opts opts;
     spdk_app_opts_init(&opts);
-    opts.reactor_mask = g_core_mask;
+    opts.reactor_mask = "0x1";
     opts.shutdown_cb = _sys_fini;
     opts.config_file = "spdk.conf";
-    opts.print_level = 1;
+    // opts.print_level = 1;
     int rc = spdk_app_start(&opts , _sys_init , NULL);
     if(rc) {
         return -1;

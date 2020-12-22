@@ -5,8 +5,7 @@
 
 
 //Operation 从
-//1.消息的 meta_buffer 中解码出来
-//2.IPC 请求结构中解码出来
+//消息的 meta_buffer 中解码出来
 typedef struct op_create_t {
     _le64 oid;
 } _packed op_create_t;
@@ -20,6 +19,7 @@ typedef struct op_read_t {
     _le64 ofst;
     _le64 len;
     _le64 flags;
+    _le64 read_buffer_zero_copy_addr; // For IPC call 
 } _packed op_read_t;
 
 typedef struct op_write_t {
