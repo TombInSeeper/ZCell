@@ -209,9 +209,8 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
             s->out_q = zic->rings[msgr->my_lcore][tgt];
             s->tgt_core = tgt;
             TAILQ_INSERT_TAIL(&msgr->session_q , s , _session_list_hook);
-            log_info("Get session with [%u]\n", tgt );  
+            log_info("Get IPC session with Core[%u]\n", tgt );  
         }
-
 
         msgr->ring_poller = spdk_poller_register(message_recv_poll , NULL , 0);
         spdk_poller_pause(msgr->ring_poller);
