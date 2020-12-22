@@ -123,6 +123,7 @@ static int message_recv_poll(void *arg) {
                 msg *m = (msg *)(msgs[i]);
 
                 //Callback，调用 message_move 
+                log_debug("Get message from %u \n " , s->tgt_core);
                 msgr->conf.on_recv_message(m);
 
                 ++count;
