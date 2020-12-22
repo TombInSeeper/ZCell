@@ -101,6 +101,7 @@ static int message_send(const message_t  *m)
     memcpy(m_send , m , sizeof(msg));
 
     spdk_ring_enqueue(s->out_q , (void**)(&(m_send)) , 1 , NULL);
+    s->nr_to_flush++;
 
     msgr->conf.on_send_message(m);
 
@@ -318,7 +319,10 @@ static int _cli_messager_wait_msg_of(void *session) {
 
 static int _cli_messager_flush_msg_of(void *session) {
     //Do nothing
-    return 0;
+    struct session_t *sess = session;
+    uint32_t n = sess->nr_to_flush;
+    sess->nr_to_flush = 0;
+    return n;
 }
 
 static void* _cli_messager_get_session_ctx (void* session) {

@@ -499,7 +499,9 @@ extern int  io_submit_to_channel(io_channel *ch , int *ops , int op_nr) {
 
 extern int io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
     int nr_reap = max < ch->reap_depth_ ? max : ch->reap_depth_;
-    liboss_ctx_t *lc = tls_liboss_ctx();
+    const msgr_client_if_t *msgr = ch->msgr_;
+
+    // liboss_ctx_t *lc = tls_liboss_ctx();
     int cpls = 0;
     int retry_times = 10;
     if(min > max) {
@@ -510,7 +512,7 @@ extern int io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
         int rc = 0;
         int n = 0;
         while( ( min && n < min ) || (!rc && ( retry_times--)) ) {
-            rc = lc->msgr->messager_wait_msg_of(ch->session_);
+            rc = msgr->messager_wait_msg_of(ch->session_);
             assert(rc >= 0);
             if(rc == 0) {
                 _mm_pause();
