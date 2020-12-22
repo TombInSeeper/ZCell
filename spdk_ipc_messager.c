@@ -173,6 +173,7 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
     if(1){
         memcpy(&(msgr->conf) , conf , sizeof (*conf));
         msgr->my_lcore = spdk_env_get_current_core();
+        log_info("Messager : my_core=%u\n" , msgr->my_lcore);
     } 
     if(1) {
         if(conf->meta_buffer_alloc) {
