@@ -184,7 +184,8 @@ static inline void msg_free_resource(message_t *m) {
  * 如果是非空指针，并且对应的头部长度是0，会被发送函数自动被释放
  */
 static inline void _response_with_reusing_request(message_t *request, uint16_t status_code) {
-    request->header.status = cpu_to_le16(status_code);
+    request->header.status = (status_code);
+
     message_state_reset(request);
     log_debug("Perpare to send response :[status=%u , meta_len=%u, data_len=%u]\n",
         request->header.status,
@@ -192,12 +193,9 @@ static inline void _response_with_reusing_request(message_t *request, uint16_t s
         request->header.data_length);
 
     //释放原来 request 的资源
-    if(request->meta_buffer && request->header.meta_length == 0)
-        free_meta_buffer(request->meta_buffer);
-    if(request->data_buffer && request->header.data_length == 0)
-        free_data_buffer(request->data_buffer);
+    msg_free_resource(request);
 
-    reactor_ctx()->net_msgr_impl->messager_sendmsg(request);
+    reactor_ctx()->ipc_msgr_impl->messager_sendmsg(request);
 }
 
 static inline void _response_broken_op(message_t *request, uint16_t status_code) {
