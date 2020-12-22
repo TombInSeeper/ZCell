@@ -538,7 +538,7 @@ int _run(admin_context_t *ac, int argc , char **argv) {
     opts.shm_id = 1;
     // opts.config_file = "spdk.conf";
     // opts.print_level = 1;
-    int rc = spdk_app_start(&opts , _sys_init , NULL);
+    int rc = spdk_app_start(&opts , _sys_init , ac);
     if(rc) {
         return -1;
     }
