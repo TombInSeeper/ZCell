@@ -17,7 +17,7 @@
 
 typedef message_t msg;
 
-static void* default_alloc_meta_buffer(size_t sz){
+static void* default_alloc_meta_buffer(uint32_t sz){
     log_debug("Messager Internal alloc message meta buffer\n");
     return spdk_malloc(sz , 0 , NULL , SPDK_ENV_SOCKET_ID_ANY , SPDK_MALLOC_SHARE);
 }
@@ -312,6 +312,7 @@ static __thread msgr_client_if_t msgr_ipc_client_impl = {
     .messager_init = _cli_messager_constructor,
     .messager_fini = _cli_messager_destructor,
     .messager_connect = _cli_messager_connect,
+    .messager_connect2 = _cli_messager_connect2,
     .messager_close = _cli_messager_close,
     .messager_sendmsg = _cli_messager_sendmsg,
     .messager_flush= _cli_messager_flush,
