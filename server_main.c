@@ -690,7 +690,7 @@ int spdk_app_run() {
     opts.shutdown_cb = _sys_fini;
     opts.config_file = "spdk.conf";
     opts.shm_id = 1;
-    opts.rpc_addr = "/var/tmp/spdk_zcell.sock"
+    opts.rpc_addr = "/var/tmp/spdk_zcell.sock";
     // opts.print_level = 1;
     int rc = spdk_app_start(&opts , _sys_init , NULL);
     if(rc) {
