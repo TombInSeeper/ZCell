@@ -11,8 +11,6 @@ CFLAGS=-D_GNU_SOURCE -DWY_NDEBUG -Wall -std=gnu11 -O3 -march=native -fno-strict-
 endif
 
 
-
-	
 PMDK_LINK_FLAGS=-lpmem
 SPDK_PATH_PREFIX=/home/wuyue
 ISA_LINK_FLAGS=-L$(SPDK_PATH_PREFIX)/spdk/isa-l/.libs -lisal 
@@ -62,7 +60,7 @@ OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o  zstore.o pm.o
 
 
 TEST_BIN= test_objstore test_ipc
-BIN_TGT=server 
+BIN_TGT=server client
 
 .PHONY: all clean test
 	
@@ -79,10 +77,7 @@ test: $(TEST_BIN)
 server:server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 	$(LINK_C)
 
-client_msgr_tool:test_client_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
-	$(LINK_C)
-
-client_admin_tool:client_admin_tool.o liboss.o $(MSGR_OBJS)
+client:client_admin_tool.o liboss.o $(MSGR_OBJS)
 	$(LINK_C)
 
 
