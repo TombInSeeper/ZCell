@@ -533,6 +533,7 @@ int _run(admin_context_t *ac, int argc , char **argv) {
     struct spdk_app_opts opts;
     spdk_app_opts_init(&opts);
     opts.reactor_mask = "0x2";
+    opts.rpc_addr = "/var/tmp/client.sock";
     opts.shutdown_cb = _sys_fini;
     opts.shm_id = 1;
     // opts.config_file = "spdk.conf";
