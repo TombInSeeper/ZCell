@@ -197,6 +197,8 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
             return -1;
         }
 
+        TAILQ_INIT(&msgr->session_q);
+        
         //Add session
         uint32_t i , j;
         struct zcell_ipc_config_t *zic = msgr->ipc_config;
