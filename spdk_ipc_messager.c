@@ -174,6 +174,12 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
         memcpy(&(msgr->conf) , conf , sizeof (*conf));
         msgr->my_lcore = spdk_env_get_current_core();
         log_info("Messager : my_core=%u\n" , msgr->my_lcore);
+        msgr->ipc_config = spdk_memzone_lookup(ZCELL_IPC_CONFIG_NAME);
+        if(!msgr->ipc_config) {
+            log_err("%s memzone not found\n" , ZCELL_IPC_CONFIG_NAME);
+            return -1;
+        }
+        TAILQ_INIT(&msgr->session_q);  
     } 
     if(1) {
         if(conf->meta_buffer_alloc) {
@@ -192,14 +198,7 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
 
     if(is_server) {
         // log_info("IPC shm id=%u\n", conf->shm_id);
-        msgr->ipc_config = spdk_memzone_lookup(ZCELL_IPC_CONFIG_NAME);
-        if(!msgr->ipc_config) {
-            log_err("%s memzone not found\n" , ZCELL_IPC_CONFIG_NAME);
-            return -1;
-        }
 
-        TAILQ_INIT(&msgr->session_q);
-        
         //Add session
         uint32_t i , j;
         struct zcell_ipc_config_t *zic = msgr->ipc_config;
