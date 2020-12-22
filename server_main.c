@@ -39,8 +39,10 @@ static void parse_args(int argc , char **argv) {
 			break;
         case 'I':
             g_ipc_msgr = 1;
+            break;
         case 'N':
             g_net_msgr = 1;
+            break;
 		case 'p':
 			g_base_port = atoi(optarg);
 			break;
