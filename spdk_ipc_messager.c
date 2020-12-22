@@ -59,14 +59,16 @@ static inline void msg_free(msg* m) {
     spdk_free(m);
 }
 
-
 typedef struct session_t {
-    //
+
     void *priv;
     //Peer
     uint32_t tgt_core;
-    struct spdk_ring *sq; // Out
-    struct spdk_ring *cq; // In
+
+    int nr_to_flush;
+    struct spdk_ring *out_q; // Out
+
+    struct spdk_ring *in_q; // In
     TAILQ_ENTRY(session_t) _session_list_hook;
 } session_t;
 
@@ -77,8 +79,6 @@ typedef struct messager_t {
     uint32_t my_lcore;
 
     struct zcell_ipc_config_t *ipc_config;
-
-    // struct ring *ring; // My cq
 
     struct spdk_poller* ring_poller;
 
@@ -93,14 +93,16 @@ static inline messager_t* get_local_msgr() {
 
 static int message_send(const message_t  *m)  
 {
-    // messager_t *msgr = get_local_msgr();
+    messager_t *msgr = get_local_msgr();
 
     struct session_t *s = m->priv_ctx;
     
     msg *m_send = msg_alloc();
     memcpy(m_send , m , sizeof(msg));
 
-    spdk_ring_enqueue(s->sq , (void**)(&(m_send)) , 1 , NULL);
+    spdk_ring_enqueue(s->out_q , (void**)(&(m_send)) , 1 , NULL);
+
+    msgr->conf.on_send_message(m);
 
     return 0;
 }
@@ -111,7 +113,7 @@ static int message_recv_poll(void *arg) {
     struct session_t *s;
     int count = 0;
     TAILQ_FOREACH(s , &msgr->session_q , _session_list_hook ) {
-        struct spdk_ring *ring = s->cq;
+        struct spdk_ring *ring = s->in_q;
         if(spdk_ring_count(ring)) {
             void *msgs[REQ_BATCH_SIZE];
             size_t count = spdk_ring_dequeue(ring, msgs , 32);
@@ -141,7 +143,7 @@ static int message_recv_poll_session(void *sess) {
     // struct session_t *s;
     int count = 0;
     // TAILQ_FOREACH(s , &msgr->session_q , _session_list_hook ) {
-    struct spdk_ring *ring = s->cq;
+    struct spdk_ring *ring = s->out_q;
     if(spdk_ring_count(ring)) {
         void *msgs[REQ_BATCH_SIZE];
         size_t count = spdk_ring_dequeue(ring, msgs , 32);
@@ -166,8 +168,12 @@ static int message_recv_poll_session(void *sess) {
 
 static int _messager_constructor(messager_conf_t *conf , bool is_server) {
     messager_t *msgr = get_local_msgr();
-    (void)is_server;
-    do {
+    // (void)is_server;
+    if(1){
+        memcpy(&(msgr->conf) , conf , sizeof (*conf));
+        msgr->my_lcore = spdk_env_get_current_core();
+    } 
+    if(1) {
         if(conf->meta_buffer_alloc) {
             alloc_meta_buffer = conf->meta_buffer_alloc;
         }
@@ -180,18 +186,35 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
         if(conf->data_buffer_free) {
             free_data_buffer = conf->data_buffer_free;
         }
-    } while (0);
+    };
+
+    if(is_server) {
+        // log_info("IPC shm id=%u\n", conf->shm_id);
+        msgr->ipc_config = spdk_memzone_lookup(ZCELL_IPC_CONFIG_NAME);
+        if(!msgr->ipc_config) {
+            log_err("%s memzone not found\n" , ZCELL_IPC_CONFIG_NAME);
+            return -1;
+        }
+
+        //Add session
+        uint32_t i , j;
+        struct zcell_ipc_config_t *zic = msgr->ipc_config;
+        for (i = 0 ; i < zic->tgt_nr ; ++i) {
+            uint32_t tgt = zic->tgt_cores[i];
+            struct session_t *s = calloc( 1 , sizeof(session_t));
+            s->in_q = zic->rings[tgt][msgr->my_lcore];
+            s->out_q = zic->rings[msgr->my_lcore][tgt];
+            s->tgt_core = tgt;
+            TAILQ_INSERT_TAIL(&msgr->session_q , s , _session_list_hook);
+            log_info("Get session with [%u]\n", tgt );  
+        }
 
 
-    // log_info("IPC shm id=%u\n", conf->shm_id);
-    msgr->ipc_config = spdk_memzone_lookup(ZCELL_IPC_CONFIG_NAME);
-    if(!msgr->ipc_config) {
-        log_err("%s memzone not found\n" , ZCELL_IPC_CONFIG_NAME);
-        return -1;
+        msgr->ring_poller = spdk_poller_register(message_recv_poll , NULL , 0);
+        spdk_poller_pause(msgr->ring_poller);
     }
 
-    msgr->my_lcore = spdk_env_get_current_core();
-    msgr->ring_poller = spdk_poller_register(message_recv_poll , NULL , 0);
+
     msgr->is_running = 1;
     return 0;
 }
@@ -200,7 +223,15 @@ static void _messager_destructor(bool is_server) {
     messager_t *msgr = get_local_msgr();
     if(!msgr->is_running) 
         return;
+    spdk_poller_pause(msgr->ring_poller);
     spdk_poller_unregister(&msgr->ring_poller);
+
+    while(!TAILQ_EMPTY(&msgr->session_q)) {
+        struct session_t *s = TAILQ_FIRST(&msgr->session_q);
+        TAILQ_REMOVE(&msgr->session_q , s , _session_list_hook);
+        free(s);
+    }
+
     msgr->is_running = 0;
 }
 
@@ -245,10 +276,10 @@ static void* _cli_messager_connect2(uint32_t lcore , void *sess_priv_ctx ) {
     struct session_t *sess = calloc(1 , sizeof(struct session_t));
     struct zcell_ipc_config_t *zcfg = msgr->ipc_config;
     uint32_t my_lcore = msgr->my_lcore;
-    sess->sq = zcfg->rings[my_lcore][lcore];
-    sess->cq = zcfg->rings[lcore][my_lcore];
-    assert(sess->sq);
-    assert(sess->cq);
+    sess->out_q = zcfg->rings[my_lcore][lcore];
+    sess->in_q = zcfg->rings[lcore][my_lcore];
+    assert(sess->out_q);
+    assert(sess->in_q);
     sess->priv = sess_priv_ctx;
     sess->tgt_core = lcore;
     TAILQ_INSERT_TAIL(&msgr->session_q , sess , _session_list_hook);
@@ -259,10 +290,10 @@ static void _cli_messager_close (void * _s) {
     struct messager_t *msgr = get_local_msgr();
     struct session_t *sess = _s;
     TAILQ_REMOVE(&msgr->session_q , sess , _session_list_hook);
-    if(spdk_ring_count(sess->sq)) {
+    if(spdk_ring_count(sess->out_q)) {
         log_warn("Fuck\n");
     }
-    if(spdk_ring_count(sess->cq)) {
+    if(spdk_ring_count(sess->in_q)) {
         log_warn("Fuck\n");
     }
     free(sess);

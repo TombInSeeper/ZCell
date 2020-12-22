@@ -5,6 +5,9 @@
 
 #define NR_CORE_MAX (64)
 #define ZCELL_IPC_CONFIG_NAME "zcell_ipc_config"
+
+
+
 struct zcell_ipc_config_t {
     union {
         struct {

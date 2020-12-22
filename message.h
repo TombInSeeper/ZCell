@@ -44,9 +44,10 @@ typedef struct msg_hdr_t {
     _le32 crc_meta; 
     union {
         struct {
-            _u8 from; 
-            _u8 to;
-            _le16 pad;
+            // _u8 from; 
+            // _u8 to;
+            _u8 magic;
+            // _u8 rsv;
         }_ipc_rsv;
     }; 
     _le32 rsv[1]; // reserve for some special using 

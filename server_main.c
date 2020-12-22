@@ -88,7 +88,7 @@ typedef struct reactor_ctx_t {
         int port;
     };
 
-    const msgr_server_if_t *msgr_impl;
+    const msgr_server_if_t *net_msgr_impl;
     //
     const msgr_server_if_t *ipc_msgr_impl;
     //
@@ -191,13 +191,13 @@ static inline void _response_with_reusing_request(message_t *request, uint16_t s
         request->header.meta_length,
         request->header.data_length);
 
-    //释放原request的资源
+    //释放原来 request 的资源
     if(request->meta_buffer && request->header.meta_length == 0)
         free_meta_buffer(request->meta_buffer);
     if(request->data_buffer && request->header.data_length == 0)
         free_data_buffer(request->data_buffer);
 
-    reactor_ctx()->msgr_impl->messager_sendmsg(request);
+    reactor_ctx()->net_msgr_impl->messager_sendmsg(request);
 }
 
 static inline void _response_broken_op(message_t *request, uint16_t status_code) {
@@ -491,7 +491,7 @@ void _per_reactor_stop(void * ctx , void *err) {
     reactor_ctx_t * rctx = reactor_ctx();
     log_info("Stopping server[%d],[%s:%d]....\n", rctx->reactor_id,rctx->ip,rctx->port);
     
-    _msgr_stop(rctx->msgr_impl);
+    _msgr_stop(rctx->net_msgr_impl);
     _msgr_stop(rctx->ipc_msgr_impl);
 
     _ostore_stop(rctx->os_impl);
@@ -589,11 +589,11 @@ void _per_reactor_boot(void * ctx , void *err) {
         rctx->ipc_msgr_impl = msgr_get_ipc_server_impl();
     }
     if(g_net_msgr) {
-        rctx->msgr_impl = msgr_get_server_impl();
+        rctx->net_msgr_impl = msgr_get_server_impl();
     }
     
     if(g_net_msgr) {
-        _msgr_boot(rctx->msgr_impl);
+        _msgr_boot(rctx->net_msgr_impl);
     }
     if(g_ipc_msgr) {
         _msgr_boot(rctx->ipc_msgr_impl);

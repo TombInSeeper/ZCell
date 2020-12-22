@@ -1,4 +1,4 @@
-#include "libnet_oss.h"
+#include "liboss.h"
 
 #include "operation.h"
 #include "messager.h"
@@ -6,6 +6,10 @@
 #include "util/fixed_cache.h"
 #include "util/log.h"
 #include "util/bitmap.h"
+
+
+//For ipc messager
+#include <spdk/env.h>
 
 #define RING_MAX 1024
 #define POLL_MAX 64
@@ -39,6 +43,7 @@ struct io_channel {
     void *session_;
     
     int session_type;
+    void *msgr_;
 
     uint32_t queue_depth_;
     uint32_t reap_depth_;
@@ -86,9 +91,9 @@ void io_channel_delete(struct io_channel *ch) {
 
 
 typedef struct percore_liboss_ctx_t {
-    const msgr_client_if_t *msgr; //本线程的 network_msgr 实例
+    const msgr_client_if_t *net_msgr; //本线程的 network_msgr 实例
     // fcache_t *small_meta_buffers;
-    // const msgr_client_if_t *msgr; //本线程的 network_msgr 实例
+    const msgr_client_if_t *ipc_msgr; //本线程的 ipc_msgr 实例
 } percore_liboss_ctx_t;
 
 typedef percore_liboss_ctx_t liboss_ctx_t;
@@ -100,13 +105,51 @@ static inline liboss_ctx_t* tls_liboss_ctx() {
 static inline op_ctx_t *_get_assi_op_from_msg(message_t *_m) {
     liboss_ctx_t *lc = tls_liboss_ctx();
     void *sess = _m->priv_ctx;
-    io_channel *ch = lc->msgr->messager_get_session_ctx(sess);
+    io_channel *ch;
+    
+    if(_m->header._ipc_rsv.magic) {
+        ch = lc->ipc_msgr->messager_get_session_ctx(sess);
+    } else {
+        ch = lc->net_msgr->messager_get_session_ctx(sess);
+    }
+
+   
     //找到是哪个 op
     uint32_t id = message_get_rsv(_m, 0); //
     return &ch->op_ctxs_[id];
 }
 
-static void* msgr_meta_buffer_alloc(size_t sz) {
+static void* net_msgr_meta_buffer_alloc(uint32_t sz) {
+    return malloc(sz);
+}
+static void net_msgr_meta_buffer_free(void *ptr) {
+    free(ptr);
+}
+static void* net_msgr_data_buffer_alloc(uint32_t sz) {
+    return malloc(sz);
+}
+static void net_msgr_data_buffer_free(void *ptr) {
+    free(ptr);
+}
+
+
+static void* ipc_msgr_meta_buffer_alloc(uint32_t sz){
+    return spdk_malloc(sz , 0 , NULL , SPDK_ENV_SOCKET_ID_ANY , SPDK_MALLOC_SHARE);
+}
+static void ipc_msgr_meta_buffer_free( void *mptr) {
+    spdk_free(mptr);
+}
+static void* ipc_msgr_data_buffer_alloc(uint32_t sz) {
+    return spdk_malloc(sz , 0 , NULL , SPDK_ENV_SOCKET_ID_ANY , 
+        SPDK_MALLOC_SHARE | SPDK_MALLOC_DMA);
+}
+static void ipc_msgr_data_buffer_free( void *dptr) {
+    spdk_free(dptr);
+}
+
+
+
+static void* msgr_meta_buffer_alloc(uint32_t sz) {
     return malloc(sz);
 }
 static void msgr_meta_buffer_free(void *ptr) {
@@ -121,13 +164,15 @@ static void msgr_data_buffer_free(void *ptr) {
 
 
 //接收 response
-static void msgr_on_recv_msg(message_t *msg) {
+static void net_msgr_on_recv_msg(message_t *msg) {
     //Response meta_buffer must be NULL
     assert(msg->meta_buffer == NULL);
 
     liboss_ctx_t *lc = tls_liboss_ctx();
     void *sess = msg->priv_ctx;
-    io_channel *ch = lc->msgr->messager_get_session_ctx(sess);
+    io_channel *ch;
+
+    ch = lc->net_msgr->messager_get_session_ctx(sess);
 
     op_ctx_t *op = _get_assi_op_from_msg(msg);
     assert(op->reqeust_and_response.header.seq == msg->header.seq);
@@ -146,7 +191,7 @@ static void msgr_on_recv_msg(message_t *msg) {
 
 }
 
-static void msgr_on_send_msg(message_t *msg) {
+static void net_msgr_on_send_msg(message_t *msg) {
     liboss_ctx_t *lc = tls_liboss_ctx();
     (void)lc;    
     //Hold data_buffer and free meta_buffer
@@ -159,41 +204,102 @@ static void msgr_on_send_msg(message_t *msg) {
     return;
 }
 
+static void ipc_msgr_on_recv_msg(message_t *msg) {
+    //Response meta_buffer must be NULL
+    assert(msg->meta_buffer == NULL);
+
+    liboss_ctx_t *lc = tls_liboss_ctx();
+    void *sess = msg->priv_ctx;
+    io_channel *ch = lc->ipc_msgr->messager_get_session_ctx(sess);
+
+    op_ctx_t *op = _get_assi_op_from_msg(msg);
+    assert(op->reqeust_and_response.header.seq == msg->header.seq);
+    assert(op->reqeust_and_response.header.type == msg->header.type);
+
+    uint16_t status = message_get_status(msg);
+    log_debug("response of msg[%lu], status=%u\n", message_get_seq(msg), status);
+
+    op->state = OP_COMPLETED;
+
+    message_move(&op->reqeust_and_response , msg);
+    // ch->nr_inflight_op_this_time_--;
+    
+    ch->cpl_ops_[ch->cpl_nr_] = op;
+    ch->cpl_nr_++;
+
+}
+
+static void ipc_msgr_on_send_msg(message_t *msg) {
+    liboss_ctx_t *lc = tls_liboss_ctx();
+    (void)lc;    
+    //Hold data_buffer and free meta_buffer
+    msg->data_buffer = NULL;
+
+    msgr_meta_buffer_free(msg->meta_buffer);
+    // free(msg->meta_buffer);
+    msg->meta_buffer = NULL;
+
+    return;
+}
+
+
 static int _do_msgr_init() {
     liboss_ctx_t *lc = tls_liboss_ctx();
-    lc->msgr = msgr_get_client_impl();
+    lc->net_msgr = msgr_get_client_impl();
     messager_conf_t msgr_conf = {
-        .on_recv_message = msgr_on_recv_msg,
-        .on_send_message = msgr_on_send_msg,
-        .data_buffer_alloc = msgr_data_buffer_alloc,
-        .data_buffer_free = msgr_data_buffer_free,
+        .on_recv_message = net_msgr_on_recv_msg,
+        .on_send_message = net_msgr_on_send_msg,
+        .data_buffer_alloc = net_msgr_data_buffer_alloc,
+        .data_buffer_free = net_msgr_data_buffer_free,
+        .meta_buffer_alloc = net_msgr_meta_buffer_alloc,
+        .meta_buffer_free = net_msgr_meta_buffer_free,
     };
-    int rc = lc->msgr->messager_init(&msgr_conf);
+    int rc = lc->net_msgr->messager_init(&msgr_conf);
     assert(rc == 0);
+
+    lc->ipc_msgr = msgr_get_ipc_client_impl();
+    messager_conf_t msgr_conf = {
+        .on_recv_message = ipc_msgr_on_recv_msg,
+        .on_send_message = ipc_msgr_on_send_msg,
+        .data_buffer_alloc = ipc_msgr_data_buffer_alloc,
+        .data_buffer_free = ipc_msgr_data_buffer_free,
+        .meta_buffer_alloc = ipc_msgr_meta_buffer_alloc,
+        .meta_buffer_free = ipc_msgr_meta_buffer_free,
+    };
+    int rc = lc->ipc_msgr->messager_init(&msgr_conf);
+    assert(rc == 0);
+
+
     return rc;
 }
 
 
-extern int tls_io_ctx_init(int flags) {
+extern int tls_io_ctx_init(int flags) 
+{
     liboss_ctx_t *lc = tls_liboss_ctx();
     (void)flags;
     _do_msgr_init();
     return 0; 
 }
 
-extern int tls_io_ctx_fini() {
+extern int tls_io_ctx_fini() 
+{
     liboss_ctx_t *lc = tls_liboss_ctx();
 
-    lc->msgr->messager_fini();
-    lc->msgr = NULL;
+    lc->net_msgr->messager_fini();
+    lc->net_msgr = NULL;
 
+    lc->ipc_msgr->messager_fini();
+    lc->ipc_msgr = NULL;
     return 0;
 }
 
 extern io_channel *get_io_channel_with(const char *ip, int port, int max_qd) {
     liboss_ctx_t *lc = tls_liboss_ctx();
     io_channel *ch = io_channel_new(max_qd, max_qd);
-    ch->session_ = lc->msgr->messager_connect(ip , port, ch);
+    ch->session_type = REMOTE;
+    ch->msgr_ = lc->net_msgr;
+    ch->session_ = lc->net_msgr->messager_connect(ip , port, ch);
     if (!ch->session_) {
         log_err("Socket Connect Failed with [%s:%d]\n", ip, port);
         io_channel_delete(ch);
@@ -202,13 +308,28 @@ extern io_channel *get_io_channel_with(const char *ip, int port, int max_qd) {
     return ch;
 }
 
+extern io_channel *get_io_channel_with_local(uint32_t core, int max_qd) {
+    liboss_ctx_t *lc = tls_liboss_ctx();
+    io_channel *ch = io_channel_new(max_qd, max_qd);
+    ch->session_type = LOCAL;
+    ch->msgr_ = lc->ipc_msgr;
+    ch->session_ = lc->ipc_msgr->messager_connect2(core , ch);
+    if (!ch->session_) {
+        log_err("Connect Failed with CORE [%u]\n", core);
+        io_channel_delete(ch);
+        return NULL;
+    }
+    return ch;
+
+}
+
 extern void put_io_channel( io_channel *ioch) {
     liboss_ctx_t *lc = tls_liboss_ctx();
-    lc->msgr->messager_close(ioch->session_);
+    const msgr_client_if_t *msgr = (const msgr_client_if_t *)ioch->msgr_;
+    msgr->messager_close(ioch->session_);
     io_channel_delete(ioch);
     return;
 }
-
 
 static op_ctx_t* _alloc_op(io_channel *ch , int *id_) {
     int id = bitmap_find_next_set_and_clr(ch->op_ctxs_bitmap_ , ch->bitmap_hint_);
@@ -255,6 +376,7 @@ static int _io_prepare_op_common(io_channel *ch,  int16_t op_type ,uint32_t meta
         .rsv[0] = cpu_to_le32(op_id),
         // .rsv[1] = 0,
     };
+
     //header fill
     memcpy(&op->reqeust_and_response.header , &_hdr, sizeof(msg_hdr_t));
     
@@ -273,7 +395,7 @@ static int _io_prepare_op_common(io_channel *ch,  int16_t op_type ,uint32_t meta
     return op_id;
 }
 
-extern int io_stat(io_channel *ch) {
+extern int  io_stat(io_channel *ch) {
     return _io_prepare_op_common(ch, msg_oss_op_stat, 0, NULL, 0, NULL);
 }
 extern int  io_create(io_channel *ch , uint64_t oid) {
@@ -333,6 +455,9 @@ extern int  io_write(io_channel *ch, uint64_t oid, const void* buffer, uint64_t 
 
 extern int  io_submit_to_channel(io_channel *ch , int *ops , int op_nr) {
     liboss_ctx_t *lc = tls_liboss_ctx();
+    
+    const msgr_client_if_t *msgr = ch->msgr_;
+
     int i; 
     for (i = 0 ; i < op_nr ; ++i) {
         int opd = ops[i];
@@ -348,7 +473,7 @@ extern int  io_submit_to_channel(io_channel *ch , int *ops , int op_nr) {
     for (i = 0 ; i < op_nr ; ++i )  {
         op_ctx_t *op = &ch->op_ctxs_[ops[i]];
         // int rc = lc->msgr->messager_sendmsg(&op->reqeust_and_response);
-        lc->msgr->messager_sendmsg(&op->reqeust_and_response);
+        msgr->messager_sendmsg(&op->reqeust_and_response);
         // assert (rc == 0);
     }
 
@@ -356,7 +481,7 @@ extern int  io_submit_to_channel(io_channel *ch , int *ops , int op_nr) {
     int nr_m = 0; 
     do {
         log_debug("Preapre to flush message to peer\n");
-        int rc = lc->msgr->messager_flush_msg_of(ch->session_);
+        int rc = msgr->messager_flush_msg_of(ch->session_);
         assert (rc >= 0);
         nr_m += rc;
         if(nr_m < op_nr) {
@@ -450,9 +575,9 @@ extern int  op_destory( io_channel *ch, int op_id) {
         } else if ( st == OP_COMPLETED) {
             log_warn("op(%d) 'result isn't claimed \n", op_id);
             assert(op->reqeust_and_response.meta_buffer == NULL);
-            if(op->reqeust_and_response.data_buffer) {
-                msgr_data_buffer_free(op->reqeust_and_response.data_buffer);
-            }
+            // if(op->reqeust_and_response.data_buffer) {
+            //     msgr_data_buffer_free(op->reqeust_and_response.data_buffer);
+            // }
             _free_op(ch, op);
             return 0;            
         } else {
