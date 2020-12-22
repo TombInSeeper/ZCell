@@ -77,7 +77,7 @@ test: $(TEST_BIN)
 server:server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 	$(LINK_C)
 
-client:client_admin_tool.o liboss.o $(MSGR_OBJS)
+client:client_main.o liboss.o $(MSGR_OBJS)
 	$(LINK_C)
 
 
