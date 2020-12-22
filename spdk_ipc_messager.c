@@ -91,7 +91,7 @@ static inline messager_t* get_local_msgr() {
     return &g_msgr;
 }
 
-static int message_send(msg *m)  
+static int message_send(const message_t  *m)  
 {
     messager_t *msgr = get_local_msgr();
 
@@ -238,7 +238,7 @@ static void _cli_messager_destructor() {
     _messager_destructor(false);
 }
 
-static void*_cli_messager_connect(const char *ip , int port, void *sess_priv_ctx ) {
+static void* _cli_messager_connect(const char *ip , int port, void *sess_priv_ctx ) {
     log_err("Unsupported API\n");
     abort();
 }
