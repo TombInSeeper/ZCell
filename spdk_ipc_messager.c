@@ -275,10 +275,13 @@ static void* _cli_messager_connect(const char *ip , int port, void *sess_priv_ct
 
 static void* _cli_messager_connect2(uint32_t lcore , void *sess_priv_ctx ) {
     struct messager_t *msgr = get_local_msgr();
+    log_debug("Prepare make session with %u\n" , lcore);
     struct session_t *sess = calloc(1 , sizeof(struct session_t));
     struct zcell_ipc_config_t *zcfg = msgr->ipc_config;
     uint32_t my_lcore = msgr->my_lcore;
+    log_debug("Get out_q\n");
     sess->out_q = zcfg->rings[my_lcore][lcore];
+    log_debug("Get in_q\n");
     sess->in_q = zcfg->rings[lcore][my_lcore];
     assert(sess->out_q);
     assert(sess->in_q);
