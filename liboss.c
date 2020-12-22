@@ -265,7 +265,7 @@ static int _do_msgr_init() {
 
 extern int tls_io_ctx_init(int flags) 
 {
-    liboss_ctx_t *lc = tls_liboss_ctx();
+    // liboss_ctx_t *lc = tls_liboss_ctx();
     (void)flags;
     _do_msgr_init();
     return 0; 
@@ -313,7 +313,7 @@ extern io_channel *get_io_channel_with_local(uint32_t core, int max_qd) {
 }
 
 extern void put_io_channel( io_channel *ioch) {
-    liboss_ctx_t *lc = tls_liboss_ctx();
+    // liboss_ctx_t *lc = tls_liboss_ctx();
     const msgr_client_if_t *msgr = (const msgr_client_if_t *)ioch->msgr_;
     msgr->messager_close(ioch->session_);
     io_channel_delete(ioch);
@@ -446,7 +446,7 @@ extern int  io_write(io_channel *ch, uint64_t oid, const void* buffer, uint64_t 
 }
 
 extern int  io_submit_to_channel(io_channel *ch , int *ops , int op_nr) {
-    liboss_ctx_t *lc = tls_liboss_ctx();
+    // liboss_ctx_t *lc = tls_liboss_ctx();
     
     const msgr_client_if_t *msgr = ch->msgr_;
 
