@@ -231,7 +231,6 @@ static void ipc_msgr_on_send_msg(message_t *msg) {
     return;
 }
 
-
 static int _do_msgr_init() {
     liboss_ctx_t *lc = tls_liboss_ctx();
     lc->net_msgr = msgr_get_client_impl();
@@ -261,7 +260,6 @@ static int _do_msgr_init() {
 
     return rc;
 }
-
 
 extern int tls_io_ctx_init(int flags) 
 {
@@ -413,12 +411,13 @@ extern int  io_buffer_alloc(void** ptr, uint32_t size) {
     *ptr = msgr_data_buffer_alloc(size);
     return 0;
 }
+
 extern int  io_buffer_free (void* ptr) {
     msgr_data_buffer_free(ptr);
     return 0;
 }
 
-extern int  io_read(io_channel  *ch, uint64_t oid, uint64_t ofst, uint32_t len) {
+extern int  io_read(io_channel  *ch,  uint64_t oid, uint64_t ofst, uint32_t len) {
     uint32_t meta_size = sizeof(op_read_t);
     void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_read_t));
     do {
@@ -427,6 +426,20 @@ extern int  io_read(io_channel  *ch, uint64_t oid, uint64_t ofst, uint32_t len) 
         op_args->ofst = cpu_to_le64((uint32_t)ofst);
         op_args->len = cpu_to_le64(len);
         op_args->flags = cpu_to_le64(0);
+    } while(0);
+    return _io_prepare_op_common(ch , msg_oss_op_read, meta_size, meta_buffer , 0, NULL);
+}
+
+extern int  io_read2(io_channel  *ch, void *buf , uint64_t oid,  uint64_t ofst, uint32_t len ) {
+uint32_t meta_size = sizeof(op_read_t);
+    void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_read_t));
+    do {
+        op_read_t *op_args = meta_buffer;
+        op_args->oid = cpu_to_le64(oid);
+        op_args->ofst = cpu_to_le64(ofst);
+        op_args->len = cpu_to_le64(len);
+        op_args->flags = cpu_to_le64(0);
+        op_args->read_buffer_zero_copy_addr = buf;
     } while(0);
     return _io_prepare_op_common(ch , msg_oss_op_read, meta_size, meta_buffer , 0, NULL);
 }
@@ -489,7 +502,7 @@ extern int  io_submit_to_channel(io_channel *ch , int *ops , int op_nr) {
     return 0;
 }
 
-extern int io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
+extern int  io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
     int nr_reap = max < ch->reap_depth_ ? max : ch->reap_depth_;
     const msgr_client_if_t *msgr = ch->msgr_;
 

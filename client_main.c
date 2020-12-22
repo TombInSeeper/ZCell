@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <spdk/env.h>
+#include <spdk/event.h>
+
 typedef struct admin_context_t {
     const char *ip;
     int port;
@@ -361,6 +364,34 @@ int _do_get(admin_context_t *ac, uint32_t oid) {
     return status;
 }
 
+int _do_get2(admin_context_t *ac, uint32_t oid) {
+
+    void *rbuf; 
+    io_buffer_alloc(&rbuf , 0x1000);
+
+    int opd = io_read2(ac->ioch, rbuf , oid , 0 , 0x1000);
+    _sync_with_op(ac , opd);
+    //
+    int cpl = opd;
+    int status, op_type;
+    void *data_buffer;
+    uint32_t data_len;
+    op_claim_result(ac->ioch, cpl, &status, &op_type, &data_buffer, &data_len);
+    log_info("Execute result of op(%d), status_code=(%d)\n", cpl, status);    
+    data_buffer != NULL ? ({(void)0;}):({log_warn("Read op response data_buffer is NULL\n");});
+    op_destory(ac->ioch, cpl);
+
+    char *_str = data_buffer;
+    _str[4095] = '\0';
+    log_info("\n%s\n", _str);
+
+    assert(data_buffer == rbuf);
+
+    io_buffer_free(data_buffer);
+    return status;
+}
+
+
 int _do_stat(admin_context_t *ac) {
     int opd = io_stat(ac->ioch);
     log_debug("opd=%d, prepare OK\n", opd);
@@ -385,7 +416,45 @@ int _do_stat(admin_context_t *ac) {
     return 0;
 }
 
-int _run(admin_context_t *ac, int argc , char **argv) {
+
+void _sys_fini() {
+    spdk_app_stop(0);
+}
+
+void _sys_init(void *arg) {
+    admin_context_t *ac = arg;
+
+    tls_io_ctx_init(0);
+    log_debug("liboss env init done\n");
+
+    ac->ioch = get_io_channel_with_local(1 ,256);
+
+    if(!ac->ioch) {
+        log_info("Cannot establish channel with Core[%u] \n", 1);
+        return -1;
+    }
+    log_debug("IO channel setup done\n");
+
+    int rc = _do_create(ac , 2333);
+    assert(rc == 0);
+    
+    rc = _do_write(ac, 2333, "2333");
+    assert(rc == 0);
+    
+    rc = _do_get2(ac , 2333);
+    assert(rc == 0);
+
+    put_io_channel(ac->ioch);
+
+    tls_io_ctx_fini(0);
+
+    _sys_fini();
+}
+
+
+int _run_old(admin_context_t *ac, int argc , char **argv) {
+
+    
     if (argc < 3 ) {
         print_usage_and_exit();
     } 
@@ -456,12 +525,29 @@ int _run(admin_context_t *ac, int argc , char **argv) {
     put_io_channel(ac->ioch);
 
     tls_io_ctx_fini();
+
+}
+
+
+int _run(admin_context_t *ac, int argc , char **argv) {
+    struct spdk_app_opts opts;
+    spdk_app_opts_init(&opts);
+    opts.reactor_mask = "0x2";
+    opts.shutdown_cb = _sys_fini;
+    opts.shm_id = 1;
+    // opts.config_file = "spdk.conf";
+    // opts.print_level = 1;
+    int rc = spdk_app_start(&opts , _sys_init , NULL);
+    if(rc) {
+        return -1;
+    }
 }
 
 
 int main(int argc, char **argv) {
     admin_context_t *ac = calloc(1,sizeof(admin_context_t));
-    
+
+
     _run(ac ,argc, argv);
 
     free(ac);
