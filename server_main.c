@@ -493,15 +493,19 @@ void _per_reactor_stop(void * ctx , void *err) {
     
     _msgr_stop(rctx->net_msgr_impl);
     _msgr_stop(rctx->ipc_msgr_impl);
+    log_info("Stopping server[%d],[%s:%d], messager stop done. \n", rctx->reactor_id,rctx->ip,rctx->port);
+
 
     _ostore_stop(rctx->os_impl);
-    
+    log_info("Stopping server[%d],[%s:%d], objstore stop done. \n", rctx->reactor_id,rctx->ip,rctx->port);
+
     //...
     // if(rctx->idle_enable)
     //     spdk_poller_unregister(&rctx->idle_poller);
 
     rctx->running = false;
     _mm_mfence();
+
     log_info("Stopping server[%d],[%s:%d]....done\n", rctx->reactor_id,rctx->ip,rctx->port);
     return;
 }
@@ -679,7 +683,6 @@ void _sys_init(void *arg) {
         log_info("All reactors are running\n");
     }
 }
-
 
 int spdk_app_run() {
     struct spdk_app_opts opts;
