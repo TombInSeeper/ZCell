@@ -34,10 +34,7 @@ typedef struct small_buffer_t {
 } small_buffer_t;
 
 
-enum SESSION_TYPE {
-    LOCAL = 0x11,
-    REMOTE = 0x22,
-};
+
 
 struct io_channel {
     void *session_;
