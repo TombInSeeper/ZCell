@@ -98,11 +98,12 @@ static int message_send(const message_t  *m)
     msg *m_send = msg_alloc();
     memcpy(m_send , m , sizeof(msg));
 
-    void *msgs[] = {
+    void *msgss[] = {
         (void*)m_send
     };
 
-    spdk_ring_enqueue(s->out_q , msgs, 1,  NULL);
+    log_debug("Enqueue msg ,seq=%lu\n", m_send->header.seq);
+    spdk_ring_enqueue(s->out_q, msgss, 1 , NULL);
     s->nr_to_flush++;
 
     msgr->conf.on_send_message(m);
