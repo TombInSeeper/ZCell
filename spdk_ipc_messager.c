@@ -45,7 +45,6 @@ static inline msg *msg_alloc() {
         SPDK_MALLOC_SHARE);
     memset(m , 0 , sizeof(*m));
     log_debug("spdk_malloc msg:%p\n" , m);
-
     return m;
 }
 
@@ -97,13 +96,14 @@ static int message_send(const message_t  *m)
     
     msg *m_send = msg_alloc();
     memcpy(m_send , m , sizeof(msg));
+    m_send->priv_ctx = NULL;
 
-    void *msgss[] = {
+    void *msgs[] = {
         (void*)m_send
     };
 
     log_debug("Enqueue msg ,seq=%lu\n", m_send->header.seq);
-    spdk_ring_enqueue(s->out_q, msgss, 1 , NULL);
+    spdk_ring_enqueue(s->out_q, msgs, 1 , NULL);
     s->nr_to_flush++;
 
     msgr->conf.on_send_message(m);
@@ -128,7 +128,7 @@ static int message_recv_poll(void *arg) {
             size_t i;
             for ( i = 0 ; i < count ; ++i) {
                 msg *m = (msg *)(msgs[i]);
-
+                m->priv_ctx = s;
                 //Callback，调用 message_move 
                 log_debug("Get message from %u \n " , s->tgt_core);
                 msgr->conf.on_recv_message(m);
@@ -158,7 +158,7 @@ static int message_recv_poll_session(void *sess) {
         size_t i;
         for ( i = 0 ; i < count ; ++i) {
             msg *m = (msg *)(msgs[i]);
-
+            m->priv_ctx = sess;
             //Callback，调用 message_move 
             msgr->conf.on_recv_message(m);
 
