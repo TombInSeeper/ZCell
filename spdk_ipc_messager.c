@@ -128,7 +128,8 @@ static int message_recv_poll(void *arg) {
             size_t i;
             for ( i = 0 ; i < count ; ++i) {
                 msg *m = (msg *)(msgs[i]);
-                m->priv_ctx = s;
+                
+                m->priv_ctx = (void *)s;
                 //Callback，调用 message_move 
                 log_debug("Get message from %u \n " , s->tgt_core);
                 msgr->conf.on_recv_message(m);
@@ -152,6 +153,7 @@ static int message_recv_poll_session(void *sess) {
     struct spdk_ring *ring = s->out_q;
     if((count = spdk_ring_count(ring))) {
         void *msgs[REQ_BATCH_SIZE];
+        log_debug("Polling msg count=%lu\n", count);
         spdk_ring_dequeue(ring, msgs , count);
         //for_each_msg
         //do handle

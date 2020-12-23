@@ -62,7 +62,8 @@ typedef struct message_t {
     char *data_buffer; //被传输的内容
 
     union {
-        void *priv_ctx;  //被 network_server 使用，记录属于哪个 socket session
+        void *priv_ctx;  
+        //被 network_server 使用，记录属于哪个 socket session
         // 被 ipc_client 使用，记录前一级别的上下文
     };
 } message_t;
