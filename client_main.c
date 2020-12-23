@@ -135,7 +135,7 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
     log_info("Prepare to issue random %d write requests , qd = %d \n.." , loop * qd , qd); 
     _perf_io_t *ios = malloc(sizeof(_perf_io_t) * (loop * cqd));
     void *wbuff; 
-    io_buffer_alloc(&wbuff, 0x1000);    
+    io_buffer_alloc(ac->ioch, &wbuff, 0x1000);    
     uint64_t cre_st = now();    
     double reduce_avg_lat = 0.0;
     for (i = 0 ; i < loop ; ++i) {
@@ -191,7 +191,7 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
     }    
     uint64_t cre_ed = now();
     reduce_avg_lat /= loop;
-    io_buffer_free(wbuff);
+    io_buffer_free(ac->ioch , wbuff);
     double cre_dur = cre_ed - cre_st;
     double cre_lat = cre_dur / (loop * cqd);        
     double wiops = 1000.0 / cre_lat;        
@@ -238,7 +238,7 @@ static int _do_write_and_read_test_objects(admin_context_t *ac, int loop_, int q
                 log_err("Unexpected status:%d, op_id=%d\n",status,opds_cpl[j]);    
                 exit(1);
             }
-            io_buffer_free(rbuf);
+            io_buffer_free(ac->ioch, rbuf);
             op_destory(ac->ioch, opds_cpl[j]);
         }
     }    
@@ -321,7 +321,7 @@ int _do_write(admin_context_t *ac, uint32_t oid, const char *str) {
     // uint32_t fsz = _fstat.st_size;
     uint32_t fsz = 0x1000;
     void *iobuf;
-    io_buffer_alloc(&iobuf, fsz); 
+    io_buffer_alloc(ac->ioch, &iobuf, fsz); 
     
     strcpy((char*)iobuf, str);
 
@@ -339,7 +339,7 @@ int _do_write(admin_context_t *ac, uint32_t oid, const char *str) {
     log_info("Execute result of op(%d), status_code=(%d)\n", cpl, status);    
     data_buffer == NULL ? ({(void)0;}) :({log_warn("Write op response data_buffer is not NULL\n"); 0 ;});
     op_destory(ac->ioch, cpl);
-    io_buffer_free(iobuf);
+    io_buffer_free(ac->ioch , iobuf);
     return status;
 }
 
@@ -360,14 +360,14 @@ int _do_get(admin_context_t *ac, uint32_t oid) {
     _str[4095] = '\0';
     log_info("\n%s\n", _str);
 
-    io_buffer_free(data_buffer);
+    io_buffer_free(ac->ioch  , data_buffer);
     return status;
 }
 
 int _do_get2(admin_context_t *ac, uint32_t oid) {
 
     void *rbuf; 
-    io_buffer_alloc(&rbuf , 0x1000);
+    io_buffer_alloc(ac->ioch , &rbuf , 0x1000);
 
     int opd = io_read2(ac->ioch, rbuf , oid , 0 , 0x1000);
     _sync_with_op(ac , opd);
@@ -387,7 +387,7 @@ int _do_get2(admin_context_t *ac, uint32_t oid) {
 
     assert(data_buffer == rbuf);
 
-    io_buffer_free(data_buffer);
+    io_buffer_free(ac->ioch , data_buffer);
     return status;
 }
 
@@ -408,7 +408,7 @@ int _do_stat(admin_context_t *ac) {
 
     if(data_buffer) {
         log_info("***Result cannot be parsed now, TODO***\n");
-        io_buffer_free(data_buffer);
+        io_buffer_free(ac->ioch, data_buffer);
     } else {
         log_err("Some errors ocurred\n");
     }

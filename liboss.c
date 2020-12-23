@@ -432,7 +432,7 @@ extern int  io_create(io_channel *ch , uint64_t oid) {
     uint32_t meta_size = sizeof(op_create_t);
     void *meta_buffer;
     if(ch->session_type == REMOTE)
-        meta_buffer = msgr_meta_buffer_alloc(meta_size);
+        meta_buffer = net_msgr_meta_buffer_alloc(meta_size);
     else
         meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
     do {
@@ -445,7 +445,7 @@ extern int  io_delete(io_channel *ch , uint64_t oid) {
     uint32_t meta_size = sizeof(op_delete_t);
     void *meta_buffer;
     if(ch->session_type == REMOTE)
-        meta_buffer = msgr_meta_buffer_alloc(meta_size);
+        meta_buffer = net_msgr_meta_buffer_alloc(meta_size);
     else
         meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
     do {
@@ -455,13 +455,20 @@ extern int  io_delete(io_channel *ch , uint64_t oid) {
     return _io_prepare_op_common(ch , msg_oss_op_delete, meta_size, meta_buffer , 0, NULL);
 }
 
-extern int  io_buffer_alloc(void** ptr, uint32_t size) {
-    *ptr = msgr_data_buffer_alloc(size);
+extern int  io_buffer_alloc(io_channel *ch, void** ptr, uint32_t size) {
+    if(ch->session_type == REMOTE)
+        *ptr = net_msgr_data_buffer_alloc(size);
+    else
+        *ptr = ipc_msgr_data_buffer_alloc(size);
     return 0;
 }
 
-extern int  io_buffer_free (void* ptr) {
-    msgr_data_buffer_free(ptr);
+extern int  io_buffer_free (io_channel *ch, void* ptr) {
+    if(ch->session_type == REMOTE) {
+        net_msgr_data_buffer_free(ptr);
+    } else {
+        ipc_msgr_data_buffer_free(ptr);
+    }
     return 0;
 }
 
@@ -469,7 +476,7 @@ extern int  io_read(io_channel  *ch,  uint64_t oid, uint64_t ofst, uint32_t len)
     uint32_t meta_size = sizeof(op_read_t);
     void *meta_buffer;
     if(ch->session_type == REMOTE)
-        meta_buffer = msgr_meta_buffer_alloc(meta_size);
+        meta_buffer = net_msgr_meta_buffer_alloc(meta_size);
     else
         meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
     do {
@@ -486,7 +493,7 @@ extern int  io_read2(io_channel  *ch, void *buf , uint64_t oid,  uint64_t ofst, 
     uint32_t meta_size = sizeof(op_read_t);
     void *meta_buffer;
     if(ch->session_type == REMOTE)
-        meta_buffer = msgr_meta_buffer_alloc(meta_size);
+        meta_buffer = net_msgr_meta_buffer_alloc(meta_size);
     else
         meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
     do {
@@ -504,7 +511,7 @@ extern int  io_write(io_channel *ch, uint64_t oid, const void* buffer, uint64_t 
     uint32_t meta_size = sizeof(op_write_t);
     void *meta_buffer;
     if(ch->session_type == REMOTE)
-        meta_buffer = msgr_meta_buffer_alloc(meta_size);
+        meta_buffer = net_msgr_meta_buffer_alloc(meta_size);
     else
         meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
     const void *data_buffer = buffer;

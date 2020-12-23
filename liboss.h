@@ -36,8 +36,8 @@ extern int  io_read(io_channel  *ch, uint64_t oid, uint64_t ofst, uint32_t len);
 extern int  io_read2(io_channel  *ch, void *rbuf, uint64_t oid, uint64_t ofst, uint32_t len );
 
 extern int  io_write(io_channel *ch, uint64_t oid, const void* buffer, uint64_t ofst, uint32_t len);
-extern int  io_buffer_alloc(void** ptr, uint32_t size);
-extern int  io_buffer_free (void* ptr);
+extern int  io_buffer_alloc(io_channel *ch, void** ptr, uint32_t size);
+extern int  io_buffer_free (io_channel *ch, void* ptr);
 
 extern int  op_claim_result(io_channel *ch, int op_id, int *status, int* op_type, void** data_buffer, uint32_t *data_len);
 extern int  op_destory(io_channel *ch, int op_id);
