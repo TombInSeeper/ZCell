@@ -247,15 +247,14 @@ static void ipc_msgr_on_recv_msg(message_t *msg) {
 }
 
 static void ipc_msgr_on_send_msg(message_t *msg) {
-    liboss_ctx_t *lc = tls_liboss_ctx();
-    (void)lc;    
-    //Hold data_buffer and free meta_buffer
-    msg->data_buffer = NULL;
-
-    msgr_meta_buffer_free(msg->meta_buffer);
-    // free(msg->meta_buffer);
-    msg->meta_buffer = NULL;
-
+    // liboss_ctx_t *lc = tls_liboss_ctx();
+    // (void)lc;    
+    // //Hold data_buffer and free meta_buffer
+    // msg->data_buffer = NULL;
+    // ipc_msgr_meta_buffer_free(msg->meta_buffer);
+    // // free(msg->meta_buffer);
+    // msg->meta_buffer = NULL;
+    log_debug("Send msg seq=%lu\n" , msg->header.seq);
     return;
 }
 
