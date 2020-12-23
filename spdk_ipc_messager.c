@@ -49,7 +49,10 @@ static inline msg *msg_alloc() {
 }
 
 
-
+static inline debug_dump_msg(const msg *m) {
+    log_debug("mptr=%p , seq=%lu, mbuf = %p , dbuf = %p , sess_ctx = %p\n" ,
+        m , m->header.seq , m->meta_buffer , m->data_buffer , m->priv_ctx);
+}
 
 static inline void msg_free(msg* m) {
     log_debug("spdk_free msg:%p\n" , m);
@@ -103,6 +106,8 @@ static int message_send(const message_t  *m)
     };
 
     log_debug("Enqueue msg ,seq=%lu\n", m_send->header.seq);
+    debug_dump_msg(m_send);
+
     spdk_ring_enqueue(s->out_q, msgs, 1 , NULL);
     s->nr_to_flush++;
 
@@ -130,6 +135,8 @@ static int message_recv_poll(void *arg) {
                 msg *m = (msg *)(msgs[i]);
                 
                 m->priv_ctx = (void *)s;
+                debug_dump_msg(m);
+
                 //Callback，调用 message_move 
                 log_debug("Get message from %u \n " , s->tgt_core);
                 msgr->conf.on_recv_message(m);
@@ -161,6 +168,7 @@ static int message_recv_poll_session(void *sess) {
         for ( i = 0 ; i < count ; ++i) {
             msg *m = (msg *)(msgs[i]);
             m->priv_ctx = sess;
+            debug_dump_msg(m);
             //Callback，调用 message_move 
             msgr->conf.on_recv_message(m);
 
