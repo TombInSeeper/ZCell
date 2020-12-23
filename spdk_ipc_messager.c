@@ -239,8 +239,10 @@ static void _messager_destructor(bool is_server) {
     messager_t *msgr = get_local_msgr();
     if(!msgr->is_running) 
         return;
-    spdk_poller_pause(msgr->ring_poller);
-    spdk_poller_unregister(&msgr->ring_poller);
+    if(is_server) {
+        spdk_poller_pause(msgr->ring_poller);
+        spdk_poller_unregister(&msgr->ring_poller);
+    }
 
     while(!TAILQ_EMPTY(&msgr->session_q)) {
         struct session_t *s = TAILQ_FIRST(&msgr->session_q);
