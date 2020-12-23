@@ -201,7 +201,7 @@ static inline void _response_with_reusing_request(message_t *request, uint16_t s
     } else if(request->header.magic == REMOTE) {
         reactor_ctx()->net_msgr_impl->messager_sendmsg(request);
     } else {
-        log_err(">>>????<<<<\n");
+        log_err("????\n");
         return;
     }
 }
