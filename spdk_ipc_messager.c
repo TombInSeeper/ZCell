@@ -115,10 +115,10 @@ static int message_recv_poll(void *arg) {
     messager_t *msgr = get_local_msgr();
     (void)arg;
     struct session_t *s;
-    int count = 0;
+    size_t count = 0;
+    size_t total = 0 ;
     TAILQ_FOREACH(s , &msgr->session_q , _session_list_hook ) {
         struct spdk_ring *ring = s->in_q;
-        size_t count;
         if((count = spdk_ring_count(ring))) {
             void *msgs[REQ_BATCH_SIZE];
             log_debug("Polling msg count=%lu\n", count);
@@ -133,11 +133,10 @@ static int message_recv_poll(void *arg) {
                 log_debug("Get message from %u \n " , s->tgt_core);
                 msgr->conf.on_recv_message(m);
 
-                ++count;
-
                 //释放空壳子
                 msg_free(m);
             }
+            total += count;
         }       
     }
     return count;
@@ -148,12 +147,12 @@ static int message_recv_poll_session(void *sess) {
     struct session_t *s = sess;
 
     // struct session_t *s;
-    int count = 0;
+    size_t count = 0;
     // TAILQ_FOREACH(s , &msgr->session_q , _session_list_hook ) {
     struct spdk_ring *ring = s->out_q;
-    if(spdk_ring_count(ring)) {
+    if((count = spdk_ring_count(ring))) {
         void *msgs[REQ_BATCH_SIZE];
-        size_t count = spdk_ring_dequeue(ring, msgs , 32);
+        spdk_ring_dequeue(ring, msgs , count);
         //for_each_msg
         //do handle
         size_t i;
@@ -163,7 +162,6 @@ static int message_recv_poll_session(void *sess) {
             //Callback，调用 message_move 
             msgr->conf.on_recv_message(m);
 
-            ++count;
 
             //释放空壳子
             msg_free(m);
@@ -206,7 +204,7 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
         // log_info("IPC shm id=%u\n", conf->shm_id);
 
         //Add session
-        uint32_t i , j;
+        uint32_t i ;
         struct zcell_ipc_config_t *zic = msgr->ipc_config;
         for (i = 0 ; i < zic->tgt_nr ; ++i) {
             uint32_t tgt = zic->tgt_cores[i];
