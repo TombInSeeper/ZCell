@@ -98,7 +98,11 @@ static int message_send(const message_t  *m)
     msg *m_send = msg_alloc();
     memcpy(m_send , m , sizeof(msg));
 
-    spdk_ring_enqueue(s->out_q , (void**)(&(m_send)) , 1 , NULL);
+    void *msgs[] = {
+        (void*)m_send
+    };
+
+    spdk_ring_enqueue(s->out_q , msgs, 1,  NULL);
     s->nr_to_flush++;
 
     msgr->conf.on_send_message(m);
@@ -278,9 +282,9 @@ static void* _cli_messager_connect2(uint32_t lcore , void *sess_priv_ctx ) {
     struct session_t *sess = calloc(1 , sizeof(struct session_t));
     struct zcell_ipc_config_t *zcfg = msgr->ipc_config;
     uint32_t my_lcore = msgr->my_lcore;
-    log_debug("Get out_q\n");
+    log_debug("Get out_q [%u]==>[%u]\n" , my_lcore , lcore);
     sess->out_q = zcfg->rings[my_lcore][lcore];
-    log_debug("Get in_q\n");
+    log_debug("Get in_q [%u]==>[%u]\n" , lcore , my_lcore);
     sess->in_q = zcfg->rings[lcore][my_lcore];
     assert(sess->out_q);
     assert(sess->in_q);
