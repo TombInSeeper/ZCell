@@ -49,7 +49,7 @@ static inline msg *msg_alloc() {
 }
 
 
-static inline debug_dump_msg(const msg *m) {
+static inline void debug_dump_msg(const msg *m) {
     log_debug("mptr=%p , seq=%lu, mbuf = %p , dbuf = %p , sess_ctx = %p\n" ,
         m , m->header.seq , m->meta_buffer , m->data_buffer , m->priv_ctx);
 }
