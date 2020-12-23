@@ -157,7 +157,7 @@ static int message_recv_poll_session(void *sess) {
     // struct session_t *s;
     size_t count = 0;
     // TAILQ_FOREACH(s , &msgr->session_q , _session_list_hook ) {
-    struct spdk_ring *ring = s->out_q;
+    struct spdk_ring *ring = s->in_q;
     if((count = spdk_ring_count(ring))) {
         void *msgs[REQ_BATCH_SIZE];
         log_debug("Polling msg count=%lu\n", count);
