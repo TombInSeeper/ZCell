@@ -214,7 +214,7 @@ static void net_msgr_on_send_msg(message_t *msg) {
     //Hold data_buffer and free meta_buffer
     msg->data_buffer = NULL;
 
-    msgr_meta_buffer_free(msg->meta_buffer);
+    net_msgr_meta_buffer_free(msg->meta_buffer);
     // free(msg->meta_buffer);
     msg->meta_buffer = NULL;
 
