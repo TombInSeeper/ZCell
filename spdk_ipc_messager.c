@@ -118,9 +118,11 @@ static int message_recv_poll(void *arg) {
     int count = 0;
     TAILQ_FOREACH(s , &msgr->session_q , _session_list_hook ) {
         struct spdk_ring *ring = s->in_q;
-        if(spdk_ring_count(ring)) {
+        size_t count;
+        if((count = spdk_ring_count(ring))) {
             void *msgs[REQ_BATCH_SIZE];
-            size_t count = spdk_ring_dequeue(ring, msgs , 32);
+            log_debug("Polling msg count=%lu\n", count);
+            spdk_ring_dequeue(ring, msgs , count);
             //for_each_msg
             //do handle
             size_t i;
