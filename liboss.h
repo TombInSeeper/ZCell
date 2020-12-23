@@ -6,6 +6,10 @@
 struct io_channel;
 typedef struct io_channel io_channel;
 
+enum SESSION_TYPE {
+    LOCAL = 0x11,
+    REMOTE = 0x22,
+};
 
 struct oss_stat_t {
     uint32_t object_max_num;

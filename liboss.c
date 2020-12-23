@@ -35,14 +35,14 @@ typedef struct small_buffer_t {
 
 
 enum SESSION_TYPE {
-    LOCAL,
-    REMOTE
+    LOCAL = 0x11,
+    REMOTE = 0x22,
 };
 
 struct io_channel {
     void *session_;
     
-    int session_type;
+    _u8 session_type;
     const void *msgr_;
 
     uint32_t queue_depth_;
@@ -399,12 +399,23 @@ static int _io_prepare_op_common(io_channel *ch,  int16_t op_type ,uint32_t meta
         return -EINVAL;
     }
 
+    _u8 magic;
+    if(ch->session_type == LOCAL)
+        magic = LOCAL;
+    else if (ch->session_type == REMOTE)
+        magic = REMOTE;
+    else {
+        log_err("未知的channel类型\n");
+        return -EINVAL;
+    }
+
     msg_hdr_t _hdr = {
         .seq = cpu_to_le64(ch->seq_++),
         .type = (_u8)(op_type),
         .status = 0,
         .meta_length = (_u8)(meta_size),
-        .data_length = cpu_to_le32(data_length),        
+        .data_length = cpu_to_le32(data_length), 
+        .magic = magic,       
         /**
          * This is an ugly trick
          */
@@ -435,7 +446,11 @@ extern int  io_stat(io_channel *ch) {
 }
 extern int  io_create(io_channel *ch , uint64_t oid) {
     uint32_t meta_size = sizeof(op_create_t);
-    void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_create_t));
+    void *meta_buffer;
+    if(ch->session_type == REMOTE)
+        meta_buffer = msgr_meta_buffer_alloc(meta_size);
+    else
+        meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
     do {
         op_create_t *op_args = meta_buffer;
         op_args->oid = cpu_to_le64(oid);
@@ -444,7 +459,11 @@ extern int  io_create(io_channel *ch , uint64_t oid) {
 }
 extern int  io_delete(io_channel *ch , uint64_t oid) {
     uint32_t meta_size = sizeof(op_delete_t);
-    void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_delete_t));
+    void *meta_buffer;
+    if(ch->session_type == REMOTE)
+        meta_buffer = msgr_meta_buffer_alloc(meta_size);
+    else
+        meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
     do {
         op_delete_t *op_args = meta_buffer;
         op_args->oid = cpu_to_le64(oid);
@@ -464,7 +483,11 @@ extern int  io_buffer_free (void* ptr) {
 
 extern int  io_read(io_channel  *ch,  uint64_t oid, uint64_t ofst, uint32_t len) {
     uint32_t meta_size = sizeof(op_read_t);
-    void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_read_t));
+    void *meta_buffer;
+    if(ch->session_type == REMOTE)
+        meta_buffer = msgr_meta_buffer_alloc(meta_size);
+    else
+        meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
     do {
         op_read_t *op_args = meta_buffer;
         op_args->oid = cpu_to_le64(oid);
@@ -476,8 +499,12 @@ extern int  io_read(io_channel  *ch,  uint64_t oid, uint64_t ofst, uint32_t len)
 }
 
 extern int  io_read2(io_channel  *ch, void *buf , uint64_t oid,  uint64_t ofst, uint32_t len ) {
-uint32_t meta_size = sizeof(op_read_t);
-    void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_read_t));
+    uint32_t meta_size = sizeof(op_read_t);
+    void *meta_buffer;
+    if(ch->session_type == REMOTE)
+        meta_buffer = msgr_meta_buffer_alloc(meta_size);
+    else
+        meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
     do {
         op_read_t *op_args = meta_buffer;
         op_args->oid = cpu_to_le64(oid);
@@ -491,7 +518,11 @@ uint32_t meta_size = sizeof(op_read_t);
 
 extern int  io_write(io_channel *ch, uint64_t oid, const void* buffer, uint64_t ofst, uint32_t len) {
     uint32_t meta_size = sizeof(op_write_t);
-    void *meta_buffer = msgr_meta_buffer_alloc(sizeof(op_write_t));
+    void *meta_buffer;
+    if(ch->session_type == REMOTE)
+        meta_buffer = msgr_meta_buffer_alloc(meta_size);
+    else
+        meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
     const void *data_buffer = buffer;
     do {
         op_write_t *op_args = meta_buffer;

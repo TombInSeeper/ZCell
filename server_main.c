@@ -167,10 +167,12 @@ static void free_meta_buffer(void *p) {
 
 static inline void msg_free_resource(message_t *m) {
     if(m->header.meta_length == 0 && m->meta_buffer) {
+        log_info("释放request中的meta_buffer , request_id=%lu \n" , m->header.seq);
         free_meta_buffer(m->meta_buffer);
         m->meta_buffer = NULL;
     }
     if(m->header.data_length == 0 && m->data_buffer) {
+        log_info("释放request中的data_buffer, request_id=%lu \n" , m->header.seq);
         free_data_buffer(m->data_buffer);
         m->data_buffer = NULL;
     }
@@ -194,8 +196,14 @@ static inline void _response_with_reusing_request(message_t *request, uint16_t s
 
     //释放原来 request 的资源
     msg_free_resource(request);
-
-    reactor_ctx()->ipc_msgr_impl->messager_sendmsg(request);
+    if(request->header.magic == LOCAL) {
+        reactor_ctx()->ipc_msgr_impl->messager_sendmsg(request);
+    } else if(request->header.magic == REMOTE) {
+        reactor_ctx()->net_msgr_impl->messager_sendmsg(request);
+    } else {
+        log_err(">>>????<<<<\n");
+        return;
+    }
 }
 
 static inline void _response_broken_op(message_t *request, uint16_t status_code) {

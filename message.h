@@ -6,6 +6,10 @@
 
 #define NR_SESSION_MAX (10 * 1000)
 
+enum SESSION_TYPE {
+    LOCAL = 0x11,
+    REMOTE = 0x22,
+};
 
 enum message_type {
     msg_hdr = 0,
@@ -37,7 +41,7 @@ typedef struct msg_hdr_t {
     _le64 seq;          //Seq number in one session
     _u8   type;         //Operation Type of this message
     _u8   status;       //Response Status Code, for "response"
-    _u8   pad0;
+    _u8   magic;        //Local:1, REMOTE:2
     _u8   meta_length;  //MAX 255 字节
     _le32 data_length;  //Max 4GB
     _le32 rsv[2]; // reserve for some special using 
