@@ -643,7 +643,10 @@ extern int  op_destory( io_channel *ch, int op_id) {
         } else if (st == OP_WAITING_SUBMIT) {
             log_warn("op(%d) is dropped before submitting , if data_buffer is not null, you should free it\n", op_id);
             if(op->reqeust_and_response.meta_buffer) {
-                msgr_meta_buffer_free(op->reqeust_and_response.meta_buffer);
+                if(ch->session_type == REMOTE)
+                    net_msgr_meta_buffer_free(op->reqeust_and_response.meta_buffer);
+                else 
+                    ipc_msgr_meta_buffer_free(op->reqeust_and_response.meta_buffer);
             }
             _free_op(ch, op);
             return 0;
