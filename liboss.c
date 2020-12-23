@@ -122,19 +122,19 @@ static void net_msgr_data_buffer_free(void *ptr) {
 }
 
 
-static void* ipc_msgr_meta_buffer_alloc(uint32_t sz){
-    return spdk_malloc(sz , 0 , NULL , SPDK_ENV_SOCKET_ID_ANY , SPDK_MALLOC_SHARE);
-}
-static void ipc_msgr_meta_buffer_free( void *mptr) {
-    spdk_free(mptr);
-}
-static void* ipc_msgr_data_buffer_alloc(uint32_t sz) {
-    return spdk_malloc(sz , 0 , NULL , SPDK_ENV_SOCKET_ID_ANY , 
-        SPDK_MALLOC_SHARE | SPDK_MALLOC_DMA);
-}
-static void ipc_msgr_data_buffer_free( void *dptr) {
-    spdk_free(dptr);
-}
+// static void* ipc_msgr_meta_buffer_alloc(uint32_t sz){
+//     return spdk_malloc(sz , 0 , NULL , SPDK_ENV_SOCKET_ID_ANY , SPDK_MALLOC_SHARE);
+// }
+// static void ipc_msgr_meta_buffer_free( void *mptr) {
+//     spdk_free(mptr);
+// }
+// static void* ipc_msgr_data_buffer_alloc(uint32_t sz) {
+//     return spdk_malloc(sz , 0 , NULL , SPDK_ENV_SOCKET_ID_ANY , 
+//         SPDK_MALLOC_SHARE | SPDK_MALLOC_DMA);
+// }
+// static void ipc_msgr_data_buffer_free( void *dptr) {
+//     spdk_free(dptr);
+// }
 
 
 static void* ipc_msgr_meta_buffer_alloc(uint32_t sz) {
