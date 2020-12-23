@@ -179,19 +179,6 @@ static void ipc_msgr_data_buffer_free(void *p) {
 }
 
 
-static void* msgr_meta_buffer_alloc(uint32_t sz) {
-    return malloc(sz);
-}
-static void msgr_meta_buffer_free(void *ptr) {
-    free(ptr);
-}
-static void* msgr_data_buffer_alloc(uint32_t sz) {
-    return malloc(sz);
-}
-static void msgr_data_buffer_free(void *ptr) {
-    free(ptr);
-}
-
 
 //接收 response
 static void net_msgr_on_recv_msg(message_t *msg) {
@@ -554,20 +541,21 @@ extern int  io_submit_to_channel(io_channel *ch , int *ops , int op_nr) {
         msgr->messager_sendmsg(&op->reqeust_and_response);
         // assert (rc == 0);
     }
-
-    //Busy Loop to send and flush
-    int nr_m = 0; 
-    do {
-        log_debug("Preapre to flush message to peer\n");
-        int rc = msgr->messager_flush_msg_of(ch->session_);
-        assert (rc >= 0);
-        nr_m += rc;
-        if(nr_m < op_nr) {
-            usleep(5);
-        }
-    } while ( nr_m < op_nr);
-    
+    if(ch->session_type == REMOTE) {
+        //Busy Loop to send and flush
+        int nr_m = 0; 
+        do {
+            log_debug("Preapre to flush message to peer\n");
+            int rc = msgr->messager_flush_msg_of(ch->session_);
+            assert (rc >= 0);
+            nr_m += rc;
+            if(nr_m < op_nr) {
+                usleep(5);
+            }
+        } while ( nr_m < op_nr);
+    }
     log_debug("Flush message to peer..done\n");
+
     for (i = 0 ; i < op_nr ; ++i )  {
         op_ctx_t *op = &ch->op_ctxs_[ops[i]];
         op->state = OP_IN_PROGRESS;
