@@ -540,13 +540,14 @@ int _ostore_boot(const objstore_impl_t *oimpl , int new) {
     //TODO get ostore global config
     //....
     
-    int flags = 0;
+    int mkfs_flags = ZSTORE_MKFS_RESERVE_OBJID;
+    int mount_flags = 0;
     int rc;
     if(new) {
-        rc = oimpl->mkfs(dev_list,flags);
+        rc = oimpl->mkfs(dev_list,mkfs_flags);
         assert (rc == OSTORE_EXECUTE_OK);
     }
-    rc = oimpl->mount(dev_list,flags);
+    rc = oimpl->mount(dev_list,mount_flags);
     return rc;
 }
 
