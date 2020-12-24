@@ -25,5 +25,10 @@ static inline uint64_t rdtsc() {
     return tsc.tsc_64;
 }
 
+static inline double to_us(uint64_t end , uint64_t start , uint64_t hz)
+{
+    return ((double)(end-start)/( (double) hz / 1e6));
+}
+
 
 #endif

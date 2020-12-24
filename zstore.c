@@ -76,9 +76,9 @@ union otable_entry_t {
         uint64_t valid :1;
         uint64_t rsv : 15;
         uint64_t oid : 48;
-        uint64_t mtime;
-        uint64_t lsize;
-        uint64_t psize;
+        // uint64_t mtime;
+        // uint64_t lsize;
+        // uint64_t psize;
         uint32_t rsv2;
         uint32_t data_idx_id;
     };
@@ -350,6 +350,37 @@ zstore_mkfs(const char *dev_list[], int flags)
         pmem_write(zstore->pmem_, 1, zeros , i << 12 , 4096);    
     }
     log_info ("Bitmap region and onode table region clean done\n");
+
+    if(flags & ZSTORE_MKFS_RESERVE_OBJID) {
+        log_info("Prepare to reserve %d objects\n" , ZSTORE_MKFS_RESERVE_OBJ_NR);
+        size_t  p ; 
+        char zff[4096];
+        memset(zff , 0xff , 4096);
+        if(ZSTORE_MKFS_RESERVE_OBJ_NR % (4096 * 8 * 8) != 0) {
+            log_err("Reserve number 必须被 (4096 * 8 * 8) 整除\n");
+        } else {        
+            uint32_t pages = ZSTORE_MKFS_RESERVE_OBJ_NR / (4096 * 8 * 8);
+            uint64_t i;
+            for( i = 0 ; i < pages ; ++i) {
+                pmem_write(zstore->pmem_ , 1 , zff ,
+                zsb->pm_dy_bitmap_ofst + ( i * 4096) , 4096);
+            }
+
+            //Onode entry
+            for ( i = 0 ; i < ZSTORE_MKFS_RESERVE_OBJ_NR ; ++i) {
+                union otable_entry_t e;
+                e.oid = i ;
+                e.data_idx_id = i;
+                e.valid = 1;
+                pmem_write(zstore->pmem_ , 1 , &e , 
+                    zsb->pm_dy_space_ofst + (i * sizeof(e)) , sizeof(e));
+            }
+
+        }
+        // 4096 * 8 * 8 
+
+    }
+
 
     zstore_bdev_close(zstore);
     zstore_pm_file_close(zstore);
