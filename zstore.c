@@ -373,7 +373,7 @@ zstore_mkfs(const char *dev_list[], int flags)
                 e.data_idx_id = i;
                 e.valid = 1;
                 pmem_write(zstore->pmem_ , 1 , &e , 
-                    zsb->pm_dy_space_ofst + (i * sizeof(e)) , sizeof(e));
+                    zsb->pm_otable_ofst + (i * sizeof(e)) , sizeof(e));
             }
 
         }
