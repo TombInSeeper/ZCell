@@ -12,6 +12,7 @@
 
 #include "spdk_ipc_config.h"
 #include "messager.h"
+#include "store_common.h"
 #include "objectstore.h"
 
 
@@ -534,13 +535,6 @@ void _sys_fini() {
     }
 }
 
-
-int _ostore_create_object_pool(uint32_t reserve_object_num)
-{
-
-    
-
-}
 
 int _ostore_boot(const objstore_impl_t *oimpl , int new) {
     //TODO get ostore global config
