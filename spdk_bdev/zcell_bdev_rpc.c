@@ -57,6 +57,14 @@ static const struct spdk_json_object_decoder rpc_construct_zcell_bdev_decoders[]
 	// {"zcell_object_num", offsetof(struct rpc_construct_zcell_bdev, zcell_object_num), spdk_json_decode_uint32},
 };
 
+
+static void
+free_rpc_delete_zcell_bdev(struct rpc_delete_zcell_bdev *req)
+{
+	free(req->name);
+}
+
+
 /* Decode the parameters for this RPC method and properly construct the zcell
  * device. Error status returned in the failed cases.
  */
@@ -99,11 +107,7 @@ struct rpc_delete_zcell_bdev {
 	char *name;
 };
 
-static void
-free_rpc_delete_zcell_bdev(struct rpc_delete_zcell_bdev *req)
-{
-	free(req->name);
-}
+
 
 static const struct spdk_json_object_decoder rpc_delete_zcell_bdev_decoders[] = {
 	{"name", offsetof(struct rpc_delete_zcell_bdev, name), spdk_json_decode_string},
@@ -118,6 +122,12 @@ _spdk_rpc_delete_zcell_bdev_cb(void *cb_arg, int bdeverrno)
 	w = spdk_jsonrpc_begin_result(request);
 	spdk_json_write_bool(w, bdeverrno == 0);
 	spdk_jsonrpc_end_result(request, w);
+}
+
+static void 
+free_rpc_delete_zcell(struct rpc_delete_zcell_bdev *r)
+{
+    
 }
 
 static void
