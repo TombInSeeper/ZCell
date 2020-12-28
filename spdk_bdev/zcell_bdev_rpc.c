@@ -154,4 +154,5 @@ spdk_rpc_delete_zcell_bdev(struct spdk_jsonrpc_request *request,
 cleanup:
 	free_rpc_delete_zcell_bdev(&req);
 }
+
 SPDK_RPC_REGISTER("delete_zcell_bdev", spdk_rpc_delete_zcell_bdev, SPDK_RPC_RUNTIME)

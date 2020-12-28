@@ -87,6 +87,10 @@ client:client_main.o liboss.o $(MSGR_OBJS)
 bdev_demo:bdev_demo.o $(BDEV_OBJS) liboss.o $(MSGR_OBJS) 
 	$(LINK_C)
 
+liboss: liboss.o $(MSGR_OBJS) 
+	ar rcs $^
+
+
 # test_nvme_md:test_nvme_md.o
 # 	$(LINK_C)
 
