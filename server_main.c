@@ -31,7 +31,11 @@ static int g_new = 0;
 static const char *dev_list[] = {"Nvme0n1", "/run/pmem0" ,NULL};
 
 
+static void usage( char *argv0)
+{
+	fprintf(stderr, "Usage: %s [-i ip] [-p port]  [-s[null|chunk|zeta]] [-n new objstore] \n", argv0);
 
+}
 
 static void parse_args(int argc , char **argv) {
     int opt = -1;
@@ -632,14 +636,14 @@ static void _zcell_config_init() {
     struct zcell_ipc_config_t *zic = cfg;
 
 
-    // zic->tgt_nr = 1;
-    // zic->tgt_cores[0] = 1;
+    zic->tgt_nr = 1;
+    zic->tgt_cores[0] = 1;
 
-    // zic->zcell_nr = 1;
-    // zic->zcell_cores[0] = 0;
+    zic->zcell_nr = 1;
+    zic->zcell_cores[0] = 0;
 
-    core_mask_convert(g_zcell_core_mask , &zic->zcell_nr , zic->zcell_cores);
-    core_mask_convert(g_tgt_core_mask , &zic->tgt_nr , zic->tgt_cores);
+    // core_mask_convert(g_zcell_core_mask , &zic->zcell_nr , zic->zcell_cores);
+    // core_mask_convert(g_tgt_core_mask , &zic->tgt_nr , zic->tgt_cores);
 
     
     uint32_t i , j;
