@@ -58,9 +58,15 @@ LINK_C=\
 MSGR_OBJS = messager.o net.o net_posix.o spdk_ipc_messager.o
 OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o  zstore.o pm.o
 BDEV_OBJS = spdk_bdev/zcell_bdev.o spdk_bdev/zcell_bdev_rpc.o
+LIBOSS_OBJS = liboss.o 
 EXE_OBJS = server.o client.o bdev_demo.o
 
-OBJS=$(EXE_OBJS) $(MSGR_OBJS) $(OSTORE_OBJS) $(BDEV_OBJS)
+
+
+
+
+
+OBJS=$(EXE_OBJS) $(MSGR_OBJS) $(OSTORE_OBJS) $(BDEV_OBJS) $(LIBOSS_OBJS)
 
 TEST_BIN= test_objstore test_ipc
 BIN_TGT=server client bdev_demo
