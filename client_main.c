@@ -391,7 +391,6 @@ int _do_get2(admin_context_t *ac, uint32_t oid) {
     return status;
 }
 
-
 int _do_stat(admin_context_t *ac) {
     int opd = io_stat(ac->ioch);
     log_debug("opd=%d, prepare OK\n", opd);
@@ -415,7 +414,6 @@ int _do_stat(admin_context_t *ac) {
     op_destory(ac->ioch, cpl);
     return 0;
 }
-
 
 void _sys_fini() {
     spdk_app_stop(0);
@@ -543,6 +541,8 @@ int _run(admin_context_t *ac, int argc , char **argv) {
     if(rc) {
         return -1;
     }
+
+    return 0;
 }
 
 

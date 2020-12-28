@@ -111,7 +111,7 @@ static int message_send(const message_t  *m)
     spdk_ring_enqueue(s->out_q, msgs, 1 , NULL);
     s->nr_to_flush++;
 
-    msgr->conf.on_send_message(m);
+    msgr->conf.on_send_message((message_t *)m);
 
     return 0;
 }
