@@ -1,19 +1,91 @@
 {
     "subsystems": [
-        {
+      {
+        "subsystem": "accel",
+        "config": null
+      },
+      {
+        "subsystem": "interface",
+        "config": null
+      },
+      {
+        "subsystem": "net_framework",
+        "config": null
+      },
+      {
+        "subsystem": "bdev",
+        "config": [
+          {
             "params": {
               "bdev_io_pool_size": 65536,
               "bdev_io_cache_size": 512
             },
             "method": "bdev_set_options"
-        },
-        {
+          },
+          {
             "params": {
                 "name":"Zdisk1",
                 "size":"1"
             },
             "method": "construct_zcell_bdev"
-        }
+          }
+        ]
+      },
+      {
+        "subsystem": "scsi",
+        "config": null
+      },
+      {
+        "subsystem": "nvmf",
+        "config": [
+          {
+            "params": {
+              "acceptor_poll_rate": 10000
+            },
+            "method": "nvmf_set_config"
+          },
+          {
+            "params": {
+              "max_subsystems": 1024
+            },
+            "method": "nvmf_set_max_subsystems"
+          }
+        ]
+      },
+      {
+        "subsystem": "nbd",
+        "config": []
+      },
+      {
+        "subsystem": "vhost",
+        "config": []
+      },
+      {
+        "subsystem": "iscsi",
+        "config": [
+          {
+            "method": "iscsi_set_options",
+            "params": {
+              "allow_duplicated_isid": false,
+              "default_time2retain": 20,
+              "mutual_chap": false,
+              "max_connections_per_session": 2,
+              "nop_timeout": 60,
+              "disable_chap": false,
+              "require_chap": false,
+              "node_base": "iqn.2016-06.io.spdk",
+              "chap_group": 0,
+              "max_sessions": 128,
+              "immediate_data": true,
+              "error_recovery_level": 0,
+              "nop_in_interval": 30,
+              "default_time2wait": 2,
+              "max_queue_depth": 64,
+              "first_burst_length": 8192
+            }
+          }
+        ]
+      }
     ]
-
-}
+  }
+  
