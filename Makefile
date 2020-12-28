@@ -62,7 +62,6 @@ LINK_C=\
 MSGR_OBJS = messager.o net.o net_posix.o spdk_ipc_messager.o
 OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o  zstore.o pm.o
 LIBOSS_OBJS = liboss.o 
-BDEV_OBJS = ./spdk_bdev/zcell_bdev.o
 EXE_OBJS = server_main.o client_main.o bdev_demo.o
 
 
@@ -87,11 +86,11 @@ server:server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 client:client_main.o liboss.o $(MSGR_OBJS)
 	$(LINK_C)
 
-bdev_demo:bdev_demo.o $(BDEV_OBJS) liboss.o $(MSGR_OBJS) 
+bdev_demo:bdev_demo.o liboss.o $(MSGR_OBJS) 
 	$(LINK_C)
 
-liboss: liboss.o $(MSGR_OBJS) 
-	ar rcs ./liboss.a $^
+# liboss: liboss.o $(MSGR_OBJS) 
+# 	ar rcs ./liboss.a $^
 
 
 # test_nvme_md:test_nvme_md.o
