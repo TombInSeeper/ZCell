@@ -30,7 +30,7 @@ all: zcell_bdev
 
 
 zcell_bdev: $(OBJS)
-	$(AR) rcs ./libzcell_bdev.a $^
+	$(AR) rcs ./libspdk_bdev_zcell.a $^
 
 %.o: %.c %.d
 	$(COMPILE_C)
