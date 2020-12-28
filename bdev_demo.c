@@ -26,7 +26,6 @@ void spdk_app_run(void *arg) {
         spdk_app_done(NULL);
     } else {
         log_info("Good!\n");
-        delete_zcell_disk(devname);
         spdk_app_done(NULL);
     }
 }
