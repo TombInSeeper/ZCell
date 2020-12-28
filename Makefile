@@ -15,7 +15,9 @@ PMDK_LINK_FLAGS=-lpmem
 SPDK_PATH_PREFIX=/home/wuyue
 ISA_LINK_FLAGS=-L$(SPDK_PATH_PREFIX)/spdk/isa-l/.libs -lisal 
 SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
-SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
+SPDK_LINK_FLAGS=-Wl,--whole-archive \
+	-L./spdk_bdev \
+	-L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
 	-L$(SPDK_PATH_PREFIX)/spdk/dpdk/build/lib \
 	-ldpdk  \
 	-lspdk_json -lspdk_jsonrpc -lspdk_log_rpc  -lspdk_app_rpc  -lspdk_rpc \

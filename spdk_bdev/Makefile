@@ -4,7 +4,7 @@ Q=@
 AR=ar
 
 MAKEFLAGS += --no-print-directory
-C_SRCS += ./zcell_bdev.c ../liboss.c ../messager.c ../spdk_ipc_messager.c
+C_SRCS += ./zcell_bdev.c ./zcell_bdev_rpc.c
 OBJS = $(C_SRCS:.c=.o) 
 DEPFLAGS = -MMD -MP -MF $*.d.tmp
 
