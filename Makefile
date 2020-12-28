@@ -20,12 +20,13 @@ SPDK_LINK_FLAGS=-Wl,--whole-archive  -L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspd
 	-lspdk_json -lspdk_jsonrpc -lspdk_log_rpc  -lspdk_app_rpc  -lspdk_rpc \
 	-lspdk_bdev_malloc  -lspdk_bdev_rpc -lspdk_bdev_null \
 	-lspdk_bdev_nvme \
+	-lspdk_bdev_zcell \
 	-lspdk_bdev \
 	-lspdk_event_bdev -lspdk_event_copy -lspdk_event_net -lspdk_event_vmd -lspdk_event \
 	-lspdk_thread -lspdk_sock_posix -lspdk_sock -lspdk_notify\
 	-lspdk_net \
 	-lspdk_nvme \
-	-lspdk_ftl\
+	-lspdk_ftl \
 	-lspdk_log -lspdk_trace -lspdk_util -lspdk_copy -lspdk_conf \
 	-lspdk_vmd \
 	-Wl,--no-whole-archive  $(PMDK_LINK_FLAGS) -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
