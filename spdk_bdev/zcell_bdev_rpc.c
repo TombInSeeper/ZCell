@@ -90,7 +90,6 @@ spdk_rpc_construct_zcell_bdev(struct spdk_jsonrpc_request *request,
 
 	w = spdk_jsonrpc_begin_result(request);
 	spdk_json_write_string(w, req.name);
-	spdk_json_write_uint32(w, req.size_GiB);
 	spdk_jsonrpc_end_result(request, w);
 
 cleanup:
