@@ -96,8 +96,9 @@ spdk_rpc_construct_zcell_bdev(struct spdk_jsonrpc_request *request,
 cleanup:
 	free_rpc_construct_zcell_bdev(&req);
 }
+
+
 SPDK_RPC_REGISTER("construct_zcell_bdev", spdk_rpc_construct_zcell_bdev, SPDK_RPC_RUNTIME)
-SPDK_RPC_REGISTER_ALIAS_DEPRECATED(bdev_malloc_create, construct_malloc_bdev)
 
 
 //-------------

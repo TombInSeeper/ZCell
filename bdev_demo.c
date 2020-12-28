@@ -9,8 +9,9 @@
 
 static const char *devname = "ZDisk1";
 
-SPDK_RPC_REGISTER("construct_zcell_bdev", spdk_rpc_construct_zcell_bdev, SPDK_RPC_STARTUP | SPDK_RPC_RUNTIME);
+// SPDK_RPC_REGISTER("construct_zcell_bdev", spdk_rpc_construct_zcell_bdev, SPDK_RPC_STARTUP | SPDK_RPC_RUNTIME);
 
+// static void rpc_reg ()
 
 
 void spdk_app_done(void *arg) {
@@ -18,15 +19,14 @@ void spdk_app_done(void *arg) {
 }
 
 void spdk_app_run(void *arg) {
-
-    
-
+    int rc = create_zcell_disk(devname , 1);
     struct spdk_bdev *d = spdk_bdev_get_by_name(devname);
     if(!d) {
         log_err("Fuck\n");
         spdk_app_done(NULL);
     } else {
         log_info("Good!\n");
+        delete_zcell_disk(devname);
         spdk_app_done(NULL);
     }
 }
