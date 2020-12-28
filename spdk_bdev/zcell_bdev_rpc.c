@@ -94,7 +94,7 @@ spdk_rpc_construct_zcell_bdev(struct spdk_jsonrpc_request *request,
 	spdk_jsonrpc_end_result(request, w);
 
 cleanup:
-	free_rpc_construct_zcell(&req);
+	free_rpc_construct_zcell_bdev(&req);
 }
 SPDK_RPC_REGISTER("construct_zcell_bdev", spdk_rpc_construct_zcell_bdev, SPDK_RPC_RUNTIME)
 
@@ -150,6 +150,6 @@ spdk_rpc_delete_zcell_bdev(struct spdk_jsonrpc_request *request,
 	delete_zcell_disk(bdev, _spdk_rpc_delete_zcell_bdev_cb, request);
 
 cleanup:
-	free_rpc_delete_zcell(&req);
+	free_rpc_delete_zcell_bdev(&req);
 }
 SPDK_RPC_REGISTER("delete_zcell_bdev", spdk_rpc_delete_zcell_bdev, SPDK_RPC_RUNTIME)
