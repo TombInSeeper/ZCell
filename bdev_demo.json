@@ -1,0 +1,19 @@
+{
+    "subsystems": [
+        {
+            "params": {
+              "bdev_io_pool_size": 65536,
+              "bdev_io_cache_size": 512
+            },
+            "method": "bdev_set_options"
+        },
+        {
+            "params": {
+                "name":"Zdisk1",
+                "size":"1"
+            },
+            "method": "construct_zcell_bdev"
+        }
+    ]
+
+}
