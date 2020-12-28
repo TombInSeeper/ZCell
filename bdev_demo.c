@@ -3,7 +3,7 @@
 #include <spdk/bdev.h>
 #include <spdk/rpc.h>
 
-#include <spdk_bdev/zcell_bdev.h>
+#include "./spdk_bdev/zcell_bdev.h"
 
 #include "util/log.h"
 
