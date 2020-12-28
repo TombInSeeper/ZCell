@@ -38,7 +38,7 @@ MAKEFLAGS += --no-print-directory
 
 # C_SRCS += $(wildcard *.c)
 
-# OBJS = $(C_SRCS:.c=.o) 
+
 
 
 DEPFLAGS = -MMD -MP -MF $*.d.tmp
@@ -59,6 +59,7 @@ MSGR_OBJS = messager.o net.o net_posix.o spdk_ipc_messager.o
 OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o  zstore.o pm.o
 BDEV_OBJS = spdk_bdev/zcell_bdev.o spdk_bdev/zcell_bdev_rpc.o
 
+OBJS = $(MSGR_OBJS)  $(OSTORE_OBJS) $(BDEV_OBJS)
 
 TEST_BIN= test_objstore test_ipc
 BIN_TGT=server client bdev_demo
