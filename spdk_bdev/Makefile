@@ -4,7 +4,7 @@ Q=@
 AR=ar
 
 MAKEFLAGS += --no-print-directory
-C_SRCS += ./zcell_bdev.c ./zcell_bdev_rpc.c
+C_SRCS += ./bdev_zcell.c ./bdev_zcell_rpc.c
 OBJS = $(C_SRCS:.c=.o) 
 DEPFLAGS = -MMD -MP -MF $*.d.tmp
 
@@ -42,4 +42,4 @@ zcell_bdev: $(OBJS)
 -include $(OBJS:.o=.d)
 
 clean:
-	rm -rf  $(OBJS) $(OBJS:.o=.d)
+	rm -rf  $(OBJS) $(OBJS:.o=.d) *.a
