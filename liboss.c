@@ -488,7 +488,7 @@ extern int  io_read(io_channel  *ch,  uint64_t oid, uint64_t ofst, uint32_t len)
     return _io_prepare_op_common(ch , msg_oss_op_read, meta_size, meta_buffer , 0, NULL);
 }
 
-extern int  io_read2(io_channel  *ch, void *buf , uint64_t oid,  uint64_t ofst, uint32_t len ) {
+extern int  io_read2(io_channel *ch, void *buf , uint64_t oid,  uint64_t ofst, uint32_t len ) {
     uint32_t meta_size = sizeof(op_read_t);
     void *meta_buffer;
     if(ch->session_type == REMOTE)
@@ -501,7 +501,7 @@ extern int  io_read2(io_channel  *ch, void *buf , uint64_t oid,  uint64_t ofst, 
         op_args->ofst = cpu_to_le64(ofst);
         op_args->len = cpu_to_le64(len);
         op_args->flags = cpu_to_le64(0);
-        op_args->read_buffer_zero_copy_addr = buf;
+        op_args->read_buffer_zero_copy_addr = (uint64_t)((uintptr_t)buf);
     } while(0);
     return _io_prepare_op_common(ch , msg_oss_op_read, meta_size, meta_buffer , 0, NULL);
 }

@@ -353,7 +353,7 @@ zstore_mkfs(const char *dev_list[], int flags)
 
     if(flags & ZSTORE_MKFS_RESERVE_OBJID) {
         log_info("Prepare to reserve %d objects\n" , ZSTORE_MKFS_RESERVE_OBJ_NR);
-        size_t  p ; 
+        // size_t  p ; 
         char zff[4096];
         memset(zff , 0xff , 4096);
         if(ZSTORE_MKFS_RESERVE_OBJ_NR % (4096 * 8 * 8) != 0) {
