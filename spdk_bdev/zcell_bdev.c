@@ -221,6 +221,7 @@ static const struct spdk_bdev_fn_table zcell_disk_fn_table = {
 static int bdev_zcell_initialize(void);
 static void bdev_zcell_fini(void);
 static int bdev_zcell_get_ctx_size(void);
+
 static struct spdk_bdev_module zcell_if = {
 	.name		= "zcell",
 	.module_init	= bdev_zcell_initialize,
@@ -265,12 +266,17 @@ int create_zcell_disk(const char *name , uint32_t size_GiB)
     zdisk->disk.product_name = "Zcell Disk";
     zdisk->disk.fn_table = &zcell_disk_fn_table;
     zdisk->disk.split_on_optimal_io_boundary = true;
-
+    zdisk->disk.name = strdup(name);
     zdisk->disk.optimal_io_boundary = STRIPE_UNIT >> 12 ;
+
+
 
 	spdk_io_device_register(zdisk, bdev_zcell_create_cb, bdev_zcell_destroy_cb,
 				sizeof(struct zcell_disk_io_channel),
 				zdisk->disk.name);
+
+    int rc = spdk_bdev_register(&zdisk->disk);
+    (void)rc;
 
     TAILQ_INSERT_TAIL(&g_zcell_disk_head , zdisk , link);
 
