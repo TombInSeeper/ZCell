@@ -430,7 +430,7 @@ void _sys_init(void *arg) {
 
     if(!ac->ioch) {
         log_info("Cannot establish channel with Core[%u] \n", 1);
-        return -1;
+        return;
     }
     log_debug("IO channel setup done\n");
 
