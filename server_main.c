@@ -23,17 +23,19 @@ static int g_ipc_msgr = 0;
 static int g_net_msgr = 0;
 static const char *g_base_ip = "0.0.0.0";
 static int g_base_port = 18000;
-// static const char *g_zcell_core_mask = "0x1";
-// static const char *g_tgt_core_mask = "0x2";
+static const char *g_zcell_core_mask = NULL;
+static const char *g_tgt_core_mask = NULL;
 static int g_store_type = NULLSTORE;
 // static int g_idle = 0;
 static int g_new = 0;
 static const char *dev_list[] = {"Nvme0n1", "/run/pmem0" ,NULL};
 
 
+
+
 static void parse_args(int argc , char **argv) {
     int opt = -1;
-	while ((opt = getopt(argc, argv, "i:p:INc:C:s:n")) != -1) {
+	while ((opt = getopt(argc, argv, "i:p:INT:M:s:n")) != -1) {
 		switch (opt) {
 		case 'i':
 			g_base_ip = optarg;
@@ -47,12 +49,12 @@ static void parse_args(int argc , char **argv) {
 		case 'p':
 			g_base_port = atoi(optarg);
 			break;
-        // case 'c':
-		// 	g_tgt_core_mask = (optarg);
-		// 	break;
-        // case 'C':
-		// 	g_zcell_core_mask = (optarg);
-		// 	break;
+        case 'T':
+			g_tgt_core_mask = (optarg);
+			break;
+        case 'M':
+			g_zcell_core_mask = (optarg);
+			break;
         case 's':
             if(!strcmp(optarg,"null")){
                 log_info("Ostore type is nullstore \n");
@@ -178,6 +180,7 @@ static inline void msg_free_resource(message_t *m) {
         m->data_buffer = NULL;
     }
 }
+
 /**
  * 复用 request 结构生成 response
  * 这里我们对 request 的 meta_buffer 和 data_buffer 的处理方式是 lazy 的：
@@ -629,13 +632,16 @@ static void _zcell_config_init() {
     struct zcell_ipc_config_t *zic = cfg;
 
 
-    zic->tgt_nr = 1;
-    zic->tgt_cores[0] = 1;
+    // zic->tgt_nr = 1;
+    // zic->tgt_cores[0] = 1;
 
-    zic->zcell_nr = 1;
-    zic->zcell_cores[0] = 0;
+    // zic->zcell_nr = 1;
+    // zic->zcell_cores[0] = 0;
 
-    //Hardcode
+    core_mask_convert(g_zcell_core_mask , &zic->zcell_nr , zic->zcell_cores);
+    core_mask_convert(g_tgt_core_mask , &zic->tgt_nr , zic->tgt_cores);
+
+    
     uint32_t i , j;
     for (i = 0 ; i < zic->tgt_nr ; ++i) {
         for (j = 0 ; j < zic->zcell_nr ; ++j) {
@@ -695,7 +701,15 @@ void _sys_init(void *arg) {
 int spdk_app_run() {
     struct spdk_app_opts opts;
     spdk_app_opts_init(&opts);
-    opts.reactor_mask = "0x1";
+    if(!g_zcell_core_mask) {
+        log_err("未指定 zcell 的 coremask \n");
+        return -1;
+    }
+    if(!g_tgt_core_mask) {
+        log_err("未指定 target 的 coremask \n");
+        return -1;
+    }
+    opts.reactor_mask = g_zcell_core_mask;
     opts.shutdown_cb = _sys_fini;
     opts.config_file = "spdk.conf";
     opts.shm_id = 1;

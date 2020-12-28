@@ -29,6 +29,19 @@
 
 typedef void (*cb_func_t) (void* , int status_code);
 
+static inline void core_mask_convert(const char *m , uint32_t cores[] , uint32_t *n)
+{
+    uint64_t cm;
+    sscanf(m , "0x%lx" , &cm);
+    uint64_t i;
+    *n = 0;
+    for (i = 0 ; i < 64 ; ++i) {
+        if (( 1ull << i ) & cm ) {
+            cores[*n] = i;
+            *n = *n + 1;
+        }
+    }
+}
 
 
 

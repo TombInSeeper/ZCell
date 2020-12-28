@@ -16,8 +16,16 @@ struct oss_stat_t {
     uint64_t free_space;
 };
 
-struct local_peer_t {
-    uint32_t lcore;
+struct zcell_addr_t {
+    union {
+        struct {
+            uint32_t lcore;
+        }local;
+        struct {
+            char *ip;
+            int port;
+        }remote;
+    };
 };
 
 extern int tls_io_ctx_init(int flags);
@@ -39,10 +47,14 @@ extern int  io_write(io_channel *ch, uint64_t oid, const void* buffer, uint64_t 
 extern int  io_buffer_alloc(io_channel *ch, void** ptr, uint32_t size);
 extern int  io_buffer_free (io_channel *ch, void* ptr);
 
+extern int  op_set_userdata(io_channel *ch, int op_id , uint64_t userdata);
+extern uint64_t  op_get_userdata(io_channel *ch, int op_id);
+
 extern int  op_claim_result(io_channel *ch, int op_id, int *status, int* op_type, void** data_buffer, uint32_t *data_len);
 extern int  op_destory(io_channel *ch, int op_id);
 
 extern int  stat_result_parse_to(void *data_buffer, struct oss_stat_t *stat_, char *str);
+
 
 extern int  io_submit_to_channel(io_channel *ch , int *ops , int nr);
 extern int  io_poll_channel(io_channel *ch, int *op_cpl, int min,  int max);

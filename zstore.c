@@ -342,7 +342,7 @@ zstore_mkfs(const char *dev_list[], int flags)
     log_info ("Superblock write done\n");
     int i;
     for (i = 0 ; i < 255 ; ++i) {
-        pmem_write(zstore->pmem_, 1, zeros , (i+ 1)*4096 , 4096);    
+        pmem_write(zstore->pmem_, 1, zeros , (i+1) * 4096 , 4096);    
     }
     log_info ("Log region clean done\n");
 

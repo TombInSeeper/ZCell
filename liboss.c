@@ -14,6 +14,7 @@
 #define RING_MAX 1024
 #define POLL_MAX 64
 
+
 enum  {
     OP_NEW,
     OP_WAITING_SUBMIT,
@@ -291,9 +292,8 @@ static int _do_msgr_init() {
 extern int tls_io_ctx_init(int flags) 
 {
     // liboss_ctx_t *lc = tls_liboss_ctx();
-    (void)flags;
-    _do_msgr_init();
-    return 0; 
+    // (void)flags;
+    return _do_msgr_init(); 
 }
 
 extern int tls_io_ctx_fini() 
@@ -602,6 +602,15 @@ extern int  io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
         ch->cpl_nr_ -= cpls;
     }
     return cpls;
+}
+
+extern int  op_set_userdata(io_channel *ch, int op_id , uint64_t userdata) {
+    ch->op_ctxs_[op_id].user_data_ = userdata;
+    return 0;
+}
+
+extern uint64_t  op_get_userdata(io_channel *ch, int op_id) {
+    return ch->op_ctxs_[op_id].user_data_;
 }
 
 extern int  op_claim_result(io_channel *ch, int op_id, int *status, int* op_type, void** data_buffer, uint32_t *data_len) {
