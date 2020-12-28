@@ -24,8 +24,27 @@ void spdk_app_run(void *arg) {
         spdk_app_done(NULL);
     } else {
         log_info("Good!\n");
-        spdk_app_done(NULL);
     }
+    struct spdk_bdev_desc *bd;
+    spdk_bdev_open( d , 1 , NULL , NULL, &bd);
+    
+    if(!bd) {
+        log_err("Fuck2\n");
+        spdk_app_done(NULL);
+    } else {
+        log_info("Good2!\n");
+    }
+    struct spdk_io_channel *ch = spdk_bdev_get_io_channel(bd);
+    if(!ch) {
+        log_err("Fuck3\n");
+        spdk_app_done(NULL);
+    } else {
+        log_info("Good3!\n");
+    }
+
+    spdk_put_io_channel(ch);
+    spdk_bdev_close(bd);
+    spdk_app_done(NULL);
 }
 
 int main ( int argc , char **argv)

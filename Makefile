@@ -50,6 +50,7 @@ COMPILE_C=\
 	$(CC) -o $@  $(SPDK_INCLUDE_FLAGS) $(DEPFLAGS) $(CFLAGS) -c $< && \
 	mv -f $*.d.tmp $*.d && touch -c $@
 
+
 # Link $(OBJS) and $(LIBS) into $@ (app)
 LINK_C=\
 	$(Q)echo "  LINK [$(ver)] $@"; \
