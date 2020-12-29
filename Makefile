@@ -15,7 +15,7 @@ PMDK_LINK_FLAGS=-lpmem
 SPDK_PATH_PREFIX=/home/wuyue
 ISA_LINK_FLAGS=-L$(SPDK_PATH_PREFIX)/spdk/isa-l/.libs -lisal 
 SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
-SPDK_LINK_FLAGS=-Wl,--whole-archive \
+SPDK_CLIENT_LINK_FLAGS=-Wl,--whole-archive \
 	-L./spdk_bdev -lspdk_bdev_zcell \
 	-L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
 	-L$(SPDK_PATH_PREFIX)/spdk/dpdk/build/lib \
@@ -32,6 +32,24 @@ SPDK_LINK_FLAGS=-Wl,--whole-archive \
 	-lspdk_log -lspdk_trace -lspdk_util -lspdk_copy -lspdk_conf \
 	-lspdk_vmd \
 	-Wl,--no-whole-archive  $(PMDK_LINK_FLAGS) -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
+
+SPDK_SERVER_LINK_FLAGS=-Wl,--whole-archive \
+	-L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
+	-L$(SPDK_PATH_PREFIX)/spdk/dpdk/build/lib \
+	-ldpdk  \
+	-lspdk_json -lspdk_jsonrpc -lspdk_log_rpc  -lspdk_app_rpc  -lspdk_rpc \
+	-lspdk_bdev_malloc  -lspdk_bdev_rpc -lspdk_bdev_null \
+	-lspdk_bdev_nvme \
+	-lspdk_bdev \
+	-lspdk_event_bdev -lspdk_event_copy -lspdk_event_net -lspdk_event_vmd -lspdk_event \
+	-lspdk_thread -lspdk_sock_posix -lspdk_sock -lspdk_notify\
+	-lspdk_net \
+	-lspdk_nvme \
+	-lspdk_ftl \
+	-lspdk_log -lspdk_trace -lspdk_util -lspdk_copy -lspdk_conf \
+	-lspdk_vmd \
+	-Wl,--no-whole-archive  $(PMDK_LINK_FLAGS) -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
+
 
 SPDK_TGT_LINK_FLAGS=-Wl,--whole-archive \
 	-L./spdk_bdev -lspdk_bdev_zcell \
@@ -86,6 +104,10 @@ LINK_TGT_C=\
 	$(Q)echo "  LINK [$(ver)] $@"; \
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_TGT_LINK_FLAGS) $(SYS_LIBS)
 
+LINK_SERVER_C=\
+	$(Q)echo "  LINK [$(ver)] $@"; \
+	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_SERVER_LINK_FLAGS) $(SYS_LIBS)
+
 
 MSGR_OBJS = messager.o net.o net_posix.o spdk_ipc_messager.o
 OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o  zstore.o pm.o
@@ -109,7 +131,7 @@ test: $(TEST_BIN)
 # 	$(LINK_C)
 
 server:server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
-	$(LINK_C)
+	$(LINK_SERVER_C)
 
 client:client_main.o liboss.o $(MSGR_OBJS)
 	$(LINK_C)
