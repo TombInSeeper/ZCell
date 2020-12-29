@@ -161,8 +161,8 @@ bdev_zcell_get_buf_cb(struct spdk_io_channel *ch, struct spdk_bdev_io *bdev_io,
         // return -1;
     }
 
-    if(iov->iov_base == NULL) {
-        SPDK_ERRLOG("iov->iov_base == NULL\n");
+    if(iov[0].iov_base == NULL) {
+        SPDK_ERRLOG("iov[0].iov_base == NULL\n");
         return -1;
     }
 
