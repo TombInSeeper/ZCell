@@ -47,6 +47,11 @@ void write_cb (struct spdk_bdev_io *bdev_io,
 }
 
 
+void spdk_app_run_tgt(void *arg) {
+
+
+};
+
 void spdk_app_run(void *arg) {
 
 
@@ -89,7 +94,7 @@ int main ( int argc , char **argv)
     opt.rpc_addr = "/var/tmp/bdev_demo.sock";
     opt.enable_coredump = 1;
 
-    int rc = spdk_app_start(&opt, spdk_app_run , NULL);
+    int rc = spdk_app_start(&opt, spdk_app_run_tgt , NULL);
     if(rc) {
 
 
