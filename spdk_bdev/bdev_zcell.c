@@ -160,6 +160,11 @@ static int _bdev_zcell_submit_request(struct spdk_io_channel *ch, struct spdk_bd
 		    // return -1;
         }
 
+        if(iov->iov_base == NULL) {
+            SPDK_ERRLOG("iov->iov_base == NULL\n");
+            return -1;
+        }
+
         if(bdev_io->type == SPDK_BDEV_IO_TYPE_READ) {
             zio->zcell_op_id = io_read2(zgrp->zioch_list[stripe_id] , iov->iov_base ,
                 obj_id , obj_offset , obj_len );
