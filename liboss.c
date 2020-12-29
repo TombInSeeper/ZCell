@@ -503,14 +503,18 @@ extern int  io_read2(io_channel *ch, void *buf , uint64_t oid,  uint64_t ofst, u
         meta_buffer = net_msgr_meta_buffer_alloc(meta_size);
     else
         meta_buffer = ipc_msgr_meta_buffer_alloc(meta_size);
+    op_read_t *op_args = meta_buffer;
+    
     do {
-        op_read_t *op_args = meta_buffer;
         op_args->oid = cpu_to_le64(oid);
         op_args->ofst = cpu_to_le64(ofst);
         op_args->len = cpu_to_le64(len);
         op_args->flags = cpu_to_le64(0);
         op_args->read_buffer_zero_copy_addr = (uint64_t)((uintptr_t)buf);
     } while(0);
+
+    log_debug("op_args->read_buffer_zero_copy_addr=%p\n" , op_args->read_buffer_zero_copy_addr);
+
     return _io_prepare_op_common(ch , msg_oss_op_read, meta_size, meta_buffer , 0, NULL);
 }
 
