@@ -57,6 +57,7 @@ static uint64_t GetOidStart(size_t GiB , uint64_t stripes) {
 
 
 struct zcell_channel_group {
+    uint32_t refcount;
     struct spdk_poller	*completion_poller;
     //已经连接的 local zcell 的 io_channels
     uint32_t zcell_nr;
@@ -366,24 +367,26 @@ static int
 bdev_zcell_group_create_cb(void *io_device, void *ctx_buf)
 {
 	struct zcell_channel_group *grp = ctx_buf;
+    if(grp->refcount == 0) {
+        int rc = tls_io_ctx_init(0); // 初始化当前线程的 msgr 
+        if(rc) {
+            SPDK_ERRLOG("liboss ctx tls init failed\n");
+            return rc;
+        }
 
-    int rc = tls_io_ctx_init(0); // 初始化当前线程的 msgr 
-    if(rc) {
-        SPDK_ERRLOG("liboss ctx tls init failed\n");
-        return rc;
-    }
+        grp->zcell_nr = 1;
+        grp->zioch_list[0] = get_io_channel_with_local(0 , 512);
+        if(!grp->zioch_list[0]) {
+            SPDK_ERRLOG("liboss get channel with 0\n");
+            return -1;
+        }
 
-    grp->zcell_nr = 1;
-    grp->zioch_list[0] = get_io_channel_with_local(0 , 512);
-    if(!grp->zioch_list[0]) {
-        SPDK_ERRLOG("liboss get channel with 0\n");
-        return -1;
+        grp->completion_poller = spdk_poller_register(bdev_zcell_group_poll , grp , 0 );
+        if(!grp->completion_poller) {
+            return -1;
+        }
     }
-
-    grp->completion_poller = spdk_poller_register(bdev_zcell_group_poll , grp , 0 );
-    if(!grp->completion_poller) {
-        return -1;
-    }
+    grp->refcount++;
     return 0;
 }
 
@@ -391,13 +394,19 @@ static void
 bdev_zcell_group_destroy_cb(void *io_device, void *ctx_buf)
 {
 	struct zcell_channel_group *grp = ctx_buf;
-    spdk_poller_unregister(&grp->completion_poller);
-    uint64_t i;
-    for (i = 0 ; i<grp->zcell_nr ; ++i) {
-       put_io_channel(grp->zioch_list[i]);
-    }   
-    tls_io_ctx_fini(); //销毁当前线程的 msgr    
-
+    if(grp->refcount == 0) {
+        SPDK_WARNLOG("???\n");
+        return;
+    }
+    grp->refcount--;
+    if(grp->refcount == 0) {
+        spdk_poller_unregister(&grp->completion_poller);
+        uint64_t i;
+        for (i = 0 ; i<grp->zcell_nr ; ++i) {
+        put_io_channel(grp->zioch_list[i]);
+        }   
+        tls_io_ctx_fini(); //销毁当前线程的 msgr    
+    }
 }
 
 
