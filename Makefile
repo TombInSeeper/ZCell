@@ -51,7 +51,10 @@ SPDK_TGT_LINK_FLAGS=-Wl,--whole-archive \
 	-lspdk_json -lspdk_jsonrpc -lspdk_log_rpc  -lspdk_app_rpc  -lspdk_rpc \
 	-lspdk_log -lspdk_trace -lspdk_util -lspdk_copy -lspdk_conf \
 	-lspdk_vmd \
-	-Wl,--no-whole-archive  $(PMDK_LINK_FLAGS) -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
+	-Wl,--no-whole-archive  \
+	$(PMDK_LINK_FLAGS) \
+	-lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc \
+	-lssl -lcrypto 
 
 
 # PMDK_LINK_CFLAGS=-lpmem2
