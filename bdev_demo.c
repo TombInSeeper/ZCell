@@ -13,8 +13,20 @@ static const char *devname = "ZDisk1";
 
 static void *wbuf;
 static void *rbuf;
+static struct spdk_bdev_desc *bd;
+static struct spdk_io_channel *ch;
 
 void spdk_app_done(void *arg) {
+
+    spdk_free(rbuf);
+    spdk_free(wbuf);
+    if(ch) {
+        spdk_put_io_channel(ch);
+    }
+    if(bd) {
+        spdk_bdev_close(bd);
+    }
+
     spdk_app_stop(0);
 }
 
@@ -28,6 +40,9 @@ void write_cb (struct spdk_bdev_io *bdev_io,
     assert(success);
     spdk_bdev_free_io(bdev_io);
     log_info("Write done\n");
+
+
+
     spdk_app_done(NULL);
 }
 
@@ -42,7 +57,6 @@ void spdk_app_run(void *arg) {
     } else {
         log_info("Good!\n");
     }
-    struct spdk_bdev_desc *bd;
     spdk_bdev_open( d , 1 , NULL , NULL, &bd);
     
     if(!bd) {
@@ -51,7 +65,7 @@ void spdk_app_run(void *arg) {
     } else {
         log_info("Good2!\n");
     }
-    struct spdk_io_channel *ch = spdk_bdev_get_io_channel(bd);
+    ch = spdk_bdev_get_io_channel(bd);
     if(!ch) {
         log_err("Fuck3\n");
         spdk_app_done(NULL);
