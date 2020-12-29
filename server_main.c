@@ -182,8 +182,8 @@ static inline void msg_free_resource(message_t *m) {
         if(m->header.magic == REMOTE) {
             log_info("Release request data_buffer, request_id=%lu \n" , m->header.seq);
             free_data_buffer(m->data_buffer);
-            m->data_buffer = NULL;
         }
+        m->data_buffer = NULL;
     }
 }
 

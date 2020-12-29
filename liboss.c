@@ -591,7 +591,7 @@ extern int  io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
             }
             n += rc;
         }
-        log_debug("msgr get %u response this time\n", ch->cpl_nr_);
+        // log_debug("msgr get %u response this time\n", ch->cpl_nr_);
     }
     if(ch->cpl_nr_) {
         int i;
