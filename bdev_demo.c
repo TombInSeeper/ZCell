@@ -97,10 +97,11 @@ int main ( int argc , char **argv)
     opt.rpc_addr = "/var/tmp/bdev_demo.sock";
     opt.enable_coredump = 1;
 
-    int rc = spdk_app_start(&opt, spdk_app_run , NULL);
-    if(rc) {
-
-
+    if(argc > 1) {
+        spdk_app_start(&opt, spdk_app_run , NULL);
+    } else {
+        spdk_app_start(&opt, spdk_app_run_tgt , NULL);
     }
+
     spdk_app_fini();
 }
