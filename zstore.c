@@ -691,7 +691,7 @@ object_lba_range_get(struct zstore_context_t *zs,
     uint32_t *ext_nr, struct zstore_extent_t *exts ,  
     uint32_t *mapped_blen,
     uint32_t *dib,
-    uint64_t op_ofst , uint64_t op_len)
+    uint64_t op_ofst , uint64_t op_len , bool is_write)
 {
     uint64_t bofst = op_ofst >> zs->zsb_->ssd_min_alloc_size_shift;
     uint64_t blen = op_len >> zs->zsb_->ssd_min_alloc_size_shift;
@@ -716,7 +716,7 @@ object_lba_range_get(struct zstore_context_t *zs,
         log_debug("Data Index Read , Per Index represents(%u)K :" , zs->zsb_->ssd_min_alloc_size >> 10 );
         for (i = 0  ; i < ilen ; ++i) {
             log_raw_debug("0x%x," , dib_[i]);
-            if(dib_[i] == -1) {
+            if(dib_[i] == -1 && !is_write) {
                 log_debug("把空洞都设为 lba:0x0 \n ");
                 dib_[i] = 0;
             }
@@ -771,6 +771,7 @@ _tx_prep_rw_common(void *r)
     uint64_t oid, op_ofst, op_len , op_flags;
     (void)op_flags;
     void *data_buf = m->data_buffer;
+    bool is_write = false;
     if(op  == msg_oss_op_read) {
         op_read_t * op = message_get_meta_buffer(m);
         oid = op->oid;
@@ -782,7 +783,8 @@ _tx_prep_rw_common(void *r)
         oid = op->oid;
         op_ofst = op->ofst;
         op_len = op->len;
-        op_flags = op->flags;    
+        op_flags = op->flags;  
+        is_write = true;  
     } else {
         log_err("Op error\n");
         return UNKNOWN_OP;
@@ -822,7 +824,7 @@ _tx_prep_rw_common(void *r)
 
     //获取合并后的extent
     object_lba_range_get(zstore, oe , &ne , 
-        e , &mapped_blen , dib ,op_ofst , op_len);
+        e , &mapped_blen , dib ,op_ofst , op_len , is_write);
     
     if(1) {
         log_debug("TID=%lu,object_id:%lu,op_ofst:0x%lx,op_len:0x%lx,mapped len=0x%x\n" ,
