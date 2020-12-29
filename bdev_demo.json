@@ -15,7 +15,14 @@
               "name": "ZDisk1",
               "size": 1
             },
-            "method": "construct_zcell_bdev"
+            "method": "bdev_zcell_create"
+          },
+          {
+            "params": {
+              "name": "ZDisk2",
+              "size": 1
+            },
+            "method": "bdev_zcell_create"
           }
         ]
       }
