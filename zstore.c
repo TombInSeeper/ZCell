@@ -360,10 +360,19 @@ zstore_mkfs(const char *dev_list[], int flags)
             log_err("Reserve number 必须被 (4096 * 8 * 8) 整除\n");
         } else {        
             uint32_t pages = ZSTORE_MKFS_RESERVE_OBJ_NR / (4096 * 8 * 8);
+            
             uint64_t i;
+            //SSD allocator reserve
             for( i = 0 ; i < pages ; ++i) {
                 pmem_write(zstore->pmem_ , 1 , zff ,
-                zsb->pm_dy_bitmap_ofst + ( i * 4096) , 4096);
+                zsb->pm_ssd_bitmap_ofst + (i * 4096) , 4096);
+            }
+
+
+            //PM allocator
+            for( i = 0 ; i < pages ; ++i) {
+                pmem_write(zstore->pmem_ , 1 , zff ,
+                zsb->pm_dy_bitmap_ofst + (i * 4096) , 4096);
             }
 
             //Onode entry
@@ -374,6 +383,14 @@ zstore_mkfs(const char *dev_list[], int flags)
                 e.valid = 1;
                 pmem_write(zstore->pmem_ , 1 , &e , 
                     zsb->pm_otable_ofst + (i * sizeof(e)) , sizeof(e));
+            }
+
+            //Index block 
+            for ( i = 0 ; i < ZSTORE_MKFS_RESERVE_OBJ_NR ; ++i) {
+                char buf[0x1000];
+                memset(buf , 0xff , 4096);
+                pmem_write(zstore->pmem_ , 1 , buf , 
+                    zsb->pm_dy_space_ofst + (i * 4096) , 4096 );
             }
 
         }
@@ -699,6 +716,10 @@ object_lba_range_get(struct zstore_context_t *zs,
         log_debug("Data Index Read , Per Index represents(%u)K :" , zs->zsb_->ssd_min_alloc_size >> 10 );
         for (i = 0  ; i < ilen ; ++i) {
             log_raw_debug("0x%x," , dib_[i]);
+            if(dib_[i] == -1) {
+                log_debug("把空洞都设为 lba:0x0 \n ");
+                dib_[i] = 0;
+            }
         }
         log_raw_debug("\n");
     } while (0);
