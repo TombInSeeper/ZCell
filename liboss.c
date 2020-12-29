@@ -293,6 +293,8 @@ extern int tls_io_ctx_init(int flags)
 {
     // liboss_ctx_t *lc = tls_liboss_ctx();
     // (void)flags;
+    log_debug("liboss ctx init ...\n");
+
     return _do_msgr_init(); 
 }
 
@@ -305,6 +307,9 @@ extern int tls_io_ctx_fini()
 
     lc->ipc_msgr->messager_fini();
     lc->ipc_msgr = NULL;
+
+    log_debug("liboss ctx destroy done\n");
+
     return 0;
 }
 
@@ -343,6 +348,9 @@ extern void put_io_channel( io_channel *ioch) {
     const msgr_client_if_t *msgr = (const msgr_client_if_t *)ioch->msgr_;
     msgr->messager_close(ioch->session_);
     io_channel_delete(ioch);
+
+    log_debug("Put iochannel done\n");
+
     return;
 }
 
