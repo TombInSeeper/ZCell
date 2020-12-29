@@ -11,9 +11,26 @@ static const char *devname = "ZDisk1";
 // static void rpc_reg ()
 
 
+static void *wbuf;
+static void *rbuf;
+
 void spdk_app_done(void *arg) {
     spdk_app_stop(0);
 }
+
+
+
+
+void write_cb (struct spdk_bdev_io *bdev_io,
+		bool success,
+		void *cb_arg)
+{
+    assert(success);
+    spdk_bdev_free_io(bdev_io);
+
+    spdk_app_done(NULL);
+}
+
 
 void spdk_app_run(void *arg) {
 
@@ -41,9 +58,10 @@ void spdk_app_run(void *arg) {
     } else {
         log_info("Good3!\n");
     }
-
-    spdk_put_io_channel(ch);
-    spdk_bdev_close(bd);
+    wbuf = spdk_dma_malloc(0x1000, 0x1000, NULL);
+    rbuf = spdk_dma_malloc(0x1000, 0x1000, NULL);
+    int rc = spdk_bdev_write_blocks(bd , ch , wbuf , 0 , 1 , write_cb , NULL);
+    assert(rc == 0);
 }
 
 int main ( int argc , char **argv)
