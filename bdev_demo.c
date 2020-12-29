@@ -27,7 +27,7 @@ void write_cb (struct spdk_bdev_io *bdev_io,
 {
     assert(success);
     spdk_bdev_free_io(bdev_io);
-
+    log_info("Write done\n");
     spdk_app_done(NULL);
 }
 
@@ -59,6 +59,7 @@ void spdk_app_run(void *arg) {
         log_info("Good3!\n");
     }
     wbuf = spdk_dma_malloc(0x1000, 0x1000, NULL);
+
     rbuf = spdk_dma_malloc(0x1000, 0x1000, NULL);
     int rc = spdk_bdev_write_blocks(bd , ch , wbuf , 0 , 1 , write_cb , NULL);
     assert(rc == 0);
