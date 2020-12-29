@@ -133,8 +133,8 @@ test: $(TEST_BIN)
 server:server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 	$(LINK_SERVER_C)
 
-client:client_main.o liboss.o $(MSGR_OBJS)
-	$(LINK_C)
+# client:client_main.o liboss.o $(MSGR_OBJS)
+# 	$(LINK_C)
 
 bdev_demo:bdev_demo.o liboss.o $(MSGR_OBJS) 
 	$(LINK_TGT_C)
