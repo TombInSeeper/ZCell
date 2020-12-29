@@ -130,60 +130,77 @@ bdev_zcell_write_json_config(struct spdk_bdev *bdev, struct spdk_json_write_ctx 
 	spdk_json_write_object_end(w);
 }
 
+
+static void
+bdev_zcell_get_buf_cb(struct spdk_io_channel *ch, struct spdk_bdev_io *bdev_io,
+		    bool success)
+{
+	if (!success) {
+		spdk_bdev_io_complete(bdev_io, SPDK_BDEV_IO_STATUS_FAILED);
+		return;
+	}
+	struct zcell_disk_io_channel *zch = spdk_io_channel_get_ctx(ch);
+    struct zcell_channel_group *zgrp = zch->zgrp;
+    struct zcell_disk *disk = (struct zcell_disk *)(bdev_io->bdev->ctxt);
+    (void)disk;
+    struct zcell_ioctx *zio = (struct zcell_ioctx *)(bdev_io->driver_ctx);
+    struct iovec *iov = bdev_io->u.bdev.iovs;
+    uint32_t iovcnt = bdev_io->u.bdev.iovcnt;
+    uint32_t len = bdev_io->u.bdev.num_blocks * bdev_io->bdev->blocklen;
+    uint64_t offset = bdev_io->u.bdev.offset_blocks * bdev_io->bdev->blocklen;
+
+    uint64_t stripe_id = (offset >> STRIPE_UNIT_SHIFT) % 1 ;
+    
+    uint64_t obj_id =  (offset / STRIPE_UNIT);
+    uint64_t obj_offset = (offset % STRIPE_UNIT);
+    uint64_t obj_len = len;
+
+    if(iovcnt > 1) {
+        SPDK_ERRLOG("iovcnt > 1\n");
+        assert(iovcnt == 1);
+        // return -1;
+    }
+
+    if(iov->iov_base == NULL) {
+        SPDK_ERRLOG("iov->iov_base == NULL\n");
+        return -1;
+    }
+
+    if(bdev_io->type == SPDK_BDEV_IO_TYPE_READ) {
+        zio->zcell_op_id = io_read2(zgrp->zioch_list[stripe_id] , iov->iov_base ,
+            obj_id , obj_offset , obj_len );
+        assert(zio->zcell_op_id >= 0);
+    } else {
+        zio->zcell_op_id = io_write(zgrp->zioch_list[stripe_id] ,
+            obj_id , iov->iov_base , obj_offset , obj_len );
+        assert(zio->zcell_op_id >= 0);
+    }
+    op_set_userdata(zgrp->zioch_list[stripe_id] , 
+        zio->zcell_op_id, (uint64_t)(bdev_io));
+    int op_ids[] = { zio->zcell_op_id };
+
+    int rc = io_submit_to_channel(zgrp->zioch_list[stripe_id] , op_ids , 1);
+    
+    if(rc) {
+        abort();
+    }  
+    return 0;
+
+}
+
 static int _bdev_zcell_submit_request(struct spdk_io_channel *ch, struct spdk_bdev_io *bdev_io)
 {
 
-	struct zcell_disk_io_channel *zch = spdk_io_channel_get_ctx(ch);
-    struct zcell_channel_group *zgrp = zch->zgrp;
     int rc;
 	switch (bdev_io->type) {
 	case SPDK_BDEV_IO_TYPE_READ:
 	case SPDK_BDEV_IO_TYPE_WRITE: {
+        spdk_bdev_io_get_buf(bdev_io, bdev_zcell_get_buf_cb,
+				     bdev_io->u.bdev.num_blocks * bdev_io->bdev->blocklen);
+		return 0;
 		// spdk_bdev_io_get_buf(bdev_io, bdev_aio_get_buf_cb,
 		// bdev_io->u.bdev.num_blocks * bdev_io->bdev->blocklen);
-        struct zcell_disk *disk = (struct zcell_disk *)(bdev_io->bdev->ctxt);
-        (void)disk;
-        struct zcell_ioctx *zio = (struct zcell_ioctx *)(bdev_io->driver_ctx);
-        struct iovec *iov = bdev_io->u.bdev.iovs;
-        uint32_t iovcnt = bdev_io->u.bdev.iovcnt;
-        uint32_t len = bdev_io->u.bdev.num_blocks * bdev_io->bdev->blocklen;
-        uint64_t offset = bdev_io->u.bdev.offset_blocks * bdev_io->bdev->blocklen;
 
-        uint64_t stripe_id = (offset >> STRIPE_UNIT_SHIFT) % 1 ;
-        
-        uint64_t obj_id =  (offset / STRIPE_UNIT);
-        uint64_t obj_offset = (offset % STRIPE_UNIT);
-        uint64_t obj_len = len;
-
-        if(iovcnt > 1) {
-            assert(iovcnt == 1);
-		    // return -1;
-        }
-
-        if(iov->iov_base == NULL) {
-            SPDK_ERRLOG("iov->iov_base == NULL\n");
-            return -1;
-        }
-
-        if(bdev_io->type == SPDK_BDEV_IO_TYPE_READ) {
-            zio->zcell_op_id = io_read2(zgrp->zioch_list[stripe_id] , iov->iov_base ,
-                obj_id , obj_offset , obj_len );
-            assert(zio->zcell_op_id >= 0);
-        } else {
-            zio->zcell_op_id = io_write(zgrp->zioch_list[stripe_id] ,
-                obj_id , iov->iov_base , obj_offset , obj_len );
-            assert(zio->zcell_op_id >= 0);
-        }
-        op_set_userdata(zgrp->zioch_list[stripe_id] , 
-           zio->zcell_op_id, (uint64_t)(bdev_io));
-        int op_ids[] = { zio->zcell_op_id };
-
-        rc = io_submit_to_channel(zgrp->zioch_list[stripe_id] , op_ids , 1);
-        
-        if(rc) {
-            abort();
-        }  
-        return 0;
     }
 
 	case SPDK_BDEV_IO_TYPE_FLUSH:
