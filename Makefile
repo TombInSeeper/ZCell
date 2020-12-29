@@ -33,6 +33,27 @@ SPDK_LINK_FLAGS=-Wl,--whole-archive \
 	-lspdk_vmd \
 	-Wl,--no-whole-archive  $(PMDK_LINK_FLAGS) -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
 
+SPDK_TGT_LINK_FLAGS=-Wl,--whole-archive \
+	-L./spdk_bdev -lspdk_bdev_zcell \
+	-L$(SPDK_PATH_PREFIX)/spdk/build/lib  -lspdk_env_dpdk  -lspdk_env_dpdk_rpc \
+	-L$(SPDK_PATH_PREFIX)/spdk/dpdk/build/lib \
+	-ldpdk  \
+	-lspdk_bdev_malloc  -lspdk_bdev_null \
+	-lspdk_bdev_nvme \
+	-lspdk_bdev_rpc -lspdk_bdev \
+	-lspdk_event_scsi -lspdk_event_iscsi -lspdk_event_nvmf -lspdk_event_bdev \
+	-lspdk_event_vmd   -lspdk_event_copy -lspdk_event_net \
+	-lspdk_event \
+	-lspdk_iscsi -lspdk_nvmf -lspdk_scsi \
+	-lspdk_thread -lspdk_sock_posix -lspdk_sock -lspdk_notify \
+	-lspdk_net \
+	-lspdk_nvme \
+	-lspdk_json -lspdk_jsonrpc -lspdk_log_rpc  -lspdk_app_rpc  -lspdk_rpc \
+	-lspdk_log -lspdk_trace -lspdk_util -lspdk_copy -lspdk_conf \
+	-lspdk_vmd \
+	-Wl,--no-whole-archive  $(PMDK_LINK_FLAGS) -lpthread -lrt -lnuma -ldl -luuid -lm -ltcmalloc
+
+
 # PMDK_LINK_CFLAGS=-lpmem2
 
 
@@ -57,6 +78,10 @@ COMPILE_C=\
 LINK_C=\
 	$(Q)echo "  LINK [$(ver)] $@"; \
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_LINK_FLAGS) $(SYS_LIBS)
+
+LINK_TGT_C=\
+	$(Q)echo "  LINK [$(ver)] $@"; \
+	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_TGT_LINK_FLAGS) $(SYS_LIBS)
 
 
 MSGR_OBJS = messager.o net.o net_posix.o spdk_ipc_messager.o
@@ -87,7 +112,7 @@ client:client_main.o liboss.o $(MSGR_OBJS)
 	$(LINK_C)
 
 bdev_demo:bdev_demo.o liboss.o $(MSGR_OBJS) 
-	$(LINK_C)
+	$(LINK_TGT_C)
 
 # liboss: liboss.o $(MSGR_OBJS) 
 # 	ar rcs ./liboss.a $^

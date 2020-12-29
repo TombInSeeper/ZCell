@@ -44,7 +44,6 @@ void spdk_app_run(void *arg) {
 
     spdk_put_io_channel(ch);
     spdk_bdev_close(bd);
-    spdk_app_done(NULL);
 }
 
 int main ( int argc , char **argv)
