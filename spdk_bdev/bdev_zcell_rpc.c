@@ -97,7 +97,8 @@ cleanup:
 }
 
 
-SPDK_RPC_REGISTER("construct_zcell_bdev", spdk_rpc_construct_zcell_bdev, SPDK_RPC_RUNTIME)
+SPDK_RPC_REGISTER("bdev_zcell_create", spdk_rpc_construct_zcell_bdev, SPDK_RPC_RUNTIME)
+SPDK_RPC_REGISTER_ALIAS_DEPRECATED(bdev_zcell_create, construct_zcell_bdev)
 
 
 //-------------
@@ -154,4 +155,5 @@ cleanup:
 	free_rpc_delete_zcell_bdev(&req);
 }
 
-SPDK_RPC_REGISTER("delete_zcell_bdev", spdk_rpc_delete_zcell_bdev, SPDK_RPC_RUNTIME)
+SPDK_RPC_REGISTER("bdev_zcell_delete", spdk_rpc_delete_zcell_bdev, SPDK_RPC_RUNTIME)
+SPDK_RPC_REGISTER_ALIAS_DEPRECATED(bdev_zcell_delete, delete_zcell_bdev)
