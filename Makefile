@@ -116,7 +116,7 @@ EXE_OBJS = server_main.o client_main.o bdev_demo.o
 
 
 TEST_BIN= test_objstore test_ipc
-BIN_TGT=server client bdev_demo
+BIN_TGT=server  bdev_demo
 
 .PHONY: all clean test 
 	
