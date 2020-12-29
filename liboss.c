@@ -513,7 +513,7 @@ extern int  io_read2(io_channel *ch, void *buf , uint64_t oid,  uint64_t ofst, u
         op_args->read_buffer_zero_copy_addr = (uint64_t)((uintptr_t)buf);
     } while(0);
 
-    log_debug("op_args->read_buffer_zero_copy_addr=%p\n" , op_args->read_buffer_zero_copy_addr);
+    log_debug("op_args->read_buffer_zero_copy_addr=%lu\n" , op_args->read_buffer_zero_copy_addr);
 
     return _io_prepare_op_common(ch , msg_oss_op_read, meta_size, meta_buffer , 0, NULL);
 }
