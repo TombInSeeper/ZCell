@@ -323,9 +323,13 @@ static int  oss_op_refill_request_with_reponse(message_t *request) {
             if(op->read_buffer_zero_copy_addr) {
                 //IPC Call
                 request->data_buffer = (void*)((uintptr_t)(op->read_buffer_zero_copy_addr));
+                log_debug("IPC call read buffer:%p\n" ,request->data_buffer);
+            
             } else {
                 //RPC Call
                 request->data_buffer = alloc_data_buffer(le32_to_cpu(op->len));           
+                log_debug("RPC call read buffer:%p\n" ,request->data_buffer);
+            
             }
         }
             /* code */

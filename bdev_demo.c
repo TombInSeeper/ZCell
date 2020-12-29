@@ -30,8 +30,14 @@ void spdk_app_done(void *arg) {
     spdk_app_stop(0);
 }
 
-
-
+void read_cb (struct spdk_bdev_io *bdev_io,
+		bool success,
+		void *cb_arg)
+{
+    log_info("Read done\n");
+    
+    spdk_app_done(NULL);
+}
 
 void write_cb (struct spdk_bdev_io *bdev_io,
 		bool success,
@@ -40,10 +46,8 @@ void write_cb (struct spdk_bdev_io *bdev_io,
     assert(success);
     spdk_bdev_free_io(bdev_io);
     log_info("Write done\n");
-
-
-
-    spdk_app_done(NULL);
+    int rc = spdk_bdev_read_blocks(bd , ch , rbuf , 0 , 1 , read_cb , NULL);
+    assert(rc == 0);
 }
 
 
@@ -78,7 +82,6 @@ void spdk_app_run(void *arg) {
         log_info("Good3!\n");
     }
     wbuf = spdk_dma_malloc(0x1000, 0x1000, NULL);
-
     rbuf = spdk_dma_malloc(0x1000, 0x1000, NULL);
     int rc = spdk_bdev_write_blocks(bd , ch , wbuf , 0 , 1 , write_cb , NULL);
     assert(rc == 0);
@@ -94,7 +97,7 @@ int main ( int argc , char **argv)
     opt.rpc_addr = "/var/tmp/bdev_demo.sock";
     opt.enable_coredump = 1;
 
-    int rc = spdk_app_start(&opt, spdk_app_run_tgt , NULL);
+    int rc = spdk_app_start(&opt, spdk_app_run , NULL);
     if(rc) {
 
 
