@@ -192,13 +192,13 @@ static void free_meta_buffer(void *p) {
 
 static inline void msg_free_resource(message_t *m) {
     if(m->header.meta_length == 0 && m->meta_buffer) {
-        log_info("Release request meta_buffer , request_id=%lu \n" , m->header.seq);
+        log_debug("Release request meta_buffer , request_id=%lu \n" , m->header.seq);
         free_meta_buffer(m->meta_buffer);
         m->meta_buffer = NULL;
     }
     if(m->header.data_length == 0 && m->data_buffer) {
         if(m->header.magic == REMOTE) {
-            log_info("Release request data_buffer, request_id=%lu \n" , m->header.seq);
+            log_debug("Release request data_buffer, request_id=%lu \n" , m->header.seq);
             free_data_buffer(m->data_buffer);
         }
         m->data_buffer = NULL;
