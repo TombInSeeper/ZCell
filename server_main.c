@@ -28,7 +28,12 @@ static const char *g_tgt_core_mask = NULL;
 static int g_store_type = NULLSTORE;
 // static int g_idle = 0;
 static int g_new = 0;
-static const char *dev_list[] = {"Nvme0n1", "/run/pmem0" ,NULL};
+static const char **dev_list[] = {
+    {"Malloc0", "/run/pmem0" , NULL} ,
+    {"Malloc1", "/run/pmem1" , NULL} ,
+    {"Malloc2", "/run/pmem2" , NULL} ,
+    {"Malloc3", "/run/pmem3" , NULL} ,
+} ; 
 
 
 static void usage (char *argv0)

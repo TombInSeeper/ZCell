@@ -18,7 +18,7 @@
         {
           "params": {
             "bdev_io_pool_size": 65536,
-            "bdev_io_cache_size": 512
+            "bdev_io_cache_size": 1024
           },
           "method": "bdev_set_options"
         },
@@ -29,7 +29,7 @@
                 "traddr": "0000:02:00.0"
             },
             "method": "bdev_nvme_attach_controller"
-          },
+        },
         {
           "params": {
             "retry_count": 4,
