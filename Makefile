@@ -5,9 +5,9 @@ Q=@
 
 ver=release
 ifeq ($(ver), debug)
-CFLAGS=-D_GNU_SOURCE -Wall -std=gnu11 -fno-strict-aliasing  -g -O0 
+CFLAGS=-D_GNU_SOURCE -Wall -std=gnu11 -fPIC -fno-strict-aliasing  -g -O0 
 else
-CFLAGS=-D_GNU_SOURCE -DWY_NDEBUG -Wall -std=gnu11 -O3 -march=native -fno-strict-aliasing 
+CFLAGS=-D_GNU_SOURCE -DWY_NDEBUG -Wall -std=gnu11 -fPIC -O3 -march=native -fno-strict-aliasing 
 endif
 
 
@@ -109,9 +109,15 @@ LINK_SERVER_C=\
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_SERVER_LINK_FLAGS) $(SYS_LIBS)
 
 
+LINK_SHARED_LIB=\
+	$(Q)echo "  LINK [$(ver)] $@"; \
+	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_SERVER_LINK_FLAGS) $(SYS_LIBS)
+
+
 MSGR_OBJS = messager.o net.o net_posix.o spdk_ipc_messager.o
 OSTORE_OBJS = objectstore.o chunkstore.o nullstore.o  zstore.o pm.o
 LIBOSS_OBJS = liboss.o 
+FIO_SPDK_PLUGIN = fio_bdev.o
 EXE_OBJS = server_main.o client_main.o bdev_demo.o
 
 
@@ -154,6 +160,10 @@ test_objstore: test_objstore.o $(OSTORE_OBJS)
 
 test_ipc: test_spdk_ipc.o 
 	$(LINK_C)
+
+
+
+
 
 %.o: %.c %.d
 	$(COMPILE_C)

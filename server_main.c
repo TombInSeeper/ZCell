@@ -31,10 +31,9 @@ static int g_new = 0;
 static const char *dev_list[] = {"Nvme0n1", "/run/pmem0" ,NULL};
 
 
-static void usage( char *argv0)
+static void usage (char *argv0)
 {
 	fprintf(stderr, "Usage: %s [-i ip] [-p port]  [-s[null|chunk|zeta]] [-n new objstore] \n", argv0);
-
 }
 
 static void parse_args(int argc , char **argv) {
@@ -85,6 +84,12 @@ static void parse_args(int argc , char **argv) {
 }
 
 
+struct qos_context_t {
+
+
+
+};
+
 
 typedef struct reactor_ctx_t {
     
@@ -118,6 +123,7 @@ static reactor_ctx_t g_reactor_ctxs[NR_REACTOR_MAX];
 static inline reactor_ctx_t* reactor_ctx() {
     return &g_reactor_ctxs[spdk_env_get_current_core()];
 }
+
 static int reactor_reduce_state() {
     int i;
     int r = 0;
@@ -564,6 +570,10 @@ int _ostore_boot(const objstore_impl_t *oimpl , int new) {
     return rc;
 }
 
+// int _qos_scheduler_boot() {
+
+// }
+
 int _msgr_boot(const msgr_server_if_t *smsgr_impl) {
 
     //TODO get msgr global config
@@ -642,14 +652,14 @@ static void _zcell_config_init() {
     struct zcell_ipc_config_t *zic = cfg;
 
 
-    zic->tgt_nr = 1;
-    zic->tgt_cores[0] = 1;
+    // zic->tgt_nr = 1;
+    // zic->tgt_cores[0] = 1;
 
-    zic->zcell_nr = 1;
-    zic->zcell_cores[0] = 0;
+    // zic->zcell_nr = 1;
+    // zic->zcell_cores[0] = 0;
 
-    // core_mask_convert(g_zcell_core_mask , &zic->zcell_nr , zic->zcell_cores);
-    // core_mask_convert(g_tgt_core_mask , &zic->tgt_nr , zic->tgt_cores);
+    core_mask_convert(g_zcell_core_mask ,  zic->zcell_cores ,  &zic->zcell_nr);
+    core_mask_convert(g_tgt_core_mask , zic->tgt_cores , &zic->tgt_nr );
 
     
     uint32_t i , j;

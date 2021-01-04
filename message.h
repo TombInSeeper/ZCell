@@ -44,6 +44,7 @@ typedef struct msg_hdr_t {
     _u8   magic;        //Local:1, REMOTE:2
     _u8   meta_length;  //MAX 255 字节
     _le32 data_length;  //Max 4GB
+    _le16 slo;
     _le32 rsv[2]; // reserve for some special using 
 } _packed msg_hdr_t;
 
