@@ -221,6 +221,8 @@ static int _messager_constructor(messager_conf_t *conf , bool is_server) {
             struct session_t *s = calloc( 1 , sizeof(session_t));
             s->in_q = zic->rings[tgt][msgr->my_lcore];
             s->out_q = zic->rings[msgr->my_lcore][tgt];
+            assert(s->in_q);
+            assert(s->out_q);
             s->tgt_core = tgt;
             TAILQ_INSERT_TAIL(&msgr->session_q , s , _session_list_hook);
             log_info("Get IPC session with Core[%u]\n", tgt );  
@@ -295,9 +297,9 @@ static void* _cli_messager_connect2(uint32_t lcore , void *sess_priv_ctx ) {
     struct session_t *sess = calloc(1 , sizeof(struct session_t));
     struct zcell_ipc_config_t *zcfg = msgr->ipc_config;
     uint32_t my_lcore = msgr->my_lcore;
-    log_debug("Get out_q [%u]==>[%u]\n" , my_lcore , lcore);
+    log_info("Get out_q [%u]==>[%u]\n" , my_lcore , lcore);
     sess->out_q = zcfg->rings[my_lcore][lcore];
-    log_debug("Get in_q [%u]==>[%u]\n" , lcore , my_lcore);
+    log_info("Get in_q [%u]==>[%u]\n" , lcore , my_lcore);
     sess->in_q = zcfg->rings[lcore][my_lcore];
     assert(sess->out_q);
     assert(sess->in_q);
