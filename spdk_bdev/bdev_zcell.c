@@ -16,7 +16,7 @@
 #include "../liboss.h"
 
 #define ZCELL_MAX (1024)
-#define MAX_EVENTS_PER_POLL (32)
+#define MAX_EVENTS_PER_POLL (1024)
 
 #define BLOCK_SIZE (4ul<<10)
 #define BLOCK_SIZE_SHIFT (12)

@@ -589,7 +589,7 @@ extern int  io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
 
     // liboss_ctx_t *lc = tls_liboss_ctx();
     int cpls = 0;
-    int retry_times = 10;
+    int retry_times = 1;
     if(min > max) {
         return -EINVAL;
     }
@@ -601,7 +601,7 @@ extern int  io_poll_channel(io_channel *ch, int *op_cpl, int min, int max) {
             rc = msgr->messager_wait_msg_of(ch->session_);
             assert(rc >= 0);
             if(rc == 0) {
-                _mm_pause();
+                // _mm_pause();
             } else {
                 log_debug("msgr get %u response this time\n", rc);
             }
