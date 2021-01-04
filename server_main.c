@@ -28,12 +28,15 @@ static const char *g_tgt_core_mask = NULL;
 static int g_store_type = NULLSTORE;
 // static int g_idle = 0;
 static int g_new = 0;
-static const char **dev_list[] = {
-    {"Malloc0", "/run/pmem0" , NULL} ,
-    {"Malloc1", "/run/pmem1" , NULL} ,
-    {"Malloc2", "/run/pmem2" , NULL} ,
-    {"Malloc3", "/run/pmem3" , NULL} ,
-} ; 
+
+
+
+// static const char **dev_list[] = {
+//     {"Malloc0", "/run/pmem0" , NULL} ,
+//     {"Malloc1", "/run/pmem1" , NULL} ,
+//     {"Malloc2", "/run/pmem2" , NULL} ,
+//     {"Malloc3", "/run/pmem3" , NULL} ,
+// } ; 
 
 
 static void usage (char *argv0)
@@ -102,6 +105,8 @@ typedef struct reactor_ctx_t {
     
     int reactor_id;
     
+    uint32_t private_id;
+
     struct {
         const char *ip;
         int port;
@@ -566,6 +571,20 @@ int _ostore_boot(const objstore_impl_t *oimpl , int new) {
     //TODO get ostore global config
     //....
     
+    uint32_t pid = reactor_ctx()->private_id;
+
+
+    char data_dev_name[64] , meta_dev_name[64];
+
+    sprintf(data_dev_name , "Malloc%u" , pid);
+    sprintf(meta_dev_name , "/run/pmem%u" , pid);
+
+    const char *dev_list[] = {
+        data_dev_name , 
+        meta_dev_name , 
+        NULL
+    };
+
     int mkfs_flags = ZSTORE_MKFS_RESERVE_OBJID;
     int mount_flags = 0;
     int rc;
@@ -695,14 +714,16 @@ void _sys_init(void *arg) {
         }
     }
 
-
+    uint32_t j = 0;
     //prepare per reactor context
     SPDK_ENV_FOREACH_CORE(i) {
         reactor_ctx_t myctx = {
             .reactor_id = i,
+            .private_id = j,
             .ip = g_base_ip,
             .port = g_base_port + i,
         };
+        ++j;
         memcpy(&g_reactor_ctxs[i], &myctx, sizeof(myctx));
     }
 
