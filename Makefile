@@ -145,6 +145,9 @@ server:server_main.o $(MSGR_OBJS) $(OSTORE_OBJS)
 bdev_demo:bdev_demo.o liboss.o $(MSGR_OBJS) 
 	$(LINK_TGT_C)
 
+bdev_perf:bdev_perf.o liboss.o $(MSGR_OBJS) 
+	$(LINK_TGT_C)
+
 # liboss: liboss.o $(MSGR_OBJS) 
 # 	ar rcs ./liboss.a $^
 
