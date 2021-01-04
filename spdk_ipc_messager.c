@@ -11,7 +11,7 @@
 #include "spdk_ipc_config.h"
 
 
-#define REQ_BATCH_SIZE 32
+#define REQ_BATCH_SIZE 1024
 
 
 
@@ -69,6 +69,7 @@ typedef struct session_t {
     struct spdk_ring *out_q; // Out
 
     struct spdk_ring *in_q; // In
+
     TAILQ_ENTRY(session_t) _session_list_hook;
 } session_t;
 
