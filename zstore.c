@@ -288,7 +288,7 @@ zstore_mkfs(const char *dev_list[], int flags)
     assert(blk_sz == 4096);
 
     uint64_t nblks = spdk_bdev_get_num_blocks(zstore->nvme_bdev_);
-    
+    nblks = spdk_min( 1ULL << 28 , nblks);
     //hack
     // nblks = (1024 * 32);
     
