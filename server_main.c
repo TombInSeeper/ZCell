@@ -576,7 +576,7 @@ int _ostore_boot(const objstore_impl_t *oimpl , int new) {
 
     char data_dev_name[64] , meta_dev_name[64];
 
-    sprintf(data_dev_name , "Malloc%u" , pid);
+    sprintf(data_dev_name , "Null%u" , pid);
     sprintf(meta_dev_name , "/run/pmem%u" , pid);
 
     const char *dev_list[] = {
