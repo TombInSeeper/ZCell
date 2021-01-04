@@ -2,6 +2,7 @@
 #include <spdk/event.h>
 #include <spdk/bdev.h>
 #include <spdk/rpc.h>
+#include <spdk/nvme.h>
 #include "util/log.h"
 
 static const char *devname = "ZDisk1";
@@ -86,6 +87,60 @@ void spdk_app_run(void *arg) {
     int rc = spdk_bdev_write_blocks(bd , ch , wbuf , 0 , 1 , write_cb , NULL);
     assert(rc == 0);
 }
+
+
+
+
+static const char *null_bdev[] = {
+    "Null0",
+    "Null1",
+    "Null2",
+    "Null3",
+};
+
+struct qos_context {
+    struct spdk_bdev_desc *bdev_desc[16];
+    struct spdk_io_channel *bdev_ioch[16];
+};
+
+int qos_poller ( void *arg ) 
+{
+
+}
+
+
+
+void spdk_app_run_qos_test(void *arg) {
+    
+
+    struct spdk_bdev *d = spdk_bdev_get_by_name(devname);
+    if(!d) {
+        log_err("Fuck\n");
+        spdk_app_done(NULL);
+    } else {
+        log_info("Good!\n");
+    }
+    spdk_bdev_open( d , 1 , NULL , NULL, &bd);
+    
+    if(!bd) {
+        log_err("Fuck2\n");
+        spdk_app_done(NULL);
+    } else {
+        log_info("Good2!\n");
+    }
+    ch = spdk_bdev_get_io_channel(bd);
+    if(!ch) {
+        log_err("Fuck3\n");
+        spdk_app_done(NULL);
+    } else {
+        log_info("Good3!\n");
+    }
+    wbuf = spdk_dma_malloc(0x1000, 0x1000, NULL);
+    rbuf = spdk_dma_malloc(0x1000, 0x1000, NULL);
+    int rc = spdk_bdev_write_blocks(bd , ch , wbuf , 0 , 1 , write_cb , NULL);
+    assert(rc == 0);
+}
+
 
 int main ( int argc , char **argv)
 {

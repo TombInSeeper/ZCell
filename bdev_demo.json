@@ -6,9 +6,41 @@
           {
             "params": {
               "bdev_io_pool_size": 65536,
-              "bdev_io_cache_size": 512
+              "bdev_io_cache_size": 2048
             },
             "method": "bdev_set_options"
+          },
+          {
+            "params": {
+              "name": "Null0",
+              "num_blocks": 1000000,
+              "block_size": 4096
+            },
+            "method": "bdev_null_create"
+          },
+          {
+            "params": {
+              "name": "Null1",
+              "num_blocks": 1000000,
+              "block_size": 4096
+            },
+            "method": "bdev_null_create"
+          },
+          {
+            "params": {
+              "name": "Null2",
+              "num_blocks": 1000000,
+              "block_size": 4096
+            },
+            "method": "bdev_null_create"
+          },
+          {
+            "params": {
+              "name": "Null3",
+              "num_blocks": 1000000,
+              "block_size": 4096
+            },
+            "method": "bdev_null_create"
           },
           {
             "params": {
