@@ -33,7 +33,9 @@ static const char *dev_list[] = {"Nvme0n1", "/run/pmem0" ,NULL};
 
 static void usage (char *argv0)
 {
-	fprintf(stderr, "Usage: %s [-i ip] [-p port]  [-s[null|chunk|zeta]] [-n new objstore] \n", argv0);
+	fprintf(stdout, "Usage: [-I 启动ipc_msgr] [-N 启动net_msgr] ");
+	fprintf(stdout, "Usage: [-T spdk_tgt 进程的 coremask] [-M zcell 进程的 coremask] ");
+	fprintf(stdout, "[-i ip] [-p port]  [-s[null|chunk|zeta]] [-n new objstore] \n");
 }
 
 static void parse_args(int argc , char **argv) {
@@ -77,8 +79,8 @@ static void parse_args(int argc , char **argv) {
 			g_new = 1;
 			break;
 		default:
-			fprintf(stderr, "Usage: %s [-i ip] [-p port]  [-s[null|chunk|zeta]] [-n new objstore] \n", argv[0]);
-			exit(1);
+			usage(argv[0]);
+            exit(1);
 		}
 	}
 }
