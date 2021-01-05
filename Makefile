@@ -7,8 +7,10 @@ ver=release
 ifeq ($(ver), debug)
 CFLAGS=-D_GNU_SOURCE -Wall -std=gnu11 -fPIC -fno-strict-aliasing  -g -O0 
 else
-CFLAGS=-D_GNU_SOURCE -DWY_NDEBUG -Wall -std=gnu11 -fPIC -O3 -march=native -fno-strict-aliasing 
+CFLAGS=-D_GNU_SOURCE -DWY_NDEBUG -Wall -std=gnu11 -fPIC -O3  -fno-strict-aliasing -march=native
 endif
+
+FIO_DIR=/home/wuyue/fio
 
 
 PMDK_LINK_FLAGS=-lpmem
@@ -108,10 +110,9 @@ LINK_SERVER_C=\
 	$(Q)echo "  LINK [$(ver)] $@"; \
 	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_SERVER_LINK_FLAGS) $(SYS_LIBS)
 
-
-LINK_SHARED_LIB=\
+LINK_SHARED_C=\
 	$(Q)echo "  LINK [$(ver)] $@"; \
-	$(CC) -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_SERVER_LINK_FLAGS) $(SYS_LIBS)
+	$(CC) -shared -o $@ $(SPDK_INCLUDE_FLAGS) $(PMDK_LINK_CFLAGS) $(CFLAGS) $(LDFLAGS) $^ $(LIBS)  $(SPDK_TGT_LINK_FLAGS) $(SYS_LIBS)
 
 
 MSGR_OBJS = messager.o net.o net_posix.o spdk_ipc_messager.o
@@ -121,10 +122,10 @@ FIO_SPDK_PLUGIN = fio_bdev.o
 EXE_OBJS = server_main.o client_main.o bdev_demo.o
 
 
-TEST_BIN= test_objstore test_ipc
-BIN_TGT=server  bdev_demo
+TEST_BIN= 
+BIN_TGT = server bdev_demo
 
-.PHONY: all clean test 
+.PHONY: all clean 
 	
 all: $(BIN_TGT) 
 
@@ -147,6 +148,10 @@ bdev_demo:bdev_demo.o liboss.o $(MSGR_OBJS)
 
 bdev_perf:bdev_perf.o liboss.o $(MSGR_OBJS) 
 	$(LINK_TGT_C)
+
+bdev_fio_plugin: bdev_fio_plugin.o liboss.o $(MSGR_OBJS) 
+	$(LINK_SHARED_C)
+
 
 # liboss: liboss.o $(MSGR_OBJS) 
 # 	ar rcs ./liboss.a $^
