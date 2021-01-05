@@ -13,9 +13,9 @@ SPDK_INCLUDE_FLAGS=-I$(SPDK_PATH_PREFIX)/spdk/include
 
 ver=release
 ifeq ($(ver), debug)
-CFLAGS=-D_GNU_SOURCE -Wall -std=gnu11 -fno-strict-aliasing  -g -O0 
+CFLAGS=-D_GNU_SOURCE -Wall -std=gnu11 -fPIC -fno-strict-aliasing  -g -O0 
 else
-CFLAGS=-D_GNU_SOURCE -DWY_NDEBUG -Wall -std=gnu11 -O3 -march=native -fno-strict-aliasing 
+CFLAGS=-D_GNU_SOURCE -DWY_NDEBUG -Wall -std=gnu11 -O3 -march=native -fPIC -fno-strict-aliasing 
 endif
 
 # Compile first input $< (.c) into $@ (.o)
