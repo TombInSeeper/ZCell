@@ -1,6 +1,6 @@
 [global]
 ioengine=spdk_bdev
-spdk_conf=./bdev.conf.in
+spdk_json_conf=./bdev_demo.json
 thread=1
 group_reporting=1
 direct=1
