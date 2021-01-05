@@ -10,7 +10,7 @@ cpumask=1
 percentile_list=50:99:99.9:99.99:99.999
 
 [4k_randwrite_qd1]
-filename=Malloc0
+filename=Null0
 description="4KiB Random Read QD=1"
 bs=4k
 rw=randwrite
